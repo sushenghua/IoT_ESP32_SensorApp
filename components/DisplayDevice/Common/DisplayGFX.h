@@ -63,6 +63,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #define RGB565_GREENYELLOW   0xAFE5      /* 173, 255,  47 */
 #define RGB565_PINK          0xF81F
 
+// rotation definitions
+#define DISPLAY_ROTATION_CW_0    0
+#define DISPLAY_ROTATION_CW_90   1
+#define DISPLAY_ROTATION_CW_180  2
+#define DISPLAY_ROTATION_CW_270  3
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // DisplayGFX class
@@ -73,9 +78,9 @@ public:
   DisplayGFX(int16_t w, int16_t h);
 
 public:
-	// all subclass should implement these common method
-	virtual void init() = 0;
-	virtual void reset() = 0;
+  // all subclass should implement these common method
+  virtual void init() = 0;
+  virtual void reset() = 0;
 
   // device-specific method
   virtual void drawPixel(int16_t x, int16_t y, uint16_t color) = 0;
@@ -94,6 +99,10 @@ public:
 
   // display control
   virtual void invertDisplay(bool i);
+
+  virtual uint8_t rotation() { return _rotation; }
+  virtual void setRotation(uint8_t r);
+  virtual void setViewPort(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {};
 
 public:
 	uint32_t write(const char *str);
@@ -129,7 +138,6 @@ public:
   void setTextColor(uint16_t c, uint16_t bg);
   void setTextSize(uint8_t s);
   void setTextWrap(bool w);
-  void setRotation(uint8_t r);
   void cp437(bool x = true);
   void setFont(const GFXfont *f = NULL);
   void getTextBounds(char *string, int16_t x, int16_t y, int16_t *x1, int16_t *y1, uint16_t *w, uint16_t *h);

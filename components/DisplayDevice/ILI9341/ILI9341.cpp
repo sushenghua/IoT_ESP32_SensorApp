@@ -157,24 +157,25 @@ void ILI9341::_init()
 
 void ILI9341::setRotation(uint8_t m)
 {
-	_rotation = m % 4; // can't be higher than 3
+	if (_rotation == m) return;
+	_rotation = m;
 	switch (_rotation) {
-			case 0:
+			case DISPLAY_ROTATION_CW_0:
 					m = (MADCTL_MX | MADCTL_BGR);
 					_width  = ILI9341_TFTWIDTH;
 					_height = ILI9341_TFTHEIGHT;
 					break;
-			case 1:
+			case DISPLAY_ROTATION_CW_90:
 					m = (MADCTL_MV | MADCTL_BGR);
 					_width  = ILI9341_TFTHEIGHT;
 					_height = ILI9341_TFTWIDTH;
 					break;
-			case 2:
+			case DISPLAY_ROTATION_CW_180:
 					m = (MADCTL_MY | MADCTL_BGR);
 					_width  = ILI9341_TFTWIDTH;
 					_height = ILI9341_TFTHEIGHT;
 					break;
-			case 3:
+			case DISPLAY_ROTATION_CW_270:
 					m = (MADCTL_MX | MADCTL_MY | MADCTL_MV | MADCTL_BGR);
 					_width  = ILI9341_TFTHEIGHT;
 					_height = ILI9341_TFTWIDTH;

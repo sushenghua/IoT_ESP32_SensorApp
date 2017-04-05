@@ -95,13 +95,13 @@ public:
 
 	virtual void invertDisplay(bool i);
 
+	virtual void setRotation(uint8_t r);
+	virtual void setViewPort(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
+
 public:
-	void setRotation(uint8_t r);
 	void scrollTo(uint16_t y);
 
 	// Transaction API not used by GFX
-	void setViewPort(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
-
 	void writePixel(uint16_t color);
 	void writePixels(uint16_t *colors, uint32_t len);
 
