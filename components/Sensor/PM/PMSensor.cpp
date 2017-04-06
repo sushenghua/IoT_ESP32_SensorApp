@@ -193,7 +193,7 @@ void PMSensor::onRxComplete()
 #if SENSOR_TYPE >= PMS5003S
 			_hchoData.hcho = _parser.valueAt(HCHO_POS) / 1000.0f;
 #ifdef DEBUG_APP
-			ESP_LOGI("PMSensor", "\n--->pm1.0: %2.2f  pm2.5: %2.2f  pm10: %2.2f  hcho: %2.2f\n",
+			ESP_LOGI("PMSensor", "--->pm1.0: %2.2f  pm2.5: %2.2f  pm10: %2.2f  hcho: %2.2f\n",
 			       _pmData.pm1d0, _pmData.pm2d5, _pmData.pm10, _hchoData.hcho);
 #endif
 			_hchoData.calculateLevel();
