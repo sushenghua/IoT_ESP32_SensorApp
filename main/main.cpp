@@ -9,8 +9,8 @@
 // #include <stdio.h>
 // #include <stdlib.h>
 // #include <string.h>
-// #include "freertos/FreeRTOS.h"
-// #include "freertos/task.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 // #include "esp_system.h"
 // #include "driver/spi_master.h"
 // #include "soc/gpio_struct.h"
@@ -18,20 +18,38 @@
 // #include "esp_log.h"
 
 #include "ILI9341.h"
+#include "SensorDisplayController.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+#ifndef delay(x)
+#define delay(x)                 vTaskDelay((x)/portTICK_RATE_MS)
+#endif
+
+
+ILI9341 dev;
+SensorDisplayController dc(&dev);
+
 void app_main()
 {
-    ILI9341 dev;
-    dev.init();
-    dev.test();
-    while (1) {
-        dev.test();
+    
+    dc.init();
+
+    while (true) {
+        dc.forceUpdate();
+        dc.update();
+        // delay(10);
     }
+
+    // ILI9341 dev;
+    // dev.init();
+    // dev.test();
+    // while (1) {
+    //     dev.test();
+    // }
 }
 
 #ifdef __cplusplus

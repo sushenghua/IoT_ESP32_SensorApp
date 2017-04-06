@@ -16,10 +16,13 @@
 #include "ILI9341.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+// #include "esp_log.h"
 
 // delay definition
 #define RESET_DELAY_TIME         5
+#ifndef delay(x)
 #define delay(x)                 vTaskDelay((x)/portTICK_RATE_MS)
+#endif
 
 // GPIO
 #define ILI9341_DC_CMD_MODE      0

@@ -53,7 +53,7 @@ void SpiBus::alloc()
 {
     if (!_allocated) {
         // initialize the SPI bus
-        ESP_LOGI("[SpiBus]", "alloc spi bus with host %d...", _host);
+        ESP_LOGI("[SpiBus]", "alloc spi bus with host %d", _host);
 
         esp_err_t ret;
         ret = spi_bus_initialize(_host, &_config, 1);
@@ -65,7 +65,7 @@ void SpiBus::alloc()
 void SpiBus::free()
 {
     if (_allocated) {
-        ESP_LOGI("[SpiBus]", "free spi bus with host %d...", _host);
+        ESP_LOGI("[SpiBus]", "free spi bus with host %d", _host);
         esp_err_t ret;
         ret = spi_bus_free(_host);
         assert(ret == ESP_OK);
