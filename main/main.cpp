@@ -22,8 +22,7 @@
 #include "PMSensor.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 ILI9341 dev;
@@ -43,10 +42,8 @@ void sensor_sample_task(void *p)
 void app_main()
 {
     dc.init();
-    // pmSensor.init();
-    // pmSensor.setDisplayDelegate(&dc);
 
-    xTaskCreate(sensor_sample_task, "sensor_sample_task", 4096, NULL, 0, NULL);
+    xTaskCreate(sensor_sample_task, "sensor_sample_task", 4096, NULL, 10, NULL);
 
     while (true) {
         dc.update();
