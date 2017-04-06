@@ -6,7 +6,7 @@
 
 #include "SensorDisplayController.h"
 #include "HealthyStandard.h"
-#include "esp_log.h"
+#include "Debug.h"
 
 SensorDisplayController::SensorDisplayController(DisplayGFX *dev)
 : DisplayController(dev)
@@ -68,8 +68,8 @@ void SensorDisplayController::setPmData(PMData &pmData, bool update)
 	_aqiPm10US = pmData.aqiPm10US;
 
 	// color update
-	_pm2d5Color = colorForAirLevel(pmData.levelPm2d5US);
-	_pm10Color = colorForAirLevel(pmData.levelPm10US);
+	_pm2d5Color = HS::colorForAirLevel(pmData.levelPm2d5US);
+	_pm10Color = HS::colorForAirLevel(pmData.levelPm10US);
 
 	if (update) _needUpdate = true;
 }
@@ -80,7 +80,7 @@ void SensorDisplayController::setHchoData(HchoData &hchoData, bool update)
 	_hcho = hchoData.hcho;
 
 	// color update
-	_hchoColor = colorForHchoLevel(hchoData.level);
+	_hchoColor = HS::colorForHchoLevel(hchoData.level);
 
 	if (update) _needUpdate = true;
 }
@@ -92,8 +92,8 @@ void SensorDisplayController::setTempHumidData(TempHumidData &tempHumidData, boo
 	_humid = tempHumidData.humid;
 
 	// color update
-	_tempColor = colorForTempLevel(tempHumidData.levelTemp);
-	_humidColor = colorForHumidLevel(tempHumidData.levelHumid);
+	_tempColor = HS::colorForTempLevel(tempHumidData.levelTemp);
+	_humidColor = HS::colorForHumidLevel(tempHumidData.levelHumid);
 
 	if (update) _needUpdate = true;
 }
@@ -104,7 +104,7 @@ void SensorDisplayController::setCO2Data(CO2Data &co2Data, bool update)
 	_co2 = co2Data.co2;
 
 	// color update
-	_co2Color = colorForCO2Level(co2Data.level);
+	_co2Color = HS::colorForCO2Level(co2Data.level);
 
 	if (update) _needUpdate = true;
 }
@@ -112,6 +112,8 @@ void SensorDisplayController::setCO2Data(CO2Data &co2Data, bool update)
 void SensorDisplayController::update()
 {
 	if (_needUpdate) {
+
+		ESP_LOGI("SensorDC", "update");
 
 		if (_rotationNeedUpdate) {
 			_devUpdateRotationInProgress = true;  // lock
@@ -127,15 +129,17 @@ void SensorDisplayController::update()
 		_dev->write("PM1.0: "); _dev->write(_pm1d0, 1); _dev->writeln();
 
 		_dev->setTextColor(_pm2d5Color, RGB565_BLACK);
-		_dev->write("PM2.5: "); _dev->write(_pm2d5, 1); _dev->write(" "); _dev->write((long)_aqiPm2d5US); _dev->writeln();
+		_dev->write("PM2.5: "); _dev->write(_pm2d5, 1); _dev->write(" "); _dev->write((long)_aqiPm2d5US);
+		_dev->write("  "); _dev->writeln();
 
 		_dev->setTextColor(_pm10Color, RGB565_BLACK);
-		_dev->write("PM10 : "); _dev->write(_pm10, 1); _dev->write(" "); _dev->write((long)_aqiPm10US); _dev->writeln();
+		_dev->write("PM10 : "); _dev->write(_pm10, 1); _dev->write(" "); _dev->write((long)_aqiPm10US);
+		_dev->write("  "); _dev->writeln();
 
 		//_dev->writeln();
 
 		_dev->setTextColor(_hchoColor, RGB565_BLACK);
-		_dev->write("Hcho : "); _dev->write(_hcho, 2); _dev->writeln();
+		_dev->write("HCHO : "); _dev->write(_hcho, 2); _dev->writeln();
 
 		_dev->setTextColor(_tempColor, RGB565_BLACK);
 		_dev->write("Temp : "); _dev->write(_temp, 1); _dev->writeln();

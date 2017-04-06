@@ -19,37 +19,39 @@
 
 #include "ILI9341.h"
 #include "SensorDisplayController.h"
+#include "PMSensor.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#ifndef delay(x)
-#define delay(x)                 vTaskDelay((x)/portTICK_RATE_MS)
-#endif
-
-
 ILI9341 dev;
 SensorDisplayController dc(&dev);
 
+void sensor_sample_task(void *p)
+{
+    PMSensor pmSensor;
+    pmSensor.init();
+    pmSensor.setDisplayDelegate(&dc);
+    while (true) {
+        pmSensor.sampleData();
+        vTaskDelay(500/portTICK_RATE_MS);
+    }
+}
+
 void app_main()
 {
-    
     dc.init();
+    // pmSensor.init();
+    // pmSensor.setDisplayDelegate(&dc);
+
+    xTaskCreate(sensor_sample_task, "sensor_sample_task", 4096, NULL, 0, NULL);
 
     while (true) {
-        dc.forceUpdate();
         dc.update();
-        // delay(10);
+        vTaskDelay(15/portTICK_RATE_MS);
     }
-
-    // ILI9341 dev;
-    // dev.init();
-    // dev.test();
-    // while (1) {
-    //     dev.test();
-    // }
 }
 
 #ifdef __cplusplus
