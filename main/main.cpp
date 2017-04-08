@@ -71,6 +71,8 @@ void app_main()
     wifi.setStaConfig("woody@home", "58897@mljd-abcde");
     wifi.setApConfig("DDSensor", "abcd1234");
     wifi.setHostName("SensorApp");
+    // wifi.enableEap();
+    // wifi.setEapConfig("eap_test_id", "eap_user_woody", "eap_user_passwd");
     wifi.init();
     wifi.start();
 

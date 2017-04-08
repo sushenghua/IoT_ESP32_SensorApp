@@ -6,6 +6,16 @@
 
 #include "Wifi.h"
 
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// NvsFlash class
+/////////////////////////////////////////////////////////////////////////////////////////
+bool NvsFlash::_inited = false;
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// Wifi class
+/////////////////////////////////////////////////////////////////////////////////////////
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
@@ -50,16 +60,20 @@ inline void stringAssign(char *target, const char *str, size_t len)
 Wifi::Wifi()
 : _initialized(false)
 , _started(false)
-, _mode(WIFI_MODE_STA)
-, _eapEnabled(false)
-, _eapMode(EAP_PEAP)
 {
+    // set default config value
+    _config.mode = WIFI_MODE_STA;
+    _config.eapConfig.enabled = false;
+    _config.eapConfig.eapMode = EAP_PEAP;
+
+    // init nvs flash
+    NvsFlash::init();
 }
 
 void Wifi::setWifiMode(wifi_mode_t mode)
 {
     if (!_initialized)
-        _mode = mode;
+        _config.mode = mode;
 }
 
 bool Wifi::setStaConfig(const char *ssid, const char *passwd)
@@ -67,15 +81,15 @@ bool Wifi::setStaConfig(const char *ssid, const char *passwd)
     if (_initialized) return false;
 
     size_t ssidLen = stringLen(ssid);
-    size_t ssidMaxLen = sizeof(_apConfig.sta.ssid);
+    size_t ssidMaxLen = sizeof(_config.apConfig.sta.ssid);
     size_t passwdLen = stringLen(passwd);
-    size_t passwdMaxLen = sizeof(_apConfig.sta.password);
+    size_t passwdMaxLen = sizeof(_config.apConfig.sta.password);
     
     if (ssidLen > ssidMaxLen || passwdLen > passwdMaxLen)
         return false;
 
-    stringAssign((char*)_staConfig.sta.ssid, ssid, ssidLen);
-    stringAssign((char*)_staConfig.sta.password, passwd, passwdLen);
+    stringAssign((char*)_config.staConfig.sta.ssid, ssid, ssidLen);
+    stringAssign((char*)_config.staConfig.sta.password, passwd, passwdLen);
     
     return true;
 }
@@ -89,20 +103,20 @@ bool Wifi::setApConfig(const char      *ssid,
     if (_initialized) return false;
 
     size_t ssidLen = stringLen(ssid);
-    size_t ssidMaxLen = sizeof(_apConfig.ap.ssid);
+    size_t ssidMaxLen = sizeof(_config.apConfig.ap.ssid);
     size_t passwdLen = stringLen(passwd);
-    size_t passwdMaxLen = sizeof(_apConfig.ap.password);
+    size_t passwdMaxLen = sizeof(_config.apConfig.ap.password);
 
     if (ssidLen > ssidMaxLen || passwdLen > passwdMaxLen)
         return false;
 
-    stringAssign((char*)_apConfig.ap.ssid, ssid, ssidLen);
-    stringAssign((char*)_apConfig.ap.password, passwd, passwdLen);
+    stringAssign((char*)_config.apConfig.ap.ssid, ssid, ssidLen);
+    stringAssign((char*)_config.apConfig.ap.password, passwd, passwdLen);
 
-    _apConfig.ap.ssid_len = ssidLen;
-    _apConfig.ap.authmode = authmode;
-    _apConfig.ap.max_connection = maxConnection;
-    _apConfig.ap.ssid_hidden = ssidHidden;
+    _config.apConfig.ap.ssid_len = ssidLen;
+    _config.apConfig.ap.authmode = authmode;
+    _config.apConfig.ap.max_connection = maxConnection;
+    _config.apConfig.ap.ssid_hidden = ssidHidden;
 
     return true;
 }
@@ -139,16 +153,16 @@ ESP_LOGI("[Wifi]", "disconnected event");
 
 #ifdef ENABLE_EAP
 
-bool Wifi::setEapConfig(EapMode     mode,
-                        const char *eapId,
+bool Wifi::setEapConfig(const char *eapId,
                         const char *username,
-                        const char *passwd)
+                        const char *password,
+                        EapMode     mode)
 {
     if (_initialized) return false;
 
     size_t eapIdLen = stringLen(eapId);
     size_t usernameLen = stringLen(username);
-    size_t passwdLen = stringLen(passwd);
+    size_t passwdLen = stringLen(password);
 
     if (eapIdLen > EAP_ID_MAX_LEN ||
         usernameLen > EAP_USERNAME_MAX_LEN ||
@@ -156,10 +170,10 @@ bool Wifi::setEapConfig(EapMode     mode,
         passwdLen > EAP_PASSWORD_MAX_LEN)
         return false;
 
-    _eapMode = mode;
-    stringAssign(_eapId, eapId, eapIdLen);
-    stringAssign(_eapUsername, username, usernameLen);
-    stringAssign(_eapPassword, passwd, passwdLen);
+    _config.eapConfig.eapMode = mode;
+    stringAssign(_config.eapConfig.eapId, eapId, eapIdLen);
+    stringAssign(_config.eapConfig.eapUsername, username, usernameLen);
+    stringAssign(_config.eapConfig.eapPassword, password, passwdLen);
 
     return true;
 }
@@ -169,9 +183,9 @@ bool Wifi::setHostName(const char* hostname)
     size_t len = stringLen(hostname);
     if (len > HOST_NAME_MAX_LEN || len == 0) return false;
 
-    stringAssign(_hostName, hostname, len);
-    if ( _started && (_mode == WIFI_MODE_APSTA || _mode == WIFI_MODE_STA) ) {
-        ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _hostName) );
+    stringAssign(_config.hostName, hostname, len);
+    if ( _started && (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) ) {
+        ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
     }
 
     return true;
@@ -179,7 +193,7 @@ bool Wifi::setHostName(const char* hostname)
 
 void Wifi::_initEap()
 {
-    if (_eapEnabled) {
+    if (_config.eapConfig.enabled) {
         unsigned int ca_pem_bytes = ca_pem_end - ca_pem_start;
         unsigned int client_crt_bytes = client_crt_end - client_crt_start;
         unsigned int client_key_bytes = client_key_end - client_key_start;
@@ -188,10 +202,13 @@ void Wifi::_initEap()
         ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_cert_key(client_crt_start, client_crt_bytes,
                                                             client_key_start, client_key_bytes, NULL, 0) );
 
-        ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_identity((uint8_t*)_eapId, stringLen(_eapId)) );
-        if (_eapMode == EAP_PEAP || _eapMode == EAP_TTLS) {
-            ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_username((uint8_t*)_eapUsername, stringLen(_eapUsername)) );
-            ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_password((uint8_t*)_eapPassword, stringLen(_eapPassword)) );
+        ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_identity((uint8_t*)_config.eapConfig.eapId,
+                                                             stringLen(_config.eapConfig.eapId)) );
+        if (_config.eapConfig.eapMode == EAP_PEAP || _config.eapConfig.eapMode == EAP_TTLS) {
+            ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_username((uint8_t*)_config.eapConfig.eapUsername,
+                                                                 stringLen(_config.eapConfig.eapUsername)) );
+            ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_password((uint8_t*)_config.eapConfig.eapPassword,
+                                                                 stringLen(_config.eapConfig.eapPassword)) );
         }
         ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_enable() );
     }
@@ -203,7 +220,7 @@ void Wifi::init()
 {
     if (_initialized) return;
 
-    ESP_LOGI("[Wifi]", "init with mode %d", _mode);
+    ESP_LOGI("[Wifi]", "init with mode %d", _config.mode);
 
     tcpip_adapter_init();
 
@@ -214,12 +231,12 @@ void Wifi::init()
     ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
     ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
 
-    ESP_ERROR_CHECK( esp_wifi_set_mode(_mode) );
+    ESP_ERROR_CHECK( esp_wifi_set_mode(_config.mode) );
 
-    if (_mode == WIFI_MODE_APSTA || _mode == WIFI_MODE_STA)
-        ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &_staConfig) );
-    if (_mode == WIFI_MODE_APSTA || _mode == WIFI_MODE_AP)
-        ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_AP, &_apConfig) );
+    if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA)
+        ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &_config.staConfig) );
+    if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_AP)
+        ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_AP, &_config.apConfig) );
 
 #ifdef ENABLE_EAP
     _initEap();
@@ -236,12 +253,126 @@ void Wifi::deinit()
     }
 }
 
+#include "nvs.h"
+#define STORAGE_NAMESPACE               "storage"
+#define WIFI_CONFIG_TAG                 "wifiConfig"
+#define WIFI_CONFIG_SAVE_COUNT_TAG      "wifiConfigSaveCount"
+
+bool Wifi::loadConfig()
+{
+    bool succeeded = false;
+    bool nvsOpened = false;
+
+    nvs_handle nvsHandle;
+    esp_err_t err;
+
+    do {
+        // open nvs
+        err = nvs_open(STORAGE_NAMESPACE, NVS_READWRITE, &nvsHandle);
+        if (err != ESP_OK) {
+            ESP_LOGE("[Wifi]", "loadConfig open nvs failed %d", err);
+            break;
+        }
+        nvsOpened = true;
+
+        // read wifi save count
+        uint16_t wifiConfigSaveCount = 0; // value will default to 0, if not set yet in NVS
+        err = nvs_get_u16(nvsHandle, WIFI_CONFIG_SAVE_COUNT_TAG, &wifiConfigSaveCount);
+        if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {
+            ESP_LOGE("[Wifi]", "loadConfig read \"save-count\" failed %d", err);
+            break;
+        }
+
+        // read wifi config
+        if (wifiConfigSaveCount > 0) {
+            size_t requiredSize = 0;  // value will default to 0, if not set yet in NVS
+            err = nvs_get_blob(nvsHandle, WIFI_CONFIG_TAG, NULL, &requiredSize);
+            if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {
+                ESP_LOGE("[Wifi]", "loadConfig read \"wifi-config-size\" failed %d", err);
+                break;
+            }
+            if (requiredSize != sizeof(_config)) {
+                ESP_LOGE("[Wifi]", "loadConfig read \"wifi-config-size\" got unexpected value");
+                break;
+            }
+            // read previously saved config
+            err = nvs_get_blob(nvsHandle, WIFI_CONFIG_TAG, &_config, &requiredSize);
+            if (err != ESP_OK) {
+                ESP_LOGE("[Wifi]", "loadConfig read \"wifi-config-content\" failed %d", err);
+                break;
+            }
+            succeeded = true;
+        }
+    } while(false);
+
+    // close nvs
+    if (nvsOpened) nvs_close(nvsHandle);
+
+    return succeeded;
+}
+
+bool Wifi::saveConfig()
+{
+    bool succeeded = true;
+    bool nvsOpened = false;
+
+    nvs_handle nvsHandle;
+    esp_err_t err;
+
+    do {
+        // open nvs
+        err = nvs_open(STORAGE_NAMESPACE, NVS_READWRITE, &nvsHandle);
+        if (err != ESP_OK) {
+            ESP_LOGE("[Wifi]", "saveConfig open nvs failed %d", err);
+            break;
+        }
+        nvsOpened = true;
+
+        // read wifi save count
+        uint16_t wifiConfigSaveCount = 0; // value will default to 0, if not set yet in NVS
+        err = nvs_get_u16(nvsHandle, WIFI_CONFIG_SAVE_COUNT_TAG, &wifiConfigSaveCount);
+        if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {
+            ESP_LOGE("[Wifi]", "saveConfig read \"save-count\" failed %d", err);
+            break;
+        }
+
+        // write wifi config
+        err = nvs_set_blob(nvsHandle, WIFI_CONFIG_TAG, &_config, sizeof(_config));
+        if (err != ESP_OK) {
+            ESP_LOGE("[Wifi]", "saveConfig write \"wifi-config\" failed %d", err);
+            break;
+        }
+
+        // write save count
+        wifiConfigSaveCount++;
+        err = nvs_set_u16(nvsHandle, WIFI_CONFIG_SAVE_COUNT_TAG, wifiConfigSaveCount);
+        if (err != ESP_OK) {
+            ESP_LOGE("[Wifi]", "saveConfig write \"save-count\" failed %d", err);
+            break;
+        }
+
+        // commit written value.
+        err = nvs_commit(nvsHandle);
+        if (err != ESP_OK) {
+            ESP_LOGE("[Wifi]", "saveConfig commit failed %d", err);
+            break;
+        }
+        succeeded = true;
+
+    } while(false);
+
+    // close nvs
+    if (nvsOpened) nvs_close(nvsHandle);
+
+    return succeeded;
+}
+
 void Wifi::start()
 {
     if (!_started) {
         ESP_ERROR_CHECK( esp_wifi_start() );
-        if ( (_mode == WIFI_MODE_APSTA || _mode == WIFI_MODE_STA) &&_hostName[0] != '\0') {
-        	ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _hostName) );
+        if ( (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) &&_config.hostName[0] != '\0') {
+            ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
         }
         _started = true;
     }

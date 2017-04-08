@@ -7,6 +7,32 @@
 #ifndef _WIFI_H
 #define _WIFI_H
 
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// NvsFlash class
+/////////////////////////////////////////////////////////////////////////////////////////
+#include "esp_err.h"
+#include "nvs_flash.h"
+
+class NvsFlash
+{
+public:
+    static void init() {
+        if (!_inited) {
+            ESP_ERROR_CHECK( nvs_flash_init() );
+            _inited = true;
+        }
+    }
+    static bool inited() { return _inited; }
+
+protected:
+    static bool _inited;
+};
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// Wifi class
+/////////////////////////////////////////////////////////////////////////////////////////
 #include "esp_wifi_types.h"
 
 // AP
@@ -28,7 +54,23 @@ enum EapMode {
 // host info
 #define HOST_NAME_MAX_LEN              32
 
-// Wifi class
+// EAP config structure
+struct WifiEapConfig {
+    bool                     enabled;
+    EapMode                  eapMode;
+    char                     eapId[EAP_ID_MAX_LEN];
+    char                     eapUsername[EAP_USERNAME_MAX_LEN];
+    char                     eapPassword[EAP_PASSWORD_MAX_LEN];
+};
+
+struct WifiConfig {
+    wifi_mode_t              mode;
+    wifi_config_t            apConfig;
+    wifi_config_t            staConfig;
+    WifiEapConfig            eapConfig;
+    char                     hostName[HOST_NAME_MAX_LEN+1];
+};
+
 class Wifi
 {
 public:
@@ -45,18 +87,18 @@ public:
                      uint8_t          ssidHidden = 0); // default 0: not hidden
 
 #ifdef ENABLE_EAP
-    void enableEap(bool enabled = true) { _eapEnabled = enabled; }
-    bool setEapConfig(EapMode        mode,
-                      const char    *eapId,
-                      const char    *eapUsername,
-                      const char    *passwd);
+public:
+    void enableEap(bool enabled = true) { _config.eapConfig.enabled = enabled; }
+    bool setEapConfig(const char    *eapId,
+                      const char    *username,
+                      const char    *password,
+                      EapMode        mode = EAP_PEAP);
+protected:
+    void _initEap();
 #endif
 
+public:
     bool setHostName(const char* hostname);
-
-    // storage load, save
-    void loadConfig();
-    void saveConfig();
 
     // init, deinit
     void init();
@@ -66,26 +108,16 @@ public:
     void start();
     void stop();
 
+    // storage load, save
+    bool loadConfig();
+    bool saveConfig();
+
 protected:
     // init
     bool                     _initialized;
     bool                     _started;
-    // wifi mode and config
-    wifi_mode_t              _mode;
-    wifi_config_t            _apConfig;
-    wifi_config_t            _staConfig;
-
-#ifdef ENABLE_EAP
-    void _initEap();
-    // EAP
-    bool                     _eapEnabled;
-    EapMode                  _eapMode;
-    char                     _eapId[EAP_ID_MAX_LEN];
-    char                     _eapUsername[EAP_USERNAME_MAX_LEN];
-    char                     _eapPassword[EAP_PASSWORD_MAX_LEN];
-#endif
-    // Host info
-    char                     _hostName[HOST_NAME_MAX_LEN+1];
+    // config
+    WifiConfig               _config;
 };
 
 #endif // _WIFI_H
