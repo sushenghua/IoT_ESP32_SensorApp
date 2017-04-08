@@ -18,6 +18,7 @@
 #include "esp_log.h"
 
 #include "Wifi.h"
+#include "NvsFlash.h"
 
 #include "ILI9341.h"
 #include "SensorDisplayController.h"
@@ -66,13 +67,27 @@ Wifi wifi;
 
 void app_main()
 {
+    NvsFlash::init();
+
     dc.init();
-    wifi.setWifiMode(WIFI_MODE_APSTA);
-    wifi.setStaConfig("woody@home", "58897@mljd-abcde");
-    wifi.setApConfig("DDSensor", "abcd1234");
-    wifi.setHostName("SensorApp");
-    // wifi.enableEap();
-    // wifi.setEapConfig("eap_test_id", "eap_user_woody", "eap_user_passwd");
+
+    if (wifi.loadConfig()) {
+      ESP_LOGI("wifi", "load config succeeded");
+    }
+    else {
+      // set config
+      wifi.setWifiMode(WIFI_MODE_APSTA);
+      wifi.setStaConfig("woody@home", "58897@mljd-abcde");
+      wifi.setApConfig("DDSensor", "abcd1234");
+      wifi.setHostName("SensorApp");
+      wifi.enableEap();
+      wifi.setEapConfig("eap_test_id", "eap_user_woody", "eap_user_passwd");
+
+      if (wifi.saveConfig()) {
+        ESP_LOGI("wifi", "save config succeeded");
+      }
+    }
+
     wifi.init();
     wifi.start();
 

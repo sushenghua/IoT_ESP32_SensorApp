@@ -6,16 +6,6 @@
 
 #include "Wifi.h"
 
-
-/////////////////////////////////////////////////////////////////////////////////////////
-// NvsFlash class
-/////////////////////////////////////////////////////////////////////////////////////////
-bool NvsFlash::_inited = false;
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-// Wifi class
-/////////////////////////////////////////////////////////////////////////////////////////
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
@@ -27,6 +17,8 @@ bool NvsFlash::_inited = false;
 #include "nvs_flash.h"
 #include "tcpip_adapter.h"
 
+/////////////////////////////////////////////////////////////////////////////////////////
+// ------ enterprise AP
 #ifdef ENABLE_EAP
 /* CA cert, taken from wpa2_ca.pem
    Client cert, taken from wpa2_client.crt
@@ -47,6 +39,8 @@ extern uint8_t client_key_end[]   asm("_binary_wpa2_client_key_end");
 
 #endif // ENABLE_EAP
 
+/////////////////////////////////////////////////////////////////////////////////////////
+// ------ helper
 inline size_t stringLen(const char *str)
 {
     return strlen((const char*)str);
@@ -57,6 +51,8 @@ inline void stringAssign(char *target, const char *str, size_t len)
     strncpy((char *)target, (const char*)str, len);
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+// ------ contructor
 Wifi::Wifi()
 : _initialized(false)
 , _started(false)
@@ -65,11 +61,10 @@ Wifi::Wifi()
     _config.mode = WIFI_MODE_STA;
     _config.eapConfig.enabled = false;
     _config.eapConfig.eapMode = EAP_PEAP;
-
-    // init nvs flash
-    NvsFlash::init();
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+// ------ config
 void Wifi::setWifiMode(wifi_mode_t mode)
 {
     if (!_initialized)
@@ -121,6 +116,74 @@ bool Wifi::setApConfig(const char      *ssid,
     return true;
 }
 
+
+#ifdef ENABLE_EAP
+
+bool Wifi::setEapConfig(const char *eapId,
+                        const char *username,
+                        const char *password,
+                        EapMode     mode)
+{
+    if (_initialized) return false;
+
+    size_t eapIdLen = stringLen(eapId);
+    size_t usernameLen = stringLen(username);
+    size_t passwdLen = stringLen(password);
+
+    if (eapIdLen > EAP_ID_MAX_LEN ||
+        usernameLen > EAP_USERNAME_MAX_LEN ||
+        passwdLen < 8 ||
+        passwdLen > EAP_PASSWORD_MAX_LEN)
+        return false;
+
+    _config.eapConfig.eapMode = mode;
+    stringAssign(_config.eapConfig.eapId, eapId, eapIdLen);
+    stringAssign(_config.eapConfig.eapUsername, username, usernameLen);
+    stringAssign(_config.eapConfig.eapPassword, password, passwdLen);
+
+    return true;
+}
+
+void Wifi::_initEap()
+{
+    if (_config.eapConfig.enabled) {
+        unsigned int ca_pem_bytes = ca_pem_end - ca_pem_start;
+        unsigned int client_crt_bytes = client_crt_end - client_crt_start;
+        unsigned int client_key_bytes = client_key_end - client_key_start;
+
+        ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_ca_cert(ca_pem_start, ca_pem_bytes) );
+        ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_cert_key(client_crt_start, client_crt_bytes,
+                                                            client_key_start, client_key_bytes, NULL, 0) );
+
+        ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_identity((uint8_t*)_config.eapConfig.eapId,
+                                                             stringLen(_config.eapConfig.eapId)) );
+        if (_config.eapConfig.eapMode == EAP_PEAP || _config.eapConfig.eapMode == EAP_TTLS) {
+            ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_username((uint8_t*)_config.eapConfig.eapUsername,
+                                                                 stringLen(_config.eapConfig.eapUsername)) );
+            ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_password((uint8_t*)_config.eapConfig.eapPassword,
+                                                                 stringLen(_config.eapConfig.eapPassword)) );
+        }
+        ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_enable() );
+    }
+}
+
+#endif
+
+bool Wifi::setHostName(const char* hostname)
+{
+    size_t len = stringLen(hostname);
+    if (len > HOST_NAME_MAX_LEN || len == 0) return false;
+
+    stringAssign(_config.hostName, hostname, len);
+    if ( _started && (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) ) {
+        ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
+    }
+
+    return true;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// ------ wifi init and event handler
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
 static EventGroupHandle_t wifiEventGroup;
 
@@ -150,71 +213,6 @@ ESP_LOGI("[Wifi]", "disconnected event");
     }
     return ESP_OK;
 }
-
-#ifdef ENABLE_EAP
-
-bool Wifi::setEapConfig(const char *eapId,
-                        const char *username,
-                        const char *password,
-                        EapMode     mode)
-{
-    if (_initialized) return false;
-
-    size_t eapIdLen = stringLen(eapId);
-    size_t usernameLen = stringLen(username);
-    size_t passwdLen = stringLen(password);
-
-    if (eapIdLen > EAP_ID_MAX_LEN ||
-        usernameLen > EAP_USERNAME_MAX_LEN ||
-        passwdLen < 8 ||
-        passwdLen > EAP_PASSWORD_MAX_LEN)
-        return false;
-
-    _config.eapConfig.eapMode = mode;
-    stringAssign(_config.eapConfig.eapId, eapId, eapIdLen);
-    stringAssign(_config.eapConfig.eapUsername, username, usernameLen);
-    stringAssign(_config.eapConfig.eapPassword, password, passwdLen);
-
-    return true;
-}
-
-bool Wifi::setHostName(const char* hostname)
-{
-    size_t len = stringLen(hostname);
-    if (len > HOST_NAME_MAX_LEN || len == 0) return false;
-
-    stringAssign(_config.hostName, hostname, len);
-    if ( _started && (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) ) {
-        ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
-    }
-
-    return true;
-}
-
-void Wifi::_initEap()
-{
-    if (_config.eapConfig.enabled) {
-        unsigned int ca_pem_bytes = ca_pem_end - ca_pem_start;
-        unsigned int client_crt_bytes = client_crt_end - client_crt_start;
-        unsigned int client_key_bytes = client_key_end - client_key_start;
-
-        ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_ca_cert(ca_pem_start, ca_pem_bytes) );
-        ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_cert_key(client_crt_start, client_crt_bytes,
-                                                            client_key_start, client_key_bytes, NULL, 0) );
-
-        ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_identity((uint8_t*)_config.eapConfig.eapId,
-                                                             stringLen(_config.eapConfig.eapId)) );
-        if (_config.eapConfig.eapMode == EAP_PEAP || _config.eapConfig.eapMode == EAP_TTLS) {
-            ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_username((uint8_t*)_config.eapConfig.eapUsername,
-                                                                 stringLen(_config.eapConfig.eapUsername)) );
-            ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_set_password((uint8_t*)_config.eapConfig.eapPassword,
-                                                                 stringLen(_config.eapConfig.eapPassword)) );
-        }
-        ESP_ERROR_CHECK( esp_wifi_sta_wpa2_ent_enable() );
-    }
-}
-
-#endif
 
 void Wifi::init()
 {
@@ -253,10 +251,12 @@ void Wifi::deinit()
     }
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+// ------ laod, save config
 #include "nvs.h"
 #define STORAGE_NAMESPACE               "storage"
-#define WIFI_CONFIG_TAG                 "wifiConfig"
-#define WIFI_CONFIG_SAVE_COUNT_TAG      "wifiConfigSaveCount"
+#define WIFI_CONFIG_TAG                 "wifiConf"
+#define WIFI_CONFIG_SAVE_COUNT_TAG      "wifiConfSC"  // wifi config save count
 
 bool Wifi::loadConfig()
 {
@@ -268,7 +268,7 @@ bool Wifi::loadConfig()
 
     do {
         // open nvs
-        err = nvs_open(STORAGE_NAMESPACE, NVS_READWRITE, &nvsHandle);
+        err = nvs_open(STORAGE_NAMESPACE, NVS_READONLY, &nvsHandle);
         if (err != ESP_OK) {
             ESP_LOGE("[Wifi]", "loadConfig open nvs failed %d", err);
             break;
@@ -313,7 +313,7 @@ bool Wifi::loadConfig()
 
 bool Wifi::saveConfig()
 {
-    bool succeeded = true;
+    bool succeeded = false;
     bool nvsOpened = false;
 
     nvs_handle nvsHandle;
@@ -367,6 +367,8 @@ bool Wifi::saveConfig()
     return succeeded;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+// ------ start, stop
 void Wifi::start()
 {
     if (!_started) {
