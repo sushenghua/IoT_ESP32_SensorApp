@@ -150,13 +150,29 @@ bool Wifi::setEapConfig(EapMode     mode,
     size_t usernameLen = stringLen(username);
     size_t passwdLen = stringLen(passwd);
 
-    if (eapIdLen > EAP_ID_MAX_LEN || usernameLen > EAP_USERNAME_MAX_LEN || passwdLen > EAP_PASSWORD_MAX_LEN)
+    if (eapIdLen > EAP_ID_MAX_LEN ||
+        usernameLen > EAP_USERNAME_MAX_LEN ||
+        passwdLen < 8 ||
+        passwdLen > EAP_PASSWORD_MAX_LEN)
         return false;
 
     _eapMode = mode;
     stringAssign(_eapId, eapId, eapIdLen);
     stringAssign(_eapUsername, username, usernameLen);
     stringAssign(_eapPassword, passwd, passwdLen);
+
+    return true;
+}
+
+bool Wifi::setHostName(const char* hostname)
+{
+    size_t len = stringLen(hostname);
+    if (len > HOST_NAME_MAX_LEN || len == 0) return false;
+
+    stringAssign(_hostName, hostname, len);
+    if ( _started && (_mode == WIFI_MODE_APSTA || _mode == WIFI_MODE_STA) ) {
+        ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _hostName) );
+    }
 
     return true;
 }
@@ -224,6 +240,9 @@ void Wifi::start()
 {
     if (!_started) {
         ESP_ERROR_CHECK( esp_wifi_start() );
+        if ( (_mode == WIFI_MODE_APSTA || _mode == WIFI_MODE_STA) &&_hostName[0] != '\0') {
+        	ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _hostName) );
+        }
         _started = true;
     }
 }

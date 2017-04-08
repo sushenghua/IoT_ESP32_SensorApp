@@ -25,6 +25,9 @@ enum EapMode {
 };
 #endif
 
+// host info
+#define HOST_NAME_MAX_LEN              32
+
 // Wifi class
 class Wifi
 {
@@ -48,6 +51,8 @@ public:
                       const char    *eapUsername,
                       const char    *passwd);
 #endif
+
+    bool setHostName(const char* hostname);
 
     // storage load, save
     void loadConfig();
@@ -79,6 +84,8 @@ protected:
     char                     _eapUsername[EAP_USERNAME_MAX_LEN];
     char                     _eapPassword[EAP_PASSWORD_MAX_LEN];
 #endif
+    // Host info
+    char                     _hostName[HOST_NAME_MAX_LEN+1];
 };
 
 #endif // _WIFI_H

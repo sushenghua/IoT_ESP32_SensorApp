@@ -67,7 +67,10 @@ Wifi wifi;
 void app_main()
 {
     dc.init();
+    wifi.setWifiMode(WIFI_MODE_APSTA);
     wifi.setStaConfig("woody@home", "58897@mljd-abcde");
+    wifi.setApConfig("DDSensor", "abcd1234");
+    wifi.setHostName("SensorApp");
     wifi.init();
     wifi.start();
 
