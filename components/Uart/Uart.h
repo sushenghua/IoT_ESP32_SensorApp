@@ -47,7 +47,7 @@ public:
                            int txBufSize = UART_DEFAULT_TX_SIZE,
                            int queueSize = UART_DEFAULT_QUEUE_SIZE);
 
-    // config, alloc and free
+    // config, init and deinit
     void setPins(int pinTx, int pinRx, int pinRts = UART_DEFAULT_PIN, int pinCts = UART_DEFAULT_PIN);
     void setParams(int                   baudRate = UART_DEFAULT_BAUDRATE,
                    uart_word_length_t    dataBits = UART_DEFAULT_WORD_LEN,
@@ -56,9 +56,9 @@ public:
                    uart_hw_flowcontrol_t flowCtrl = UART_DEFAULT_HW_FLOWCTRL,
                    uint8_t               rxFlowCtrlThresh = UART_DEFAULT_RX_CTRL_THRESH);
 
-    void alloc(int pinTx, int pinRx, int pinRts = UART_DEFAULT_PIN, int pinCts = UART_DEFAULT_PIN);
-    void alloc();
-    void free();
+    void init(int pinTx, int pinRx, int pinRts = UART_DEFAULT_PIN, int pinCts = UART_DEFAULT_PIN);
+    void init();
+    void deinit();
 
     // tx and rx
     int tx(const uint8_t *data, size_t size) {
@@ -73,7 +73,7 @@ protected:
     // uart port
     const uart_port_t    _port;
     // indicates if uart resource allocated
-    bool                 _allocated;
+    bool                 _initialized;
     // pins
     int                  _pinTx;
     int                  _pinRx;

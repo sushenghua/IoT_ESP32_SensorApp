@@ -76,7 +76,7 @@ void ILI9341::init()
 
     // bus init
     SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
-    bus->alloc(PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK);
+    bus->init(PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK);
     _spiChannel.setParams(0, PIN_NUM_CS, 5, 25000000);
     _spiChannel.bindTransactionCache(_ili9341SpiTrans, ILI9341_SPI_TRANS_MAX);
     bus->addChannel(_spiChannel);

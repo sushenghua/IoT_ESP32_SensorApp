@@ -22,11 +22,11 @@ public:
     // constructor
     SpiBus(spi_host_device_t host);
 
-    // config, alloc and free
+    // config, init and deinit
     void setPins(int pinMiso, int pinMosi, int pinClk);
-    void alloc(int pinMiso, int pinMosi, int pinClk);
-    void alloc();
-    void free();
+    void init(int pinMiso, int pinMosi, int pinClk);
+    void init();
+    void deinit();
 
     // channel methods
     void addChannel(SpiChannel &channel);
@@ -34,7 +34,7 @@ public:
 
 protected:
     const spi_host_device_t  _host;
-    bool                     _allocated;
+    bool                     _initialized;
     spi_bus_config_t         _config;
 };
 

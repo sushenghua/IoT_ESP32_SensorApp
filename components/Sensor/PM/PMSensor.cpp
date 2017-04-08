@@ -114,7 +114,7 @@ void PMSensor::init()
     gpio_set_pull_mode((gpio_num_t)PM_SENSOR_SET_PIN, GPIO_PULLUP_ONLY);
     gpio_set_pull_mode((gpio_num_t)PM_SENSOR_RST_PIN, GPIO_PULLUP_ONLY);
 
-	alloc(PM_SENSOR_MCU_TX_PIN, PM_SENSOR_MCU_RX_PIN);
+	Uart::init(PM_SENSOR_MCU_TX_PIN, PM_SENSOR_MCU_RX_PIN);
 }
 
 void PMSensor::enableActiveDataTx(bool enabled)

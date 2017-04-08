@@ -24,7 +24,7 @@ SpiBus* SpiBus::busForHost(spi_host_device_t host)
 
 SpiBus::SpiBus(spi_host_device_t host)
 : _host(host)
-, _allocated(false)
+, _initialized(false)
 {
     _config.quadwp_io_num = -1;
     _config.quadhd_io_num = -1;
@@ -32,44 +32,44 @@ SpiBus::SpiBus(spi_host_device_t host)
 
 void SpiBus::setPins(int pinMiso, int pinMosi, int pinClk)
 {
-    if (!_allocated) {
+    if (!_initialized) {
         _config.miso_io_num = pinMiso;
         _config.mosi_io_num = pinMosi;
         _config.sclk_io_num = pinClk;
     }
 }
 
-void SpiBus::alloc(int pinMiso, int pinMosi, int pinClk)
+void SpiBus::init(int pinMiso, int pinMosi, int pinClk)
 {
-    if (!_allocated) {
+    if (!_initialized) {
         _config.miso_io_num = pinMiso;
         _config.mosi_io_num = pinMosi;
         _config.sclk_io_num = pinClk;
-        alloc();
+        init();
     }
 }
 
-void SpiBus::alloc()
+void SpiBus::init()
 {
-    if (!_allocated) {
+    if (!_initialized) {
         // initialize the SPI bus
-        ESP_LOGI("[SpiBus]", "alloc spi bus with host %d", _host);
+        ESP_LOGI("[SpiBus]", "init spi bus with host %d", _host);
 
         esp_err_t ret;
         ret = spi_bus_initialize(_host, &_config, 1);
         assert(ret == ESP_OK);
-        _allocated = true;
+        _initialized = true;
     }
 }
 
-void SpiBus::free()
+void SpiBus::deinit()
 {
-    if (_allocated) {
-        ESP_LOGI("[SpiBus]", "free spi bus with host %d", _host);
+    if (_initialized) {
+        ESP_LOGI("[SpiBus]", "deinit spi bus with host %d", _host);
         esp_err_t ret;
         ret = spi_bus_free(_host);
         assert(ret == ESP_OK);
-        _allocated = false;
+        _initialized = false;
     }
 }
 

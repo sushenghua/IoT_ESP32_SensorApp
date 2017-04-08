@@ -9,7 +9,7 @@
 
 Uart::Uart(uart_port_t port, int rxBufSize, int txBufSize, int queueSize)
 : _port(port)
-, _allocated(false)
+, _initialized(false)
 , _rxBufSize(rxBufSize)
 , _txBufSize(txBufSize)
 , _queueSize(queueSize)
@@ -34,7 +34,7 @@ void Uart::setParams(int                   baudRate,
 
 void Uart::setPins(int pinTx, int pinRx, int pinRts, int pinCts)
 {
-    if (!_allocated) {
+    if (!_initialized) {
         _pinTx = pinTx;
         _pinRx = pinRx;
         _pinRts = pinRts;
@@ -42,22 +42,22 @@ void Uart::setPins(int pinTx, int pinRx, int pinRts, int pinCts)
     }
 }
 
-void Uart::alloc(int pinTx, int pinRx, int pinRts, int pinCts)
+void Uart::init(int pinTx, int pinRx, int pinRts, int pinCts)
 {
-    if (!_allocated) {
+    if (!_initialized) {
         _pinTx = pinTx;
         _pinRx = pinRx;
         _pinRts = pinRts;
         _pinCts = pinCts;
-        alloc();
+        init();
     }
 }
 
-void Uart::alloc()
+void Uart::init()
 {
-    if (!_allocated) {
+    if (!_initialized) {
 
-        ESP_LOGI("[Uart]", "alloc uart with port %d", _port);
+        ESP_LOGI("[Uart]", "init uart with port %d", _port);
 
         esp_err_t ret;
 
@@ -70,21 +70,21 @@ void Uart::alloc()
         ret = uart_driver_install(_port, _rxBufSize, _txBufSize, _queueSize, NULL, 0);
         assert(ret == ESP_OK);
 
-        _allocated = true;
+        _initialized = true;
     }
 }
 
-void Uart::free()
+void Uart::deinit()
 {
-    if (_allocated) {
+    if (_initialized) {
 
-        ESP_LOGI("[Uart]", "free uart with port %d", _port);
+        ESP_LOGI("[Uart]", "deinit uart with port %d", _port);
 
         esp_err_t ret;
 
         ret = uart_driver_delete(_port);
         assert(ret == ESP_OK);
 
-        _allocated = false;
+        _initialized = false;
     }
 }
