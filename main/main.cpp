@@ -15,7 +15,9 @@
 // #include "driver/spi_master.h"
 // #include "soc/gpio_struct.h"
 // #include "driver/gpio.h"
-// #include "esp_log.h"
+#include "esp_log.h"
+
+#include "Wifi.h"
 
 #include "ILI9341.h"
 #include "SensorDisplayController.h"
@@ -39,10 +41,37 @@ void sensor_sample_task(void *p)
     }
 }
 
+#include "tcpip_adapter.h"
+
+void wpa2_enterprise_task(void *pvParameters)
+{
+    tcpip_adapter_ip_info_t ip;
+    memset(&ip, 0, sizeof(tcpip_adapter_ip_info_t));
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+    while (true) {
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+        if (tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip) == 0) {
+            ESP_LOGI("wifi test", "~~~~~~~~~~~");
+            ESP_LOGI("wifi test", "  IP: %d.%d.%d.%d", IP2STR(&ip.ip));
+            ESP_LOGI("wifi test", "MASK: %d.%d.%d.%d", IP2STR(&ip.netmask));
+            ESP_LOGI("wifi test", "  GW: %d.%d.%d.%d", IP2STR(&ip.gw));
+            ESP_LOGI("wifi test", "~~~~~~~~~~~");
+        }
+    }
+}
+
+Wifi wifi;
+
 void app_main()
 {
     dc.init();
+    wifi.setStaConfig("woody@home", "58897@mljd-abcde");
+    wifi.init();
+    wifi.start();
 
+    xTaskCreate(&wpa2_enterprise_task, "wpa2_enterprise_task", 4096, NULL, 5, NULL);
     xTaskCreate(sensor_sample_task, "sensor_sample_task", 4096, NULL, 10, NULL);
 
     while (true) {
