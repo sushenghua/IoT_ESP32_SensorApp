@@ -191,6 +191,7 @@ static EventGroupHandle_t wifiEventGroup;
    but we only care about one event - are we connected
    to the AP with an IP? */
 const int CONNECTED_BIT = BIT0;
+static bool _connected = false;
 
 static esp_err_t wifi_app_event_handler(void *ctx, system_event_t *event)
 {
@@ -202,16 +203,23 @@ ESP_LOGI("[Wifi]", "connect event");
         case SYSTEM_EVENT_STA_GOT_IP:
 ESP_LOGI("[Wifi]", "got ip event");
             xEventGroupSetBits(wifiEventGroup, CONNECTED_BIT);
+            _connected = true;
             break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
 ESP_LOGI("[Wifi]", "disconnected event");
             ESP_ERROR_CHECK( esp_wifi_connect() );
             xEventGroupClearBits(wifiEventGroup, CONNECTED_BIT);
+            _connected = false;
             break;
         default:
             break;
     }
     return ESP_OK;
+}
+
+bool Wifi::connected()
+{
+    return _connected;
 }
 
 void Wifi::init()

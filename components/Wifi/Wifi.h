@@ -86,9 +86,10 @@ public:
     void init();
     void deinit();
 
-    // start, stop
+    // start, stop, status
     void start();
     void stop();
+    bool connected();
 
     // storage load, save
     bool loadConfig();

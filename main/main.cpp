@@ -42,7 +42,11 @@ void sensor_sample_task(void *p)
     }
 }
 
+Wifi wifi;
+
 #include "tcpip_adapter.h"
+
+TaskHandle_t enterpriseTaskHandle;
 
 void wpa2_enterprise_task(void *pvParameters)
 {
@@ -53,17 +57,19 @@ void wpa2_enterprise_task(void *pvParameters)
     while (true) {
         vTaskDelay(2000 / portTICK_PERIOD_MS);
 
-        if (tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip) == 0) {
-            ESP_LOGI("wifi test", "~~~~~~~~~~~");
-            ESP_LOGI("wifi test", "  IP: %d.%d.%d.%d", IP2STR(&ip.ip));
-            ESP_LOGI("wifi test", "MASK: %d.%d.%d.%d", IP2STR(&ip.netmask));
-            ESP_LOGI("wifi test", "  GW: %d.%d.%d.%d", IP2STR(&ip.gw));
-            ESP_LOGI("wifi test", "~~~~~~~~~~~");
+        if (wifi.connected()) {
+
+          if (tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip) == 0) {
+              ESP_LOGI("wifi test", "~~~~~~~~~~~");
+              ESP_LOGI("wifi test", "  IP: %d.%d.%d.%d", IP2STR(&ip.ip));
+              ESP_LOGI("wifi test", "MASK: %d.%d.%d.%d", IP2STR(&ip.netmask));
+              ESP_LOGI("wifi test", "  GW: %d.%d.%d.%d", IP2STR(&ip.gw));
+              ESP_LOGI("wifi test", "~~~~~~~~~~~");
+              vTaskDelete(enterpriseTaskHandle);
+          }
         }
     }
 }
-
-Wifi wifi;
 
 void app_main()
 {
@@ -91,7 +97,7 @@ void app_main()
     wifi.init();
     wifi.start();
 
-    xTaskCreate(&wpa2_enterprise_task, "wpa2_enterprise_task", 4096, NULL, 5, NULL);
+    xTaskCreate(&wpa2_enterprise_task, "wpa2_enterprise_task", 4096, NULL, 5, &enterpriseTaskHandle);
     xTaskCreate(sensor_sample_task, "sensor_sample_task", 4096, NULL, 10, NULL);
 
     while (true) {
