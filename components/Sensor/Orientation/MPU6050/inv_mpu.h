@@ -63,6 +63,10 @@ struct int_param_s {
 #define MPU_INT_STATUS_DMP_4            (0x1000)
 #define MPU_INT_STATUS_DMP_5            (0x2000)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Set up APIs */
 int mpu_init(struct int_param_s *int_param);
 int mpu_init_slave(void);
@@ -135,5 +139,8 @@ int mpu_run_self_test(long *gyro, long *accel);
 int mpu_run_6500_self_test(long *gyro, long *accel, unsigned char debug);
 int mpu_register_tap_cb(void (*func)(unsigned char, unsigned char));
 
-#endif  /* #ifndef _INV_MPU_H_ */
+#ifdef __cplusplus
+}
+#endif
 
+#endif  /* #ifndef _INV_MPU_H_ */

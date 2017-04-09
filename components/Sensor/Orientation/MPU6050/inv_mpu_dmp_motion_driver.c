@@ -36,13 +36,14 @@
 #if defined MOTION_DRIVER_TARGET_MSP430
 //#include "msp430.h"
 //#include "msp430_clock.h"
-#include "MPU6050.h"
-#define delay_ms    HAL_Delay
+#include "MPU6050Adapter.h"
+#define delay_ms    delay
 #define get_ms      mpu6050GetMs
 #define log_i(...)     do {} while (0)
 #define log_e(...)     do {} while (0)
-	
-#define __no_operation __NOP
+
+void __no_operation(void) {}
+// #define __no_operation __NOP
 
 #elif defined EMPL_TARGET_MSP430
 #include "msp430.h"

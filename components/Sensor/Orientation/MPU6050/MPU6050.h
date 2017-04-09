@@ -28,22 +28,18 @@
  ================================================================================================
  */
 
-#ifndef _MPU6050_H_
-#define _MPU6050_H_
+#ifndef _MPU6050_SENSOR_H_
+#define _MPU6050_SENSOR_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "MPU6050Adapter.h"
 
-/* Includes */
-#include <stdbool.h>
-#include "HAL_MPU6050.h"
-	
+#ifndef MPU6050_ADDR
 #define MPU6050_ADDRESS_AD0_LOW     0x68 // address pin low (GND), default for InvenSense evaluation board
 #define MPU6050_ADDRESS_AD0_HIGH    0x69 // address pin high (VCC)
-#define MPU6050_ADDR                (MPU6050_ADDRESS_AD0_LOW<<1)
-	
-#define MPU6050_I_AM                MPU6050_ADDRESS_AD0_LOW
+#define MPU6050_ADDR                MPU6050_ADDRESS_AD0_LOW
+#endif
+
+#define MPU6050_I_AM                MPU6050_ADDR
 
 #define MPU6050_RA_XG_OFFS_TC       0x00 //[7] PWR_MODE, [6:1] XG_OFFS_TC, [0] OTP_BNK_VLD
 #define MPU6050_RA_YG_OFFS_TC       0x01 //[7] PWR_MODE, [6:1] YG_OFFS_TC, [0] OTP_BNK_VLD
@@ -394,59 +390,48 @@ extern "C" {
 #define MPU6050_DMP_MEMORY_BANK_SIZE    256
 #define MPU6050_DMP_MEMORY_CHUNK_SIZE   16
 
-// initialize
-int mpu6050Init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRange,
-                uint16_t sampleRate, int8_t enableDMP);
-
-// gyro config
-uint8_t mpu6050GetFullScaleGyroRange(void);
-void mpu6050SetFullScaleGyroRange(uint8_t range);
-
-// acclerometer config
-uint8_t mpu6050GetFullScaleAccelRange(void);
-void mpu6050SetFullScaleAccelRange(uint8_t range);
-
-// power management config
-bool mpu6050GetSleepModeStatus(void);
-void mpu6050SetSleepModeStatus(FunctionalState NewState);
-
-// clock source config
-void mpu6050SetClockSource(uint8_t source);
-
-// temperature
-float mpu6050GetTemperature(void);
 
 // sensor data struct
-typedef struct {
-	short gyro[3];  // short : int16_t
-	short accel[3];
-	float pitch;
-	float roll;
-} MPU6050Data;
+struct MPU6050Data {
+    short gyro[3];  // short : int16_t
+    short accel[3];
+    float pitch;
+    float roll;
+};
 
-// raw gyro data
-int mpu6050GetRawData(MPU6050Data *data);
+class MPU6050Sensor
+{
+public:
+    // initialize
+    bool init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRange,
+              uint16_t sampleRate, int8_t enableDMP);
 
-// dmp gyro data
-int mpu6050GetDmpData(MPU6050Data *data);
+    // gyro config
+    uint8_t getFullScaleGyroRange();
+    void setFullScaleGyroRange(uint8_t range);
+    
+    // acclerometer config
+    uint8_t getFullScaleAccelRange();
+    void setFullScaleAccelRange(uint8_t range);
+    
+    // power management config
+    bool getSleepModeStatus();
+    void setSleepModeStatus(int state); // 0: disabled, 1: enabled
+    
+    // clock source config
+    void setClockSource(uint8_t source);
+    
+    // temperature
+    float getTemperature(void);
 
-// raw data
-void mpu6050GetRawAccelGyro(int16_t* AccelGyro);
-
-// helper functions: i2c operation
-int i2cReadBytes(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *buf);
-int i2cWriteBytes(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *data);
-int mpu6050GetMs(unsigned long *time);
-
-// helper functions: bit-wise register read/write
-//void mpu6050WriteBits(uint8_t slaveAddr, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t data);
-//void mpu6050WriteBit(uint8_t slaveAddr, uint8_t regAddr, uint8_t bitNum, uint8_t data);
-//void mpu6050ReadBits(uint8_t slaveAddr, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t *data);
-//void mpu6050ReadBit(uint8_t slaveAddr, uint8_t regAddr, uint8_t bitNum, uint8_t *data);
-
-#ifdef __cplusplus
-}
-#endif
+    // raw gyro data
+    int getRawData(MPU6050Data *data);
+    
+    // dmp gyro data
+    int getDmpData(MPU6050Data *data);
+    
+    // raw data
+    void getRawAccelGyro(int16_t* AccelGyro);
+};
 
 #endif /* __MPU6050_H */
-/******************* (C) COPYRIGHT 2012 Harinadha Reddy Chintalapalli *****END OF FILE****/

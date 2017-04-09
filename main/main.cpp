@@ -23,6 +23,7 @@
 #include "ILI9341.h"
 #include "SensorDisplayController.h"
 #include "PMSensor.h"
+#include "OrientationSensor.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,7 +32,7 @@ extern "C" {
 ILI9341 dev;
 SensorDisplayController dc(&dev);
 
-void sensor_sample_task(void *p)
+void pm_sensor_task(void *p)
 {
     PMSensor pmSensor;
     pmSensor.init();
@@ -39,6 +40,17 @@ void sensor_sample_task(void *p)
     while (true) {
         pmSensor.sampleData();
         vTaskDelay(500/portTICK_RATE_MS);
+    }
+}
+
+void orientation_sensor_task(void *p)
+{
+    OrientationSensor orientationSensor;
+    orientationSensor.init();
+    orientationSensor.setDisplayDelegate(&dc);
+    while (true) {
+        orientationSensor.tick();
+        vTaskDelay(250/portTICK_RATE_MS);
     }
 }
 
@@ -98,7 +110,8 @@ void app_main()
     wifi.start();
 
     xTaskCreate(&wpa2_enterprise_task, "wpa2_enterprise_task", 4096, NULL, 5, &enterpriseTaskHandle);
-    xTaskCreate(sensor_sample_task, "sensor_sample_task", 4096, NULL, 10, NULL);
+    xTaskCreate(pm_sensor_task, "pm_sensor_task", 4096, NULL, 10, NULL);
+    xTaskCreate(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, 10, NULL);
 
     while (true) {
         dc.update();

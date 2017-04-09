@@ -78,6 +78,17 @@ void I2c::deinit()
 #define ACK_VAL        0x0              /*!< I2C ack value */
 #define NACK_VAL       0x1              /*!< I2C nack value */
 
+bool I2c::deviceReady(uint8_t addr, portBASE_TYPE waitTicks)
+{
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, ( addr << 1 ) | WRITE_BIT, ACK_CHECK_EN);
+    i2c_master_stop(cmd);
+    esp_err_t ret = i2c_master_cmd_begin(_port, cmd, waitTicks / portTICK_RATE_MS);
+    i2c_cmd_link_delete(cmd);
+    return ret == ESP_OK;
+}
+
 bool I2c::masterTx(uint8_t addr, uint8_t *data, size_t size, portBASE_TYPE waitTicks)
 {
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
@@ -105,6 +116,38 @@ bool I2c::masterRx(uint8_t addr, uint8_t *data, size_t size, portBASE_TYPE waitT
     return ret == ESP_OK;
 }
 
+bool I2c::masterMemTx(uint8_t addr, uint8_t memAddr, uint8_t *data, size_t size, portBASE_TYPE waitTicks)
+{
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, ( addr << 1 ) | WRITE_BIT, ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, memAddr, ACK_CHECK_EN);
+    i2c_master_write(cmd, data, size, ACK_CHECK_EN);
+    i2c_master_stop(cmd);
+    esp_err_t ret = i2c_master_cmd_begin(_port, cmd, waitTicks / portTICK_RATE_MS);
+    i2c_cmd_link_delete(cmd);
+    return ret == ESP_OK;
+}
+
+bool I2c::masterMemRx(uint8_t addr, uint8_t memAddr, uint8_t *data, size_t size, portBASE_TYPE waitTicks)
+{
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, ( addr << 1 ) | WRITE_BIT, ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, memAddr, ACK_CHECK_EN);
+    i2c_master_start(cmd); // repeated start
+    i2c_master_write_byte(cmd, ( addr << 1 ) | READ_BIT, ACK_CHECK_EN);
+    if (size > 1) {
+        i2c_master_read(cmd, data, size - 1, ACK_VAL);
+    }
+    i2c_master_read_byte(cmd, data + size - 1, NACK_VAL);
+    i2c_master_stop(cmd);
+    esp_err_t ret = i2c_master_cmd_begin(_port, cmd, waitTicks / portTICK_RATE_MS);
+    i2c_cmd_link_delete(cmd);
+    return ret == ESP_OK;
+}
+    
+
 int I2c::slaveTx(uint8_t *data, size_t size, portBASE_TYPE waitTicks)
 {
     return i2c_slave_write_buffer(_port, data, size, waitTicks / portTICK_RATE_MS);
@@ -114,5 +157,3 @@ int I2c::slaveRx(uint8_t *data, size_t size, portBASE_TYPE waitTicks)
 {
     return i2c_slave_read_buffer(_port, data, size, waitTicks / portTICK_RATE_MS);
 }
-
-

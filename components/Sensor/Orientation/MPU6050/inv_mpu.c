@@ -43,10 +43,10 @@ void empty_get_ms(unsigned long *time){}
 //#include "msp430_i2c.h"
 //#include "msp430_clock.h"
 //#include "msp430_interrupt.h"
-#include "MPU6050.h"
+#include "MPU6050Adapter.h"
 #define i2c_write   i2cWriteBytes
 #define i2c_read    i2cReadBytes
-#define delay_ms    HAL_Delay
+#define delay_ms    delay
 #define get_ms      mpu6050GetMs
 static inline int reg_int_cb(struct int_param_s *int_param)
 {
@@ -458,8 +458,8 @@ const struct gyro_reg_s reg = {
     0x23,     // .fifo_en        = 
     0x1B,     // .gyro_cfg       = 
     0x1C,     // .accel_cfg      = 
-	  0x00,     // .accel_cfg2    <-- aligned with null
-	  0x00,     // .lp_accel_odr  <-- aligned with null
+    0x00,     // .accel_cfg2    <-- aligned with null
+    0x00,     // .lp_accel_odr  <-- aligned with null
     0x1F,     // .motion_thr     = 
     0x20,     // .motion_dur     = 
     0x72,     // .fifo_count_h   = 
@@ -470,7 +470,7 @@ const struct gyro_reg_s reg = {
     0x38,     // .int_enable     = 
     0x39,     // .dmp_int_status = 
     0x3A,     // .int_status     = 
-	  0x00,     // .accel_intel    <-- aligned with null
+    0x00,     // .accel_intel    <-- aligned with null
     0x6B,     // .pwr_mgmt_1     = 
     0x6C,     // .pwr_mgmt_2     = 
     0x37,     // .int_pin_cfg    = 
@@ -3317,4 +3317,3 @@ lp_int_restore:
 /**
  *  @}
  */
-
