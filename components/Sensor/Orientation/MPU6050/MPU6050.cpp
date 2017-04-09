@@ -35,7 +35,7 @@
 
 #define MPU6050_I2C_PIN_SCK    26
 #define MPU6050_I2C_PIN_SDA    27
-#define MPU6050_I2C_CLK_SPEED  400000
+#define MPU6050_I2C_CLK_SPEED  100000
 
 I2c _i2c(I2C_NUM_0, MPU6050_I2C_PIN_SCK, MPU6050_I2C_PIN_SDA);
 
@@ -86,11 +86,16 @@ int mpu6050GetMs(unsigned long *time)
 
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
+#include "esp_log.h"
 
-int mpu6050IsDeviceReady(uint8_t deviceAddr)
+int mpu6050IsDeviceReady(uint8_t deviceAddr, int trials = 3)
 {
-    if (_i2c.deviceReady(deviceAddr))
-        return -1;
+    for (int i = 0; i < trials; ++i) {
+        if (_i2c.deviceReady(deviceAddr))
+            return -1;
+    }
+    // if (_i2c.deviceReady(deviceAddr))
+    //     return -1;
     return 0;
 }
 
@@ -159,13 +164,13 @@ int mpu6050InitDMP(uint16_t fifoRate)
 {
     // load motion driver
     if(dmp_load_motion_driver_firmware()) {
-        printf("MPU6050 dmp load motion driver firmware failed!\n");
+        ESP_LOGE("[MPU6050]", "dmp load motion driver firmware failed");
         return -1;
     }
 
     // set orientation
     if(dmp_set_orientation(inv_orientation_matrix_to_scalar(gyro_orientation))) {
-        printf("MPU6050 dmp set orientation failed!\n");
+        ESP_LOGE("[MPU6050]", "dmp set orientation failed");
         return -1;
     }
 
@@ -173,23 +178,23 @@ int mpu6050InitDMP(uint16_t fifoRate)
     if(dmp_enable_feature(DMP_FEATURE_6X_LP_QUAT | DMP_FEATURE_TAP |
                           DMP_FEATURE_ANDROID_ORIENT | DMP_FEATURE_SEND_RAW_ACCEL | DMP_FEATURE_SEND_CAL_GYRO |
                           DMP_FEATURE_GYRO_CAL)) {
-        printf("MPU6050 dmp enable features failed!\n");
+        ESP_LOGE("[MPU6050]", "dmp enable features failed");
         return -1;
     }
 
     // set fifo rate
     if(dmp_set_fifo_rate(fifoRate)) {
-        printf("MPU6050 dmp set fifo rate failed!\n");
+        ESP_LOGE("[MPU6050]", "mp set fifo rate failed");
         return -1;
     }
 
     if (dmp_self_test()) {
-        printf("MPU6050 dmp set bias failed!\n");
+        ESP_LOGE("[MPU6050]", "dmp set bias failed");
         return -1;
     }
 
     if(mpu_set_dmp_state(1)) { // turn on DMP
-        printf("MPU6050 set dmp state failed\n");
+        ESP_LOGE("[MPU6050]", "set dmp state failed");
         return -1;
     }
 
@@ -292,10 +297,11 @@ bool MPU6050Sensor::init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRang
     // init i2c
     _i2c.setMode(I2C_MODE_MASTER);
     _i2c.setMasterClkSpeed(MPU6050_I2C_CLK_SPEED);
+    _i2c.init();
 
     // check device connected
     if (!mpu6050IsDeviceReady(MPU6050_ADDR)) {
-        printf("MPU6050 device not connected!\n");
+        ESP_LOGE("[MPU6050]", "device not connected");
         return false;
     }
 
@@ -303,13 +309,13 @@ bool MPU6050Sensor::init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRang
     uint8_t whoami = 0x00;
     i2cReadByte(MPU6050_ADDR, MPU6050_RA_WHO_AM_I, &whoami);
     if (whoami != MPU6050_I_AM) {
-        printf("Not MPU6050 device!\n");
+        ESP_LOGE("[MPU6050]", "not mpu6050 device");
         return false;
     }
 
     // try to init mpu with default value from InvenSense lib inv_mpu.c
     if(mpu_init(NULL)) {
-        printf("MPU6050 init failed!\n");
+        ESP_LOGE("[MPU6050]", "init failed");
         return false;
     }
 
@@ -327,25 +333,25 @@ bool MPU6050Sensor::init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRang
 
     // disable mpu6050 i2c bypass
     if (mpu_set_bypass(0)) {
-        printf("MPU6050 disable i2c bypass failed!\n");
+        ESP_LOGE("[MPU6050]", "disable i2c bypass failed");
         return false;
     }
 
     // set sensors
     if(mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL)) {
-        printf("MPU6050 set sensor failed!\n");
+        ESP_LOGE("[MPU6050]", "set sensor failed");
         return false;
     }
 
     // config fifo
     if(mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL)) {
-        printf("MPU6050 configure fifo failed!\n");
+        ESP_LOGE("[MPU6050]", "configure fifo failed");
         return false;
     }
 
     // set sample rate
     if(mpu_set_sample_rate(sampleRate)) {
-        printf("MPU6050 set sample rate failed!\n");
+        ESP_LOGE("[MPU6050]", "set sample rate failed");
         return false;
     }
 

@@ -20,7 +20,7 @@
 
 // delay definition
 #define RESET_DELAY_TIME         5
-#ifndef delay(x)
+#ifndef delay
 #define delay(x)                 vTaskDelay((x)/portTICK_RATE_MS)
 #endif
 

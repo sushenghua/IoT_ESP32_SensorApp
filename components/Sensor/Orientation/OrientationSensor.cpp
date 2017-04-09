@@ -7,6 +7,7 @@
 #include "OrientationSensor.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_log.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Configuration
@@ -86,8 +87,8 @@ void OrientationSensor::_updateOrientation()
         float accelZ = _mpuData.accel[2] / MPU6050_ACCE_SCALE_FACTOR;
         float angle = calculateAngle(accelX, accelY);
 
-        //uint8_t rotation = _dc->rotation();
-        //printf("rotation: %d,  aX: %f  aY: %f  aZ: %f  angle: %f\n", rotation, accelX, accelY, accelZ, angle);
+        uint8_t rotation = _dc->rotation();
+        ESP_LOGI("[OriSensor]", "rotation: %d,  aX: %f  aY: %f  aZ: %f  angle: %f", rotation, accelX, accelY, accelZ, angle);
         if (fabs(angle - 0) < 20) {
             _dc->setRotation(DISPLAY_ROTATION_CW_0);
         }

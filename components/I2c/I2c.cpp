@@ -5,6 +5,7 @@
  */
 
 #include "I2c.h"
+#include "esp_log.h"
 
 I2c::I2c(i2c_port_t port)
 : _port(port)
@@ -56,6 +57,7 @@ void I2c::setPins(int pinSck, int pinSda)
 void I2c::init(size_t rxBufLen, size_t txBufLen)
 {
     if (!_inited) {
+    	ESP_LOGI("[I2c]", "init i2c with port %d", _port);
         i2c_param_config(_port, &_config);
         i2c_driver_install(_port, _config.mode,
                            rxBufLen, txBufLen, 0);
@@ -66,6 +68,7 @@ void I2c::init(size_t rxBufLen, size_t txBufLen)
 void I2c::deinit()
 {
     if (_inited) {
+    	ESP_LOGI("[I2c]", "deinit i2c with port %d", _port);
         i2c_driver_delete(_port);
         _inited = false;
     }
@@ -83,9 +86,11 @@ bool I2c::deviceReady(uint8_t addr, portBASE_TYPE waitTicks)
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
     i2c_master_write_byte(cmd, ( addr << 1 ) | WRITE_BIT, ACK_CHECK_EN);
+    // i2c_master_write_byte(cmd, 0, ACK_CHECK_EN);
     i2c_master_stop(cmd);
     esp_err_t ret = i2c_master_cmd_begin(_port, cmd, waitTicks / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
+    //ESP_LOGE("[I2c]", "check device ready addr: %d, ret: %d", addr, ret);
     return ret == ESP_OK;
 }
 
