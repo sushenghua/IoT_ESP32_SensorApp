@@ -68,11 +68,11 @@ Wifi::Wifi()
 void Wifi::setDefaultConfig()
 {
     setWifiMode(WIFI_MODE_APSTA);
-    setStaConfig("woody@home", "58897@mljd-abcde");
-    setApConfig("DDSensor", "abcd1234");
+    setStaConfig("ssid", "ssidpasswd");
+    setApConfig("dodosensor", "dodosensor");
     setHostName("SensorApp");
-    enableEap();
-    setEapConfig("eap_test_id", "eap_user_woody", "eap_user_passwd");
+    enableEap(false);
+    setEapConfig("eapid", "eapusername", "eapuserpassword");
 }
 
 void Wifi::setWifiMode(wifi_mode_t mode)
