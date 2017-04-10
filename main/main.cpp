@@ -17,8 +17,9 @@
 // #include "driver/gpio.h"
 #include "esp_log.h"
 
-#include "Wifi.h"
 #include "NvsFlash.h"
+#include "Wifi.h"
+#include "Mongoose.h"
 
 #include "ILI9341.h"
 #include "SensorDisplayController.h"
@@ -29,34 +30,12 @@
 extern "C" {
 #endif
 
-ILI9341 dev;
-SensorDisplayController dc(&dev);
-
-void pm_sensor_task(void *p)
-{
-    PMSensor pmSensor;
-    pmSensor.init();
-    pmSensor.setDisplayDelegate(&dc);
-    while (true) {
-        pmSensor.sampleData();
-        vTaskDelay(500/portTICK_RATE_MS);
-    }
-}
-
-void orientation_sensor_task(void *p)
-{
-    OrientationSensor orientationSensor;
-    orientationSensor.init();
-    orientationSensor.setDisplayDelegate(&dc);
-    while (true) {
-        orientationSensor.tick();
-        vTaskDelay(250/portTICK_RATE_MS);
-    }
-}
+/////////////////////////////////////////////////////////////////////////////////////////
+// Wifi task
+/////////////////////////////////////////////////////////////////////////////////////////
+#include "tcpip_adapter.h"
 
 Wifi wifi;
-
-#include "tcpip_adapter.h"
 
 TaskHandle_t enterpriseTaskHandle;
 
@@ -83,70 +62,49 @@ void wpa2_enterprise_task(void *pvParameters)
     }
 }
 
-#include "mongoose.h"
+/////////////////////////////////////////////////////////////////////////////////////////
+// Mongoose task
+/////////////////////////////////////////////////////////////////////////////////////////
 
-#include "esp_system.h"
-
-#define MG_LISTEN_ADDR "80"
-#define MG_TASK_STACK_SIZE 4096 /* bytes */
-#define MG_TASK_PRIORITY 1
-
-void mongoose_event_handler(struct mg_connection *nc, int ev, void *p)
-{
-  static const char *reply_fmt =
-      "HTTP/1.0 200 OK\r\n"
-      "Connection: close\r\n"
-      "Content-Type: text/plain\r\n"
-      "\r\n"
-      "Sensor %s\n";
-
-  switch (ev) {
-    case MG_EV_ACCEPT: {
-      char addr[32];
-      mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr),
-                          MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
-      printf("Connection %p from %s\n", nc, addr);
-      break;
-    }
-    case MG_EV_HTTP_REQUEST: {
-      char addr[32];
-      struct http_message *hm = (struct http_message *) p;
-      mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr),
-                          MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
-      printf("HTTP request from %s: %.*s %.*s\n", addr, (int) hm->method.len,
-             hm->method.p, (int) hm->uri.len, hm->uri.p);
-      // mg_printf(nc, reply_fmt, addr);
-      mg_printf(nc, reply_fmt, addr);
-      nc->flags |= MG_F_SEND_AND_CLOSE;
-      break;
-    }
-    case MG_EV_CLOSE: {
-      printf("Connection %p closed\n", nc);
-      break;
-    }
-  }
-}
+// #define MG_TASK_STACK_SIZE 4096
+// #define MG_TASK_PRIORITY   1
 
 static void mongoose_task(void *pvParams)
 {
-  struct mg_mgr mgr;
-  struct mg_connection *nc;
-
-  ESP_LOGI("[Mongoose]", "version: %s", MG_VERSION);
-  ESP_LOGI("[Mongoose]", "Free RAM: %d", esp_get_free_heap_size());
-
-  mg_mgr_init(&mgr, NULL);
-
-  nc = mg_bind(&mgr, MG_LISTEN_ADDR, mongoose_event_handler);
-  if (nc == NULL) {
-    ESP_LOGE("[Mongoose]", "setting up listener failed");
-    return;
-  }
-  mg_set_protocol_http_websocket(nc);
-
+  Mongoose mongoose;
+  mongoose.init();
   while (true) {
-    mg_mgr_poll(&mgr, 1000);
+    mongoose.poll();
   }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// sensor tasks
+/////////////////////////////////////////////////////////////////////////////////////////
+ILI9341 dev;
+SensorDisplayController dc(&dev);
+
+void pm_sensor_task(void *p)
+{
+    PMSensor pmSensor;
+    pmSensor.init();
+    pmSensor.setDisplayDelegate(&dc);
+    while (true) {
+        pmSensor.sampleData();
+        vTaskDelay(500/portTICK_RATE_MS);
+    }
+}
+
+void orientation_sensor_task(void *p)
+{
+    OrientationSensor orientationSensor;
+    orientationSensor.init();
+    orientationSensor.setDisplayDelegate(&dc);
+    while (true) {
+        orientationSensor.tick();
+        vTaskDelay(250/portTICK_RATE_MS);
+    }
 }
 
 void app_main()
@@ -174,9 +132,6 @@ void app_main()
 
     wifi.init();
     wifi.start();
-
-
-
 
     xTaskCreate(&wpa2_enterprise_task, "wpa2_enterprise_task", 4096, NULL, 5, &enterpriseTaskHandle);
     xTaskCreate(&mongoose_task, "mongoose_task", 4096, NULL, 5, NULL);
