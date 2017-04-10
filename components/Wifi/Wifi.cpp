@@ -230,13 +230,15 @@ void Wifi::init()
 
     tcpip_adapter_init();
 
-    tcpip_adapter_ip_info_t info = { 0, };
-    IP4_ADDR(&info.ip, 192, 168, 4, 1);
-    IP4_ADDR(&info.gw, 192, 168, 4, 1);
-    IP4_ADDR(&info.netmask, 255, 255, 255, 0);
-    ESP_ERROR_CHECK(tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP));
-    ESP_ERROR_CHECK(tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &info));
-    ESP_ERROR_CHECK(tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP));
+    if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_AP) {
+        tcpip_adapter_ip_info_t info = { 0, 0, 0};
+        IP4_ADDR(&info.ip, 192, 168, 4, 1);
+        IP4_ADDR(&info.gw, 192, 168, 4, 1);
+        IP4_ADDR(&info.netmask, 255, 255, 255, 0);
+        ESP_ERROR_CHECK(tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP));
+        ESP_ERROR_CHECK(tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &info));
+        ESP_ERROR_CHECK(tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP));
+    }
 
     wifiEventGroup = xEventGroupCreate();
     ESP_ERROR_CHECK( esp_event_loop_init(wifi_app_event_handler, NULL) );
