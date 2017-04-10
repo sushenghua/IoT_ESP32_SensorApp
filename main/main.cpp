@@ -83,6 +83,72 @@ void wpa2_enterprise_task(void *pvParameters)
     }
 }
 
+#include "mongoose.h"
+
+#include "esp_system.h"
+
+#define MG_LISTEN_ADDR "80"
+#define MG_TASK_STACK_SIZE 4096 /* bytes */
+#define MG_TASK_PRIORITY 1
+
+void mongoose_event_handler(struct mg_connection *nc, int ev, void *p)
+{
+  static const char *reply_fmt =
+      "HTTP/1.0 200 OK\r\n"
+      "Connection: close\r\n"
+      "Content-Type: text/plain\r\n"
+      "\r\n"
+      "Sensor %s\n";
+
+  switch (ev) {
+    case MG_EV_ACCEPT: {
+      char addr[32];
+      mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr),
+                          MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
+      printf("Connection %p from %s\n", nc, addr);
+      break;
+    }
+    case MG_EV_HTTP_REQUEST: {
+      char addr[32];
+      struct http_message *hm = (struct http_message *) p;
+      mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr),
+                          MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
+      printf("HTTP request from %s: %.*s %.*s\n", addr, (int) hm->method.len,
+             hm->method.p, (int) hm->uri.len, hm->uri.p);
+      // mg_printf(nc, reply_fmt, addr);
+      mg_printf(nc, reply_fmt, addr);
+      nc->flags |= MG_F_SEND_AND_CLOSE;
+      break;
+    }
+    case MG_EV_CLOSE: {
+      printf("Connection %p closed\n", nc);
+      break;
+    }
+  }
+}
+
+static void mongoose_task(void *pvParams)
+{
+  struct mg_mgr mgr;
+  struct mg_connection *nc;
+
+  ESP_LOGI("[Mongoose]", "version: %s", MG_VERSION);
+  ESP_LOGI("[Mongoose]", "Free RAM: %d", esp_get_free_heap_size());
+
+  mg_mgr_init(&mgr, NULL);
+
+  nc = mg_bind(&mgr, MG_LISTEN_ADDR, mongoose_event_handler);
+  if (nc == NULL) {
+    ESP_LOGE("[Mongoose]", "setting up listener failed");
+    return;
+  }
+  mg_set_protocol_http_websocket(nc);
+
+  while (true) {
+    mg_mgr_poll(&mgr, 1000);
+  }
+}
+
 void app_main()
 {
     NvsFlash::init();
@@ -109,7 +175,11 @@ void app_main()
     wifi.init();
     wifi.start();
 
+
+
+
     xTaskCreate(&wpa2_enterprise_task, "wpa2_enterprise_task", 4096, NULL, 5, &enterpriseTaskHandle);
+    xTaskCreate(&mongoose_task, "mongoose_task", 4096, NULL, 5, NULL);
     xTaskCreate(pm_sensor_task, "pm_sensor_task", 4096, NULL, 10, NULL);
     xTaskCreate(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, 10, NULL);
 

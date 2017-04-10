@@ -8,7 +8,7 @@
 #define _CONF_H_INCLUDED
 
 // ------ DEBUG mode
-#define DEBUG_APP
+// #define DEBUG_APP
 #ifdef DEBUG_APP
 
 	// ------ Module 1

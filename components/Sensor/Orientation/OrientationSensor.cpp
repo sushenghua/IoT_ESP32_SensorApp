@@ -84,11 +84,14 @@ void OrientationSensor::_updateOrientation()
 
         float accelX = _mpuData.accel[0] / MPU6050_ACCE_SCALE_FACTOR;
         float accelY = _mpuData.accel[1] / MPU6050_ACCE_SCALE_FACTOR;
-        float accelZ = _mpuData.accel[2] / MPU6050_ACCE_SCALE_FACTOR;
         float angle = calculateAngle(accelX, accelY);
 
+#ifdef DEBUG_APP
+        float accelZ = _mpuData.accel[2] / MPU6050_ACCE_SCALE_FACTOR;
         uint8_t rotation = _dc->rotation();
         ESP_LOGI("[OriSensor]", "rotation: %d,  aX: %f  aY: %f  aZ: %f  angle: %f", rotation, accelX, accelY, accelZ, angle);
+#endif
+
         if (fabs(angle - 0) < 20) {
             _dc->setRotation(DISPLAY_ROTATION_CW_0);
         }

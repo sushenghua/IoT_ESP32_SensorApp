@@ -113,7 +113,7 @@ void SensorDisplayController::update()
 {
 	if (_needUpdate) {
 
-		ESP_LOGI("[SensorDC]", "update");
+		// ESP_LOGI("[SensorDC]", "update");
 
 		if (_rotationNeedUpdate) {
 			_devUpdateRotationInProgress = true;  // lock
