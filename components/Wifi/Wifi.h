@@ -60,6 +60,7 @@ public:
     Wifi();
 
     // config
+    void setDefaultConfig();
     void setWifiMode(wifi_mode_t mode);
     bool setStaConfig(const char *ssid, const char *passwd);
     bool setApConfig(const char      *ssid,

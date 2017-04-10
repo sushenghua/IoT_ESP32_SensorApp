@@ -7,6 +7,7 @@
 #include "Mongoose.h"
 
 #include "esp_system.h"
+#include "esp_log.h"
 
 #define MG_LISTEN_ADDR "80"
 
@@ -28,7 +29,7 @@ static void mongoose_event_handler(struct mg_connection *nc, int ev, void *p)
             char addr[32];
             mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr),
                                 MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
-            ESP_LOGD("[Mongoose]", "Connection %p from %s\n", nc, addr);
+            ESP_LOGI("[Mongoose]", "Connection %p from %s", nc, addr);
             break;
         }
         case MG_EV_HTTP_REQUEST: {
@@ -36,7 +37,7 @@ static void mongoose_event_handler(struct mg_connection *nc, int ev, void *p)
             struct http_message *hm = (struct http_message *) p;
             mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr),
                                 MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
-            ESP_LOGD("[Mongoose]", "HTTP request from %s: %.*s %.*s\n", addr, (int) hm->method.len,
+            ESP_LOGI("[Mongoose]", "HTTP request from %s: %.*s %.*s", addr, (int) hm->method.len,
                                    hm->method.p, (int) hm->uri.len, hm->uri.p);
             // mg_printf(nc, reply_fmt, addr);
             mg_printf(nc, reply_fmt, addr);
@@ -44,7 +45,7 @@ static void mongoose_event_handler(struct mg_connection *nc, int ev, void *p)
             break;
         }
         case MG_EV_CLOSE: {
-            ESP_LOGD("[Mongoose]", "Connection %p closed\n", nc);
+            ESP_LOGI("[Mongoose]", "Connection %p closed", nc);
             break;
         }
     }  
@@ -52,7 +53,7 @@ static void mongoose_event_handler(struct mg_connection *nc, int ev, void *p)
 
 void Mongoose::init()
 {
-	if (!_inited) {
+    if (!_inited) {
         struct mg_connection *nc;
     
         ESP_LOGI("[Mongoose]", "version: %s", MG_VERSION);

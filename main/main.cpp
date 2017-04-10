@@ -1,34 +1,26 @@
-/* SPI Master example
+/*
+ * main: manage tasks of different modules
+ * Copyright (c) 2017 Shenghua Su
+ *
+ */
 
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-// #include "esp_system.h"
-// #include "driver/spi_master.h"
-// #include "soc/gpio_struct.h"
-// #include "driver/gpio.h"
+
 #include "esp_log.h"
 
 #include "NvsFlash.h"
 #include "Wifi.h"
-#include "Mongoose.h"
 
 #include "ILI9341.h"
 #include "SensorDisplayController.h"
+
 #include "PMSensor.h"
 #include "OrientationSensor.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+// the following line must be place after #include "ILI9341.h", 
+// as mongoose.h has macro write (s, b, l)
+#include "Mongoose.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Wifi task
@@ -71,11 +63,11 @@ void wpa2_enterprise_task(void *pvParameters)
 
 static void mongoose_task(void *pvParams)
 {
-  Mongoose mongoose;
-  mongoose.init();
-  while (true) {
-    mongoose.poll();
-  }
+    Mongoose mongoose;
+    mongoose.init();
+    while (true) {
+        mongoose.poll();
+    }
 }
 
 
@@ -107,31 +99,32 @@ void orientation_sensor_task(void *p)
     }
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// app_main task
+/////////////////////////////////////////////////////////////////////////////////////////
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void app_main()
 {
     NvsFlash::init();
-
-    dc.init();
 
     if (wifi.loadConfig()) {
       ESP_LOGI("wifi", "load config succeeded");
     }
     else {
-      // set config
-      wifi.setWifiMode(WIFI_MODE_APSTA);
-      wifi.setStaConfig("woody@home", "58897@mljd-abcde");
-      wifi.setApConfig("DDSensor", "abcd1234");
-      wifi.setHostName("SensorApp");
-      wifi.enableEap();
-      wifi.setEapConfig("eap_test_id", "eap_user_woody", "eap_user_passwd");
-
-      if (wifi.saveConfig()) {
-        ESP_LOGI("wifi", "save config succeeded");
-      }
+      wifi.setDefaultConfig();
+      // if (wifi.saveConfig()) {
+      //   ESP_LOGI("wifi", "save config succeeded");
+      // }
     }
 
     wifi.init();
     wifi.start();
+
+    dc.init();
 
     xTaskCreate(&wpa2_enterprise_task, "wpa2_enterprise_task", 4096, NULL, 5, &enterpriseTaskHandle);
     xTaskCreate(&mongoose_task, "mongoose_task", 4096, NULL, 5, NULL);

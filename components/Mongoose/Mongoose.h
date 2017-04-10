@@ -19,7 +19,7 @@ public:
 
     // loop poll
     void poll(int sleepMilli = MONGOOSE_DEFAULT_POLL_SLEEP) {
-    	mg_mgr_poll(&_manager, sleepMilli);
+        mg_mgr_poll(&_manager, sleepMilli);
     }
 
     // config, init and deinit

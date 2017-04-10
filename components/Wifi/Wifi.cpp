@@ -65,6 +65,16 @@ Wifi::Wifi()
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // ------ config
+void Wifi::setDefaultConfig()
+{
+    setWifiMode(WIFI_MODE_APSTA);
+    setStaConfig("woody@home", "58897@mljd-abcde");
+    setApConfig("DDSensor", "abcd1234");
+    setHostName("SensorApp");
+    enableEap();
+    setEapConfig("eap_test_id", "eap_user_woody", "eap_user_passwd");
+}
+
 void Wifi::setWifiMode(wifi_mode_t mode)
 {
     if (!_initialized)
