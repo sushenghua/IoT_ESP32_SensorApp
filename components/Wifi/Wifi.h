@@ -90,6 +90,8 @@ public:
     // start, stop, status
     void start();
     void stop();
+    // void connect();
+    // void disconnect();
     static void waitConnected();
     static bool connected();
 

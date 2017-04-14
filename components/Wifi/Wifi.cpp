@@ -401,6 +401,21 @@ bool Wifi::saveConfig()
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
+// ------ connect, disconnect
+// void Wifi::connect()
+// {
+//     if (_started && !_connected) {
+//         ESP_ERROR_CHECK( esp_wifi_connect() );
+//     }
+// }
+
+// void Wifi::disconnect()
+// {
+//     if (_started && _connected) {
+//         ESP_ERROR_CHECK( esp_wifi_disconnect() );
+//     }
+// }
+
 // ------ start, stop
 void Wifi::start()
 {

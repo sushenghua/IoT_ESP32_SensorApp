@@ -59,15 +59,20 @@ void wpa2_enterprise_task(void *pvParameters)
 /////////////////////////////////////////////////////////////////////////////////////////
 // SNTP time task
 /////////////////////////////////////////////////////////////////////////////////////////
-
+TaskHandle_t sntpTaskHandle;
 static void sntp_task(void *pvParams)
 {
     SNTP::init();
-    SNTP::sync(); // block wait wifi connected
-    while (true) {
-      SNTP::test();
-      vTaskDelay(3000 / portTICK_PERIOD_MS);
+    // block wait wifi connected and sync successfully
+    while (!SNTP::sync()) {
+        // wifi.disconnect();
+        //SNTP::stop();
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+        //SNTP::init();
     }
+
+    SNTP::test();
+    vTaskDelete(sntpTaskHandle);
 }
 
 
@@ -81,7 +86,7 @@ static void sntp_task(void *pvParams)
 static void mongoose_task(void *pvParams)
 {
     Mongoose mongoose;
-    mongoose.init();
+    mongoose.init(MQTT_MODE);
     while (true) {
         mongoose.poll();
     }
@@ -144,7 +149,7 @@ void app_main()
     dc.init();
 
     xTaskCreate(&wpa2_enterprise_task, "wpa2_enterprise_task", 4096, NULL, 5, &enterpriseTaskHandle);
-    xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, 5, NULL);
+    xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, 5, &sntpTaskHandle);
     xTaskCreate(&mongoose_task, "mongoose_task", 4096, NULL, 5, NULL);
     xTaskCreate(pm_sensor_task, "pm_sensor_task", 4096, NULL, 10, NULL);
     xTaskCreate(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, 10, NULL);

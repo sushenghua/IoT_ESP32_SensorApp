@@ -16,7 +16,8 @@ class SNTP
 public:
     static void init(uint8_t operationMode = SNTP_OPMODE_POLL);
     static bool inited() { return _inited; }
-    static void sync(int trials = 10);
+    static void stop();
+    static bool sync(int trials = 10);
     static void setTimezone(const char* zone);
     static time_t& timeNow() {
     	time(&_timeNow);

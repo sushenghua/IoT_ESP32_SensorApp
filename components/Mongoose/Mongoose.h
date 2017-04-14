@@ -11,6 +11,13 @@
 
 #define MONGOOSE_DEFAULT_POLL_SLEEP 1000
 
+enum MongooseMode {
+    UNDEFINED,
+    HTTP_MODE,
+    WEBSOCKET_MODE,
+    MQTT_MODE
+};
+
 class Mongoose
 {
 public:
@@ -23,11 +30,12 @@ public:
     }
 
     // config, init and deinit
-    void init();
+    void init(MongooseMode mode);
     void deinit();
 
 protected:
     bool                     _inited;
+    enum MongooseMode        _mode;
     struct mg_mgr            _manager;
 };
 

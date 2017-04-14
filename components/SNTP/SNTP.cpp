@@ -24,18 +24,26 @@ void SNTP::init(uint8_t operationMode) {
     }
 }
 
-void SNTP::sync(int trials)
+void SNTP::stop()
+{
+    if (_inited) {
+        sntp_stop();
+    }
+}
+
+bool SNTP::sync(int trials)
 {
     // wait for time to be set
     _timeNow = 0;
     memset(&_timeInfo, 0, sizeof(_timeInfo));
     int retry = 0;
-    while(_timeInfo.tm_year < (2017 - 1900) && ++retry < trials) {
+    while(_timeInfo.tm_year < (2016 - 1900) && ++retry <= trials) {
         ESP_LOGI("[SNTP]", "waiting for system time to be set... (%d/%d)", retry, trials);
         vTaskDelay(2000 / portTICK_PERIOD_MS);
         time(&_timeNow);
         localtime_r(&_timeNow, &_timeInfo);
     }
+    return _timeInfo.tm_year > (2016 - 1900);
 }
 
 void SNTP::setTimezone(const char* zone)
