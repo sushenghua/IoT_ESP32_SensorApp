@@ -18,6 +18,8 @@
 #include "PMSensor.h"
 #include "OrientationSensor.h"
 
+#include "SNTP.h"
+
 // the following line must be place after #include "ILI9341.h", 
 // as mongoose.h has macro write (s, b, l)
 #include "Mongoose.h"
@@ -53,6 +55,21 @@ void wpa2_enterprise_task(void *pvParameters)
         }
     }
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// SNTP time task
+/////////////////////////////////////////////////////////////////////////////////////////
+
+static void sntp_task(void *pvParams)
+{
+    SNTP::init();
+    SNTP::sync(); // block wait wifi connected
+    while (true) {
+      SNTP::test();
+      vTaskDelay(3000 / portTICK_PERIOD_MS);
+    }
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Mongoose task
@@ -127,6 +144,7 @@ void app_main()
     dc.init();
 
     xTaskCreate(&wpa2_enterprise_task, "wpa2_enterprise_task", 4096, NULL, 5, &enterpriseTaskHandle);
+    xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, 5, NULL);
     xTaskCreate(&mongoose_task, "mongoose_task", 4096, NULL, 5, NULL);
     xTaskCreate(pm_sensor_task, "pm_sensor_task", 4096, NULL, 10, NULL);
     xTaskCreate(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, 10, NULL);

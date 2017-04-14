@@ -90,7 +90,8 @@ public:
     // start, stop, status
     void start();
     void stop();
-    bool connected();
+    static void waitConnected();
+    static bool connected();
 
     // storage load, save
     bool loadConfig();

@@ -200,7 +200,7 @@ static EventGroupHandle_t wifiEventGroup;
 /* The event group allows multiple bits for each event,
    but we only care about one event - are we connected
    to the AP with an IP? */
-const int CONNECTED_BIT = BIT0;
+static const int CONNECTED_BIT = BIT0;
 static bool _connected = false;
 
 static esp_err_t wifi_app_event_handler(void *ctx, system_event_t *event)
@@ -225,6 +225,11 @@ ESP_LOGI("[Wifi]", "disconnected event");
             break;
     }
     return ESP_OK;
+}
+
+void Wifi::waitConnected()
+{
+    xEventGroupWaitBits(wifiEventGroup, CONNECTED_BIT, false, true, portMAX_DELAY);
 }
 
 bool Wifi::connected()
