@@ -56,7 +56,7 @@ void SNTP::test()
     ESP_LOGI("[SNTP]", "The current date/time in New York is: %s", strftime_buf);
 
     // Set timezone to China Standard Time
-    setenv("TZ", "CST-8CDT-9,M4.2.0/2,M9.2.0/3", 1);
+    setTimezone("CST-8CDT-9,M4.2.0/2,M9.2.0/3");
     strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeInfo(now));
     ESP_LOGI("[SNTP]", "The current date/time in Shanghai is: %s", strftime_buf);
 }
