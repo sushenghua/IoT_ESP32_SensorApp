@@ -46,7 +46,7 @@ void wifi_connection_task(void *pvParameters)
       // }
     }
     wifi.init();
-    wifi.start();
+    wifi.start(true);
     vTaskDelete(wifiConnectionTaskHandle);
 
     // // echo connection ip info

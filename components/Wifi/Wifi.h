@@ -88,7 +88,7 @@ public:
     void deinit();
 
     // start, stop, status
-    void start();
+    void start(bool waitConnected = false);
     void stop();
     // void connect();
     // void disconnect();

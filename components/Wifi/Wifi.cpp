@@ -417,12 +417,13 @@ bool Wifi::saveConfig()
 // }
 
 // ------ start, stop
-void Wifi::start()
+void Wifi::start(bool waitConnected)
 {
     if (!_started) {
         ESP_ERROR_CHECK( esp_wifi_start() );
+        if (waitConnected) Wifi::waitConnected(); 
         if ( (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) &&_config.hostName[0] != '\0') {
-            waitConnected(); 
+            if (!waitConnected) Wifi::waitConnected();  // wait connect anyway
             ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
         }
         _started = true;

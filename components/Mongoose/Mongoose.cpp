@@ -63,6 +63,8 @@ static const char *s_password = NULL;
 static const char *s_topic = "/mqtttest";
 static struct mg_mqtt_topic_expression s_topic_expr = {NULL, 0};
 
+static uint16_t msgId = 0;
+
 static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *p)
 {
     struct mg_mqtt_message *msg = (struct mg_mqtt_message *) p;
@@ -91,19 +93,30 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
             }
             break;
 
-        case MG_EV_MQTT_PUBACK:
-            ESP_LOGI("[Mongoose]", "MQTT message publishing acknowledged (msg_id: %d)", msg->message_id);
-            break;
-
         case MG_EV_MQTT_SUBACK:
             ESP_LOGI("[Mongoose]", "MQTT subscription acknowledged, forwarding to '/test'");
             break;
 
+        case MG_EV_MQTT_PUBACK:  // for QoS(1)
+            ESP_LOGI("[Mongoose]", "MQTT message QoS(1) Pub acknowledged (msg_id: %d)", msg->message_id);
+            break;
+
+        case MG_EV_MQTT_PUBREC:  // for QoS(2)
+            ESP_LOGI("[Mongoose]", "MQTT message QoS(2) Pub-Receive acknowledged (msg_id: %d)", msg->message_id);
+            mg_mqtt_pubrel(nc, msgId);
+            break;
+
+        case MG_EV_MQTT_PUBCOMP: // for QoS(2)
+            ESP_LOGI("[Mongoose]", "MQTT message QoS(2) Pub-Complete acknowledged (msg_id: %d)", msg->message_id);
+            // clear cache
+            break;
+
         case MG_EV_MQTT_PUBLISH:
-            printf("Got incoming message %.*s: %.*s\n", (int) msg->topic.len,
-                    msg->topic.p, (int) msg->payload.len, msg->payload.p);
+            printf("Got incoming message (msg_id: %d) %.*s: %.*s\n", msg->message_id,
+                   (int) msg->topic.len, msg->topic.p, (int) msg->payload.len, msg->payload.p);
             printf("Forwarding to /test\n");
-            mg_mqtt_publish(nc, "/test", 65, MG_MQTT_QOS(2), msg->payload.p, msg->payload.len);
+            mg_mqtt_publish(nc, "/test", ++msgId, MG_MQTT_QOS(1), msg->payload.p, msg->payload.len);
+            //mg_mqtt_puback(nc, msgId++);
             break;
 
         // cose
