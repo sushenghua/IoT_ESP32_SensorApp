@@ -119,7 +119,6 @@ void display_task(void *p)
         dc.update();
         vTaskDelay(15/portTICK_RATE_MS);
     }
-
 }
 
 

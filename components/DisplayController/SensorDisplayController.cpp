@@ -10,7 +10,7 @@
 
 SensorDisplayController::SensorDisplayController(DisplayGFX *dev)
 : DisplayController(dev)
-, _needUpdate(true)
+, _contentNeedUpdate(true)
 , _rotationNeedUpdate(false)
 , _devUpdateRotationInProgress(false)
 {}
@@ -46,7 +46,7 @@ void SensorDisplayController::setRotation(uint8_t rotation)
 			_lastRotation = _rotation;
 			_rotation = rotation;
 			_rotationNeedUpdate = true;
-			_needUpdate = true;
+			_contentNeedUpdate = true;
 		}
 	}
 }
@@ -54,7 +54,7 @@ void SensorDisplayController::setRotation(uint8_t rotation)
 void SensorDisplayController::setMpu6050(float r, float p, float y)
 {
 	roll = r; pitch = p; yaw = y;
-	_needUpdate = true;
+	_contentNeedUpdate = true;
 }
 
 
@@ -71,7 +71,7 @@ void SensorDisplayController::setPmData(PMData &pmData, bool update)
 	_pm2d5Color = HS::colorForAirLevel(pmData.levelPm2d5US);
 	_pm10Color = HS::colorForAirLevel(pmData.levelPm10US);
 
-	if (update) _needUpdate = true;
+	if (update) _contentNeedUpdate = true;
 }
 
 void SensorDisplayController::setHchoData(HchoData &hchoData, bool update)
@@ -82,7 +82,7 @@ void SensorDisplayController::setHchoData(HchoData &hchoData, bool update)
 	// color update
 	_hchoColor = HS::colorForHchoLevel(hchoData.level);
 
-	if (update) _needUpdate = true;
+	if (update) _contentNeedUpdate = true;
 }
 
 void SensorDisplayController::setTempHumidData(TempHumidData &tempHumidData, bool update)
@@ -95,7 +95,7 @@ void SensorDisplayController::setTempHumidData(TempHumidData &tempHumidData, boo
 	_tempColor = HS::colorForTempLevel(tempHumidData.levelTemp);
 	_humidColor = HS::colorForHumidLevel(tempHumidData.levelHumid);
 
-	if (update) _needUpdate = true;
+	if (update) _contentNeedUpdate = true;
 }
 
 void SensorDisplayController::setCO2Data(CO2Data &co2Data, bool update)
@@ -106,23 +106,21 @@ void SensorDisplayController::setCO2Data(CO2Data &co2Data, bool update)
 	// color update
 	_co2Color = HS::colorForCO2Level(co2Data.level);
 
-	if (update) _needUpdate = true;
+	if (update) _contentNeedUpdate = true;
 }
 
 void SensorDisplayController::update()
 {
-	if (_needUpdate) {
-
-		// ESP_LOGI("[SensorDC]", "update");
-
-		if (_rotationNeedUpdate) {
-			_devUpdateRotationInProgress = true;  // lock
-			_dev->fillScreen(RGB565_BLACK);
-			_dev->setRotation(_rotation);
-			_rotationNeedUpdate = false;
-			_devUpdateRotationInProgress = false; // unlock
-		}
-
+	// update rotation	
+	if (_rotationNeedUpdate) {
+		_devUpdateRotationInProgress = true;  // lock
+		_dev->fillScreen(RGB565_BLACK);
+		_dev->setRotation(_rotation);
+		_rotationNeedUpdate = false;
+		_devUpdateRotationInProgress = false; // unlock
+	}
+	// update content
+	if (_contentNeedUpdate) {
 		_dev->setCursor(0, 0);
 
 		_dev->setTextColor(RGB565_CYAN, RGB565_BLACK);
@@ -150,12 +148,12 @@ void SensorDisplayController::update()
 		_dev->setTextColor(_co2Color, RGB565_BLACK);
 		_dev->write("CO2  : "); _dev->write(_co2, 1); _dev->writeln();
 
-	// mpu6050
+		// mpu6050
 		_dev->setTextColor(_co2Color, RGB565_BLACK);
 		_dev->write("\nroll  : "); _dev->write(roll, 2); _dev->writeln();
 		_dev->write("pitch : "); _dev->write(pitch, 2); _dev->writeln();
 		_dev->write("yaw   : "); _dev->write(yaw, 2); _dev->writeln();
 
-		_needUpdate = false;
+		_contentNeedUpdate = false;
 	}
 }

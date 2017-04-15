@@ -19,7 +19,7 @@ public:
 	SensorDisplayController(DisplayGFX *dev);
 
 public:
-	void forceUpdate() { _needUpdate = true; }
+	void forceContentUpdate() { _contentNeedUpdate = true; }
 
 	uint8_t rotation() { return _rotation; }
 	void setRotation(uint8_t rotation);
@@ -35,7 +35,8 @@ public:
 	virtual void update();
 
 protected:
-	bool       _needUpdate;
+	// content update flag
+	bool       _contentNeedUpdate;
 
 	// rotation
 	bool       _rotationNeedUpdate;
