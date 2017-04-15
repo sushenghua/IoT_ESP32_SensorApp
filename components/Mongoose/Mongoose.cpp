@@ -116,7 +116,6 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
                    (int) msg->topic.len, msg->topic.p, (int) msg->payload.len, msg->payload.p);
             printf("Forwarding to /test\n");
             mg_mqtt_publish(nc, "/test", ++msgId, MG_MQTT_QOS(1), msg->payload.p, msg->payload.len);
-            //mg_mqtt_puback(nc, msgId++);
             break;
 
         // cose
