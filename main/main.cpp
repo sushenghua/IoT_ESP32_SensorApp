@@ -31,29 +31,41 @@
 
 Wifi wifi;
 
-TaskHandle_t enterpriseTaskHandle;
+TaskHandle_t wifiConnectionTaskHandle;
 
-void wpa2_enterprise_task(void *pvParameters)
+void wifi_connection_task(void *pvParameters)
 {
-    tcpip_adapter_ip_info_t ip;
-    memset(&ip, 0, sizeof(tcpip_adapter_ip_info_t));
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
-
-    while (true) {
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-
-        if (wifi.connected()) {
-
-          if (tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip) == 0) {
-              ESP_LOGI("wifi test", "~~~~~~~~~~~");
-              ESP_LOGI("wifi test", "  IP: %d.%d.%d.%d", IP2STR(&ip.ip));
-              ESP_LOGI("wifi test", "MASK: %d.%d.%d.%d", IP2STR(&ip.netmask));
-              ESP_LOGI("wifi test", "  GW: %d.%d.%d.%d", IP2STR(&ip.gw));
-              ESP_LOGI("wifi test", "~~~~~~~~~~~");
-              vTaskDelete(enterpriseTaskHandle);
-          }
-        }
+    // config and start wifi
+    if (wifi.loadConfig()) {
+      ESP_LOGI("wifi", "load config succeeded");
     }
+    else {
+      wifi.setDefaultConfig();
+      // if (wifi.saveConfig()) {
+      //   ESP_LOGI("wifi", "save config succeeded");
+      // }
+    }
+    wifi.init();
+    wifi.start();
+    vTaskDelete(wifiConnectionTaskHandle);
+
+    // // echo connection ip info
+    // tcpip_adapter_ip_info_t ip;
+    // memset(&ip, 0, sizeof(tcpip_adapter_ip_info_t));
+    // vTaskDelay(2000 / portTICK_PERIOD_MS);
+    // while (true) {
+    //   vTaskDelay(2000 / portTICK_PERIOD_MS);
+    //   if (wifi.connected()) {
+    //     if (tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip) == 0) {
+    //       ESP_LOGI("wifi test", "~~~~~~~~~~~");
+    //       ESP_LOGI("wifi test", "  IP: %d.%d.%d.%d", IP2STR(&ip.ip));
+    //       ESP_LOGI("wifi test", "MASK: %d.%d.%d.%d", IP2STR(&ip.netmask));
+    //       ESP_LOGI("wifi test", "  GW: %d.%d.%d.%d", IP2STR(&ip.gw));
+    //       ESP_LOGI("wifi test", "~~~~~~~~~~~");
+    //       vTaskDelete(wifiConnectionTaskHandle);
+    //     }
+    //   }
+    // }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -94,11 +106,26 @@ static void mongoose_task(void *pvParams)
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-// sensor tasks
+// display tasks
 /////////////////////////////////////////////////////////////////////////////////////////
 ILI9341 dev;
 SensorDisplayController dc(&dev);
 
+void display_task(void *p)
+{
+    dc.init();
+
+    while (true) {
+        dc.update();
+        vTaskDelay(15/portTICK_RATE_MS);
+    }
+
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// sensor tasks
+/////////////////////////////////////////////////////////////////////////////////////////
 void pm_sensor_task(void *p)
 {
     PMSensor pmSensor;
@@ -133,31 +160,16 @@ void app_main()
 {
     NvsFlash::init();
 
-    if (wifi.loadConfig()) {
-      ESP_LOGI("wifi", "load config succeeded");
-    }
-    else {
-      wifi.setDefaultConfig();
-      // if (wifi.saveConfig()) {
-      //   ESP_LOGI("wifi", "save config succeeded");
-      // }
-    }
-
-    wifi.init();
-    wifi.start();
-
-    dc.init();
-
-    xTaskCreate(&wpa2_enterprise_task, "wpa2_enterprise_task", 4096, NULL, 5, &enterpriseTaskHandle);
+    xTaskCreate(&display_task, "display_task", 4096, NULL, 12, NULL);
+    xTaskCreate(&wifi_connection_task, "wifi_connection_task", 4096, NULL, 5, &wifiConnectionTaskHandle);
     xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, 5, &sntpTaskHandle);
     xTaskCreate(&mongoose_task, "mongoose_task", 4096, NULL, 5, NULL);
     xTaskCreate(pm_sensor_task, "pm_sensor_task", 4096, NULL, 10, NULL);
-    xTaskCreate(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, 10, NULL);
+    xTaskCreate(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, 11, NULL);
 
-    while (true) {
-        dc.update();
-        vTaskDelay(15/portTICK_RATE_MS);
-    }
+    // while (true) {
+    //     vTaskDelay(portMAX_DELAY/portTICK_RATE_MS);
+    // }
 }
 
 #ifdef __cplusplus

@@ -422,6 +422,7 @@ void Wifi::start()
     if (!_started) {
         ESP_ERROR_CHECK( esp_wifi_start() );
         if ( (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) &&_config.hostName[0] != '\0') {
+            waitConnected(); 
             ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
         }
         _started = true;
