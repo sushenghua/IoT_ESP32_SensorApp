@@ -6,7 +6,7 @@
 
 #include "SensorDisplayController.h"
 #include "HealthyStandard.h"
-#include "Debug.h"
+#include "AppLog.h"
 
 SensorDisplayController::SensorDisplayController(DisplayGFX *dev)
 : DisplayController(dev)
@@ -17,7 +17,7 @@ SensorDisplayController::SensorDisplayController(DisplayGFX *dev)
 
 void SensorDisplayController::init()
 {
-	ESP_LOGI("[SensorDC]", "init");
+	APP_LOGI("[SensorDC]", "init");
 	_dev->init();
 	_dev->fillScreen(RGB565_BLACK);
 

@@ -5,7 +5,7 @@
  */
 
 #include "Spi.h"
-#include "esp_log.h"
+#include "AppLog.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // SpiBus
@@ -53,7 +53,7 @@ void SpiBus::init()
 {
     if (!_initialized) {
         // initialize the SPI bus
-        ESP_LOGI("[SpiBus]", "init spi bus with host %d", _host);
+        APP_LOGI("[SpiBus]", "init spi bus with host %d", _host);
 
         esp_err_t ret;
         ret = spi_bus_initialize(_host, &_config, 1);
@@ -65,7 +65,7 @@ void SpiBus::init()
 void SpiBus::deinit()
 {
     if (_initialized) {
-        ESP_LOGI("[SpiBus]", "deinit spi bus with host %d", _host);
+        APP_LOGI("[SpiBus]", "deinit spi bus with host %d", _host);
         esp_err_t ret;
         ret = spi_bus_free(_host);
         assert(ret == ESP_OK);
@@ -75,7 +75,7 @@ void SpiBus::deinit()
 
 void SpiBus::addChannel(SpiChannel &channel)
 {
-    ESP_LOGI("[SpiBus]", "add spi slave with cs pin %d to bus with host %d", 
+    APP_LOGI("[SpiBus]", "add spi slave with cs pin %d to bus with host %d", 
              channel.config()->spics_io_num, _host);
 
     spi_device_handle_t spiHandle;
@@ -87,7 +87,7 @@ void SpiBus::addChannel(SpiChannel &channel)
 
 void SpiBus::removeChannel(SpiChannel &channel)
 {
-    ESP_LOGI("[SpiBus]", "remove spi slave with cs pin %d from bus with host %d",
+    APP_LOGI("[SpiBus]", "remove spi slave with cs pin %d from bus with host %d",
              channel.config()->spics_io_num, _host);
 
     esp_err_t ret;

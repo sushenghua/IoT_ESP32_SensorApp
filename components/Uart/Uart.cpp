@@ -5,7 +5,7 @@
  */
 
 #include "Uart.h"
-#include "esp_log.h"
+#include "AppLog.h"
 
 Uart::Uart(uart_port_t port, int rxBufSize, int txBufSize, int queueSize)
 : _port(port)
@@ -57,7 +57,7 @@ void Uart::init()
 {
     if (!_initialized) {
 
-        ESP_LOGI("[Uart]", "init uart with port %d", _port);
+        APP_LOGI("[Uart]", "init uart with port %d", _port);
 
         esp_err_t ret;
 
@@ -78,7 +78,7 @@ void Uart::deinit()
 {
     if (_initialized) {
 
-        ESP_LOGI("[Uart]", "deinit uart with port %d", _port);
+        APP_LOGI("[Uart]", "deinit uart with port %d", _port);
 
         esp_err_t ret;
 

@@ -29,13 +29,13 @@ public:
     void deinit();
 
     // communication
-    bool deviceReady(uint8_t addr, portBASE_TYPE waitTicks = I2C_DEFAULT_WAIT_TICKS);
-    bool masterTx(uint8_t addr, uint8_t *data, size_t size, portBASE_TYPE waitTicks = I2C_DEFAULT_WAIT_TICKS);
-    bool masterRx(uint8_t addr, uint8_t *data, size_t size, portBASE_TYPE waitTicks = I2C_DEFAULT_WAIT_TICKS);
-    bool masterMemTx(uint8_t addr, uint8_t memAddr, uint8_t *data, size_t size, portBASE_TYPE waitTicks = I2C_DEFAULT_WAIT_TICKS);
-    bool masterMemRx(uint8_t addr, uint8_t memAddr, uint8_t *data, size_t size, portBASE_TYPE waitTicks = I2C_DEFAULT_WAIT_TICKS);
-    int slaveTx(uint8_t *data, size_t size, portBASE_TYPE waitTicks = I2C_DEFAULT_WAIT_TICKS);
-    int slaveRx(uint8_t *data, size_t size, portBASE_TYPE waitTicks = I2C_DEFAULT_WAIT_TICKS);
+    bool deviceReady(uint8_t addr, TickType_t waitTicks = I2C_DEFAULT_WAIT_TICKS);
+    bool masterTx(uint8_t addr, uint8_t *data, size_t size, TickType_t waitTicks = I2C_DEFAULT_WAIT_TICKS);
+    bool masterRx(uint8_t addr, uint8_t *data, size_t size, TickType_t waitTicks = I2C_DEFAULT_WAIT_TICKS);
+    bool masterMemTx(uint8_t addr, uint8_t memAddr, uint8_t *data, size_t size, TickType_t waitTicks = I2C_DEFAULT_WAIT_TICKS);
+    bool masterMemRx(uint8_t addr, uint8_t memAddr, uint8_t *data, size_t size, TickType_t waitTicks = I2C_DEFAULT_WAIT_TICKS);
+    int slaveTx(uint8_t *data, size_t size, TickType_t waitTicks = I2C_DEFAULT_WAIT_TICKS);
+    int slaveRx(uint8_t *data, size_t size, TickType_t waitTicks = I2C_DEFAULT_WAIT_TICKS);
 
 protected:
     const i2c_port_t         _port;

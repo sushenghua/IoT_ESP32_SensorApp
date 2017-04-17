@@ -12,10 +12,11 @@
 #include "esp_wifi.h"
 #include "esp_wpa2.h"
 #include "esp_event_loop.h"
-#include "esp_log.h"
 #include "esp_system.h"
 #include "nvs_flash.h"
 #include "tcpip_adapter.h"
+
+#include "AppLog.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // ------ enterprise AP
@@ -207,16 +208,16 @@ static esp_err_t wifi_app_event_handler(void *ctx, system_event_t *event)
 {
     switch (event->event_id) {
         case SYSTEM_EVENT_STA_START:
-ESP_LOGI("[Wifi]", "connect event");
+APP_LOGI("[Wifi]", "connect event");
             ESP_ERROR_CHECK( esp_wifi_connect() );
             break;
         case SYSTEM_EVENT_STA_GOT_IP:
-ESP_LOGI("[Wifi]", "got ip event");
+APP_LOGI("[Wifi]", "got ip event");
             xEventGroupSetBits(wifiEventGroup, CONNECTED_BIT);
             _connected = true;
             break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
-ESP_LOGI("[Wifi]", "disconnected event");
+APP_LOGI("[Wifi]", "disconnected event");
             ESP_ERROR_CHECK( esp_wifi_connect() );
             xEventGroupClearBits(wifiEventGroup, CONNECTED_BIT);
             _connected = false;
@@ -241,7 +242,7 @@ void Wifi::init()
 {
     if (_initialized) return;
 
-    ESP_LOGI("[Wifi]", "init with mode %d", _config.mode);
+    APP_LOGI("[Wifi]", "init with mode %d", _config.mode);
 
     tcpip_adapter_init();
 
@@ -303,7 +304,7 @@ bool Wifi::loadConfig()
         // open nvs
         err = nvs_open(STORAGE_NAMESPACE, NVS_READONLY, &nvsHandle);
         if (err != ESP_OK) {
-            ESP_LOGE("[Wifi]", "loadConfig open nvs failed %d", err);
+            APP_LOGE("[Wifi]", "loadConfig open nvs failed %d", err);
             break;
         }
         nvsOpened = true;
@@ -312,7 +313,7 @@ bool Wifi::loadConfig()
         uint16_t wifiConfigSaveCount = 0; // value will default to 0, if not set yet in NVS
         err = nvs_get_u16(nvsHandle, WIFI_CONFIG_SAVE_COUNT_TAG, &wifiConfigSaveCount);
         if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {
-            ESP_LOGE("[Wifi]", "loadConfig read \"save-count\" failed %d", err);
+            APP_LOGE("[Wifi]", "loadConfig read \"save-count\" failed %d", err);
             break;
         }
 
@@ -321,17 +322,17 @@ bool Wifi::loadConfig()
             size_t requiredSize = 0;  // value will default to 0, if not set yet in NVS
             err = nvs_get_blob(nvsHandle, WIFI_CONFIG_TAG, NULL, &requiredSize);
             if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {
-                ESP_LOGE("[Wifi]", "loadConfig read \"wifi-config-size\" failed %d", err);
+                APP_LOGE("[Wifi]", "loadConfig read \"wifi-config-size\" failed %d", err);
                 break;
             }
             if (requiredSize != sizeof(_config)) {
-                ESP_LOGE("[Wifi]", "loadConfig read \"wifi-config-size\" got unexpected value");
+                APP_LOGE("[Wifi]", "loadConfig read \"wifi-config-size\" got unexpected value");
                 break;
             }
             // read previously saved config
             err = nvs_get_blob(nvsHandle, WIFI_CONFIG_TAG, &_config, &requiredSize);
             if (err != ESP_OK) {
-                ESP_LOGE("[Wifi]", "loadConfig read \"wifi-config-content\" failed %d", err);
+                APP_LOGE("[Wifi]", "loadConfig read \"wifi-config-content\" failed %d", err);
                 break;
             }
             succeeded = true;
@@ -356,7 +357,7 @@ bool Wifi::saveConfig()
         // open nvs
         err = nvs_open(STORAGE_NAMESPACE, NVS_READWRITE, &nvsHandle);
         if (err != ESP_OK) {
-            ESP_LOGE("[Wifi]", "saveConfig open nvs failed %d", err);
+            APP_LOGE("[Wifi]", "saveConfig open nvs failed %d", err);
             break;
         }
         nvsOpened = true;
@@ -365,14 +366,14 @@ bool Wifi::saveConfig()
         uint16_t wifiConfigSaveCount = 0; // value will default to 0, if not set yet in NVS
         err = nvs_get_u16(nvsHandle, WIFI_CONFIG_SAVE_COUNT_TAG, &wifiConfigSaveCount);
         if (err != ESP_OK && err != ESP_ERR_NVS_NOT_FOUND) {
-            ESP_LOGE("[Wifi]", "saveConfig read \"save-count\" failed %d", err);
+            APP_LOGE("[Wifi]", "saveConfig read \"save-count\" failed %d", err);
             break;
         }
 
         // write wifi config
         err = nvs_set_blob(nvsHandle, WIFI_CONFIG_TAG, &_config, sizeof(_config));
         if (err != ESP_OK) {
-            ESP_LOGE("[Wifi]", "saveConfig write \"wifi-config\" failed %d", err);
+            APP_LOGE("[Wifi]", "saveConfig write \"wifi-config\" failed %d", err);
             break;
         }
 
@@ -380,7 +381,7 @@ bool Wifi::saveConfig()
         wifiConfigSaveCount++;
         err = nvs_set_u16(nvsHandle, WIFI_CONFIG_SAVE_COUNT_TAG, wifiConfigSaveCount);
         if (err != ESP_OK) {
-            ESP_LOGE("[Wifi]", "saveConfig write \"save-count\" failed %d", err);
+            APP_LOGE("[Wifi]", "saveConfig write \"save-count\" failed %d", err);
             break;
         }
 

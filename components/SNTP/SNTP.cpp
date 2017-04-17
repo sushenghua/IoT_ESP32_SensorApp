@@ -5,7 +5,7 @@
  */
 
 #include "SNTP.h"
-#include "esp_log.h"
+#include "AppLog.h"
 #include "Wifi.h"
 #include <string.h>
 
@@ -15,7 +15,7 @@ struct tm  SNTP::_timeInfo;
 
 void SNTP::init(uint8_t operationMode) {
     if (!_inited) {
-        ESP_LOGI("[SNTP]", "init SNTP");
+        APP_LOGI("[SNTP]", "init SNTP");
         Wifi::waitConnected(); // block wait
         sntp_setoperatingmode(operationMode);
         sntp_setservername(0, (char*)("pool.ntp.org"));
@@ -38,7 +38,7 @@ bool SNTP::sync(int trials)
     memset(&_timeInfo, 0, sizeof(_timeInfo));
     int retry = 0;
     while(_timeInfo.tm_year < (2016 - 1900) && ++retry <= trials) {
-        ESP_LOGI("[SNTP]", "waiting for system time to be set... (%d/%d)", retry, trials);
+        APP_LOGI("[SNTP]", "waiting for system time to be set... (%d/%d)", retry, trials);
         vTaskDelay(2000 / portTICK_PERIOD_MS);
         time(&_timeNow);
         localtime_r(&_timeNow, &_timeInfo);
@@ -61,10 +61,10 @@ void SNTP::test()
     // Set timezone to Eastern Standard Time and print local time
     setTimezone("EST5EDT,M3.2.0/2,M11.1.0");
     strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeInfo(now));
-    ESP_LOGI("[SNTP]", "The current date/time in New York is: %s", strftime_buf);
+    APP_LOGI("[SNTP]", "The current date/time in New York is: %s", strftime_buf);
 
     // Set timezone to China Standard Time
     setTimezone("CST-8CDT-9,M4.2.0/2,M9.2.0/3");
     strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeInfo(now));
-    ESP_LOGI("[SNTP]", "The current date/time in Shanghai is: %s", strftime_buf);
+    APP_LOGI("[SNTP]", "The current date/time in Shanghai is: %s", strftime_buf);
 }

@@ -22,7 +22,7 @@
 
 // the following line must be place after #include "ILI9341.h", 
 // as mongoose.h has macro write (s, b, l)
-#include "Mongoose.h"
+#include "MqttClient.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Wifi task
@@ -49,23 +49,10 @@ void wifi_connection_task(void *pvParameters)
     wifi.start(true);
     vTaskDelete(wifiConnectionTaskHandle);
 
-    // // echo connection ip info
-    // tcpip_adapter_ip_info_t ip;
-    // memset(&ip, 0, sizeof(tcpip_adapter_ip_info_t));
-    // vTaskDelay(2000 / portTICK_PERIOD_MS);
-    // while (true) {
-    //   vTaskDelay(2000 / portTICK_PERIOD_MS);
-    //   if (wifi.connected()) {
-    //     if (tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip) == 0) {
-    //       ESP_LOGI("wifi test", "~~~~~~~~~~~");
-    //       ESP_LOGI("wifi test", "  IP: %d.%d.%d.%d", IP2STR(&ip.ip));
-    //       ESP_LOGI("wifi test", "MASK: %d.%d.%d.%d", IP2STR(&ip.netmask));
-    //       ESP_LOGI("wifi test", "  GW: %d.%d.%d.%d", IP2STR(&ip.gw));
-    //       ESP_LOGI("wifi test", "~~~~~~~~~~~");
-    //       vTaskDelete(wifiConnectionTaskHandle);
-    //     }
-    //   }
-    // }
+    while (true) {
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+        if (wifi.connected()) vTaskDelete(wifiConnectionTaskHandle);
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -77,7 +64,6 @@ static void sntp_task(void *pvParams)
     SNTP::init();
     // block wait wifi connected and sync successfully
     while (!SNTP::sync()) {
-        // wifi.disconnect();
         //SNTP::stop();
         vTaskDelay(500 / portTICK_PERIOD_MS);
         //SNTP::init();
@@ -92,15 +78,23 @@ static void sntp_task(void *pvParams)
 // Mongoose task
 /////////////////////////////////////////////////////////////////////////////////////////
 
-// #define MG_TASK_STACK_SIZE 4096
-// #define MG_TASK_PRIORITY   1
+// #include "Mongoose.h"
 
 static void mongoose_task(void *pvParams)
 {
-    Mongoose mongoose;
-    mongoose.init(MQTT_MODE);
+    // Mongoose mongoose;
+    // mongoose.init(MQTT_MODE);
+    // while (true) {
+    //     mongoose.poll();
+    // }
+
+    MqttClient mqtt;
+    mqtt.init();
+    mqtt.addSubTopic("/mqtttest", 0);
+    mqtt.start();
     while (true) {
-        mongoose.poll();
+        mqtt.poll();
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
 
@@ -161,8 +155,8 @@ void app_main()
 
     xTaskCreate(&display_task, "display_task", 4096, NULL, 12, NULL);
     xTaskCreate(&wifi_connection_task, "wifi_connection_task", 4096, NULL, 5, &wifiConnectionTaskHandle);
-    xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, 5, &sntpTaskHandle);
-    xTaskCreate(&mongoose_task, "mongoose_task", 4096, NULL, 5, NULL);
+    xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, 4, &sntpTaskHandle);
+    xTaskCreate(&mongoose_task, "mongoose_task", 4096, NULL, 4, NULL);
     xTaskCreate(pm_sensor_task, "pm_sensor_task", 4096, NULL, 10, NULL);
     xTaskCreate(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, 11, NULL);
 

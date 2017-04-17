@@ -5,7 +5,7 @@
  */
 
 #include "I2c.h"
-#include "esp_log.h"
+#include "AppLog.h"
 
 I2c::I2c(i2c_port_t port)
 : _port(port)
@@ -57,7 +57,7 @@ void I2c::setPins(int pinSck, int pinSda)
 void I2c::init(size_t rxBufLen, size_t txBufLen)
 {
     if (!_inited) {
-    	ESP_LOGI("[I2c]", "init i2c with port %d", _port);
+    	APP_LOGI("[I2c]", "init i2c with port %d", _port);
         i2c_param_config(_port, &_config);
         i2c_driver_install(_port, _config.mode,
                            rxBufLen, txBufLen, 0);
@@ -81,7 +81,7 @@ void I2c::deinit()
 #define ACK_VAL        0x0              /*!< I2C ack value */
 #define NACK_VAL       0x1              /*!< I2C nack value */
 
-bool I2c::deviceReady(uint8_t addr, portBASE_TYPE waitTicks)
+bool I2c::deviceReady(uint8_t addr, TickType_t waitTicks)
 {
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
@@ -92,7 +92,7 @@ bool I2c::deviceReady(uint8_t addr, portBASE_TYPE waitTicks)
     return ret == ESP_OK;
 }
 
-bool I2c::masterTx(uint8_t addr, uint8_t *data, size_t size, portBASE_TYPE waitTicks)
+bool I2c::masterTx(uint8_t addr, uint8_t *data, size_t size, TickType_t waitTicks)
 {
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
@@ -104,7 +104,7 @@ bool I2c::masterTx(uint8_t addr, uint8_t *data, size_t size, portBASE_TYPE waitT
     return ret == ESP_OK;
 }
 
-bool I2c::masterRx(uint8_t addr, uint8_t *data, size_t size, portBASE_TYPE waitTicks)
+bool I2c::masterRx(uint8_t addr, uint8_t *data, size_t size, TickType_t waitTicks)
 {
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
@@ -119,7 +119,7 @@ bool I2c::masterRx(uint8_t addr, uint8_t *data, size_t size, portBASE_TYPE waitT
     return ret == ESP_OK;
 }
 
-bool I2c::masterMemTx(uint8_t addr, uint8_t memAddr, uint8_t *data, size_t size, portBASE_TYPE waitTicks)
+bool I2c::masterMemTx(uint8_t addr, uint8_t memAddr, uint8_t *data, size_t size, TickType_t waitTicks)
 {
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
@@ -132,7 +132,7 @@ bool I2c::masterMemTx(uint8_t addr, uint8_t memAddr, uint8_t *data, size_t size,
     return ret == ESP_OK;
 }
 
-bool I2c::masterMemRx(uint8_t addr, uint8_t memAddr, uint8_t *data, size_t size, portBASE_TYPE waitTicks)
+bool I2c::masterMemRx(uint8_t addr, uint8_t memAddr, uint8_t *data, size_t size, TickType_t waitTicks)
 {
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
@@ -151,12 +151,12 @@ bool I2c::masterMemRx(uint8_t addr, uint8_t memAddr, uint8_t *data, size_t size,
 }
     
 
-int I2c::slaveTx(uint8_t *data, size_t size, portBASE_TYPE waitTicks)
+int I2c::slaveTx(uint8_t *data, size_t size, TickType_t waitTicks)
 {
     return i2c_slave_write_buffer(_port, data, size, waitTicks / portTICK_RATE_MS);
 }
 
-int I2c::slaveRx(uint8_t *data, size_t size, portBASE_TYPE waitTicks)
+int I2c::slaveRx(uint8_t *data, size_t size, TickType_t waitTicks)
 {
     return i2c_slave_read_buffer(_port, data, size, waitTicks / portTICK_RATE_MS);
 }

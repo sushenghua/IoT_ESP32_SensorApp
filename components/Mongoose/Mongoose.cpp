@@ -7,7 +7,7 @@
 #include "Mongoose.h"
 
 #include "esp_system.h"
-#include "esp_log.h"
+#include "AppLog.h"
 #include "Wifi.h"
 
 #define MG_LISTEN_ADDR "80"
@@ -32,7 +32,7 @@ static void mongoose_http_event_handler(struct mg_connection *nc, int ev, void *
             char addr[32];
             mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr),
                                 MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
-            ESP_LOGI("[Mongoose]", "connection %p from %s", nc, addr);
+            APP_LOGI("[Mongoose]", "connection %p from %s", nc, addr);
             break;
         }
         // HTTP
@@ -41,7 +41,7 @@ static void mongoose_http_event_handler(struct mg_connection *nc, int ev, void *
             struct http_message *hm = (struct http_message *) p;
             mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr),
                                 MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
-            ESP_LOGI("[Mongoose]", "HTTP request from %s: %.*s %.*s", addr, (int) hm->method.len,
+            APP_LOGI("[Mongoose]", "HTTP request from %s: %.*s %.*s", addr, (int) hm->method.len,
                                    hm->method.p, (int) hm->uri.len, hm->uri.p);
             // mg_printf(nc, reply_fmt, addr);
             mg_printf(nc, reply_fmt, addr);
@@ -50,7 +50,7 @@ static void mongoose_http_event_handler(struct mg_connection *nc, int ev, void *
         }
         // cose
         case MG_EV_CLOSE: {
-            ESP_LOGI("[Mongoose]", "connection %p closed", nc);
+            APP_LOGI("[Mongoose]", "connection %p closed", nc);
             break;
         }
     }  
@@ -72,7 +72,7 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
     switch (ev) {
         // connected
         case MG_EV_CONNECT:
-            ESP_LOGI("[Mongoose]", "MQTT connect event: %p", nc);
+            APP_LOGI("[Mongoose]", "MQTT connect event: %p", nc);
             struct mg_send_mqtt_handshake_opts opts;
             memset(&opts, 0, sizeof(opts));
             opts.user_name = s_user_name;
@@ -85,29 +85,29 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
         case MG_EV_MQTT_CONNACK:
             if (msg->connack_ret_code == MG_EV_MQTT_CONNACK_ACCEPTED) {
                 s_topic_expr.topic = s_topic;
-                ESP_LOGI("[Mongoose]", "MQTT subscribe to: %s", s_topic);
+                APP_LOGI("[Mongoose]", "MQTT subscribe to: %s", s_topic);
                 mg_mqtt_subscribe(nc, &s_topic_expr, 1, 42);
             }
             else {
-                ESP_LOGE("[Mongoose]", "MQTT connection error: %d", msg->connack_ret_code);
+                APP_LOGE("[Mongoose]", "MQTT connection error: %d", msg->connack_ret_code);
             }
             break;
 
         case MG_EV_MQTT_SUBACK:
-            ESP_LOGI("[Mongoose]", "MQTT subscription acknowledged, forwarding to '/test'");
+            APP_LOGI("[Mongoose]", "MQTT subscription acknowledged, forwarding to '/test'");
             break;
 
         case MG_EV_MQTT_PUBACK:  // for QoS(1)
-            ESP_LOGI("[Mongoose]", "MQTT message QoS(1) Pub acknowledged (msg_id: %d)", msg->message_id);
+            APP_LOGI("[Mongoose]", "MQTT message QoS(1) Pub acknowledged (msg_id: %d)", msg->message_id);
             break;
 
         case MG_EV_MQTT_PUBREC:  // for QoS(2)
-            ESP_LOGI("[Mongoose]", "MQTT message QoS(2) Pub-Receive acknowledged (msg_id: %d)", msg->message_id);
+            APP_LOGI("[Mongoose]", "MQTT message QoS(2) Pub-Receive acknowledged (msg_id: %d)", msg->message_id);
             mg_mqtt_pubrel(nc, msgId);
             break;
 
         case MG_EV_MQTT_PUBCOMP: // for QoS(2)
-            ESP_LOGI("[Mongoose]", "MQTT message QoS(2) Pub-Complete acknowledged (msg_id: %d)", msg->message_id);
+            APP_LOGI("[Mongoose]", "MQTT message QoS(2) Pub-Complete acknowledged (msg_id: %d)", msg->message_id);
             // clear cache
             break;
 
@@ -120,7 +120,7 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
 
         // cose
         case MG_EV_CLOSE: {
-            ESP_LOGI("[Mongoose]", "MQTT connection closed: %p", nc);
+            APP_LOGI("[Mongoose]", "MQTT connection closed: %p", nc);
             break;
         }
     }  
@@ -146,27 +146,27 @@ void Mongoose::init(MongooseMode mode)
     if (!_inited) {
         struct mg_connection *nc;
     
-        ESP_LOGI("[Mongoose]", "version: %s", MG_VERSION);
-        ESP_LOGI("[Mongoose]", "Free RAM: %d bytes", esp_get_free_heap_size());
+        APP_LOGI("[Mongoose]", "version: %s", MG_VERSION);
+        APP_LOGI("[Mongoose]", "Free RAM: %d bytes", esp_get_free_heap_size());
     
         _mode = mode;
         mg_mgr_init(&_manager, this);
     
         if (mode == HTTP_MODE) {
-            ESP_LOGI("[Mongoose]", "HTTP init server");
+            APP_LOGI("[Mongoose]", "HTTP init server");
             nc = mg_bind(&_manager, MG_LISTEN_ADDR, mongoose_http_event_handler);
             if (nc == NULL) {
-                ESP_LOGE("[Mongoose]", "HTTP init server failed");
+                APP_LOGE("[Mongoose]", "HTTP init server failed");
                 return;
             }
             mg_set_protocol_http_websocket(nc);
         }
         else if (mode == MQTT_MODE) {
             Wifi::waitConnected(); // block wait
-            ESP_LOGI("[Mongoose]", "MQTT init client");
+            APP_LOGI("[Mongoose]", "MQTT init client");
             nc = mg_connect(&_manager, MQTT_SERVER_ADDR, mongoose_mqtt_event_handler);
             if (nc == NULL) {
-                ESP_LOGE("[Mongoose]", "MQTT init client failed");
+                APP_LOGE("[Mongoose]", "MQTT init client failed");
                 return;
             }
         }
