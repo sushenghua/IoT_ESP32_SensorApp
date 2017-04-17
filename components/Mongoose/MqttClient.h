@@ -8,6 +8,7 @@
 #define _MQTT_CLIENT_H
 
 #include "mongoose.h"
+#include "MqttMessageInterpreter.h"
 
 #define MONGOOSE_DEFAULT_POLL_SLEEP     1000   // 1 second
 
@@ -41,10 +42,16 @@ public:
 
     // communication
     void start();
+    void clearSubTopics();
     void addSubTopic(const char *topic, uint8_t qos = 0);
-    void clearTopics();
     void subscribeTopics();
-    void publish();
+    void addUnsubTopic(const char *topic);
+    void unsubscribeTopics();
+    void publish(const char *topic, const void *data, size_t len, uint8_t qos, bool retain = false, bool dup = false);
+
+    // message interpreter
+    MqttMessageInterpreter* msgInterpreter() { return _msgInterpreter; }
+    void setMessageInterpreter(MqttMessageInterpreter *interpreter) { _msgInterpreter = interpreter; }
 
 public:
     // for event handler
@@ -56,7 +63,7 @@ public:
     bool subscribeImmediatelyOnConnected() { return _subscribeImmediatelyOnConnected; }
     TickType_t reconnectTicksOnServerUnavailable() { return _reconnectTicksOnServerUnavailable; }    
     TickType_t reconnectTicksOnDisconnection() { return _reconnectTicksOnDisconnection; }
-    bool connectServer();
+    bool makeConnection();
 
 protected:
     // init and connection
@@ -76,6 +83,11 @@ protected:
     #define TOPIC_CACHE_SIZE            10    
     uint16_t                            _topicCount;
     struct mg_mqtt_topic_expression     _topics[TOPIC_CACHE_SIZE];
+    uint8_t                             _unsubTopicCount;
+    const char                         *_unsubTopics[TOPIC_CACHE_SIZE];
+
+    // message interpreter
+    MqttMessageInterpreter             *_msgInterpreter;
 };
 
 #endif // _MQTT_CLIENT_H

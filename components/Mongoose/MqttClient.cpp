@@ -20,6 +20,13 @@ void printTopics(const struct mg_mqtt_topic_expression *topics, uint16_t count)
     }
 }
 
+void printTopics(const char **topics, uint16_t count)
+{
+    for (uint16_t i = 0; i < count; ++i) {
+        printf("[%d] %s\n", i, topics[i]);
+    }
+}
+
 static char MAC_ADDR[13] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF };
 
 static void initMacADDR()
@@ -28,7 +35,6 @@ static void initMacADDR()
     char *target = MAC_ADDR;
     esp_efuse_read_mac(macAddr);
     for (int i = 0; i < 6; ++i) {
-        // printf("%02x ", macAddr[i]);
         sprintf(target, "%02x", macAddr[i]);
         target += 2;
     }
@@ -62,7 +68,6 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
 {
     struct mg_mqtt_message *msg = (struct mg_mqtt_message *) p;
     MqttClient *mqttClient = static_cast<MqttClient*>(nc->user_data);
-    // APP_LOGI("[MqttClient]", "qmtt obj pointer: %p", nc->user_data);
 
     switch (ev) {
         case MG_EV_CONNECT:
@@ -83,10 +88,8 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
             else {
                 APP_LOGE("[MqttClient]", "connection error: %d", msg->connack_ret_code);
                 if (msg->connack_ret_code == MG_EV_MQTT_CONNACK_SERVER_UNAVAILABLE) {
-                    //APP_LOGE("[MqttClient]", "reconnect in %d seconds", mqttClient->reconnectTicksOnServerUnavailable()/1000);
-                    //vTaskDelay(mqttClient->reconnectTicksOnServerUnavailable()/portTICK_RATE_MS);
                     reconnectCountDelay(mqttClient->reconnectTicksOnServerUnavailable());
-                    mqttClient->connectServer();
+                    mqttClient->makeConnection();
                 }
             }
             break;
@@ -98,6 +101,7 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
 
         case MG_EV_MQTT_PUBACK:  // for QoS(1)
             APP_LOGI("[MqttClient]", "message QoS(1) Pub acknowledged (msg_id: %d)", msg->message_id);
+            // clear cache
             break;
 
         case MG_EV_MQTT_PUBREC:  // for QoS(2)
@@ -113,16 +117,20 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
         case MG_EV_MQTT_PUBLISH:
             printf("Got incoming message (msg_id: %d) %.*s: %.*s\n", msg->message_id,
                    (int) msg->topic.len, msg->topic.p, (int) msg->payload.len, msg->payload.p);
+            if (mqttClient->msgInterpreter()) {
+                mqttClient->msgInterpreter()->interprete(msg->topic.p, msg->topic.len, msg->payload.p, msg->payload.len);
+            }
+            break;
+
+        case MG_EV_MQTT_PINGRESP:
             break;
 
         case MG_EV_CLOSE: {
             APP_LOGI("[MqttClient]", "connection to server %s closed (nc: %p)", mqttClient->serverAddress(), nc);
             mqttClient->setConnected(false);
             mqttClient->setSubscribeSucceeded(false);
-            // APP_LOGI("[MqttClient]", "reconnect in %d seconds", mqttClient->reconnectTicksOnDisconnection()/1000);
-            // vTaskDelay(mqttClient->reconnectTicksOnDisconnection()/portTICK_RATE_MS);
             reconnectCountDelay(mqttClient->reconnectTicksOnDisconnection());
-            mqttClient->connectServer();
+            mqttClient->makeConnection();
             break;
         }
     }  
@@ -134,7 +142,8 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
 #define MQTT_KEEP_ALIVE_DEFAULT_VALUE                           60     // 60 seconds
 #define MQTT_RECONNECT_DEFAULT_DELAY_TICKS                      5000   // 1 second
 #define MQTT_SERVER_UNAVAILABLE_RECONNECT_DEFAULT_DELAY_TICKS   300000 // 5 minutes
-static const char* MQTT_SERVER_ADDR =                           "192.168.0.99:8883";
+// static const char* MQTT_SERVER_ADDR =                           "192.168.0.99:8883";
+static const char* MQTT_SERVER_ADDR =                           "123.57.0.158:8883";
 
 MqttClient::MqttClient()
 : _inited(false)
@@ -146,6 +155,8 @@ MqttClient::MqttClient()
 , _subscribeSucceeded(false)
 , _clientId(macAddress())
 , _topicCount(0)
+, _unsubTopicCount(0)
+, _msgInterpreter(NULL)
 {
     _handShakeOpt.keep_alive = MQTT_KEEP_ALIVE_DEFAULT_VALUE;
 }
@@ -228,9 +239,36 @@ void MqttClient::deinit()
     }
 }
 
+bool MqttClient::makeConnection()
+{
+    if (_inited) {
+        Wifi::waitConnected(); // block wait
+        // set connect opts
+        struct mg_connect_opts opts;
+        memset(&opts, 0, sizeof(opts));
+        opts.user_data = static_cast<void*>(this);
+        // create connection
+        struct mg_connection *nc;
+        nc = mg_connect_opt(&_manager, _serverAddress, mongoose_mqtt_event_handler, opts);
+        if (nc == NULL) {
+            APP_LOGE("[MqttClient]", "connect to server failed");
+            return false;
+        }
+        return true;
+    }
+    APP_LOGE("[MqttClient]", "must be inited before connection");
+    return false;
+}
+
 void MqttClient::start()
 {
-    connectServer();
+    makeConnection();
+}
+
+void MqttClient::clearSubTopics()
+{
+    // memset(_topics, 0, sizeof(_topics));
+    _topicCount = 0;
 }
 
 void MqttClient::addSubTopic(const char *topic, uint8_t qos)
@@ -251,29 +289,29 @@ void MqttClient::subscribeTopics()
     }
 }
 
-void MqttClient::clearTopics()
+void MqttClient::addUnsubTopic(const char *topic)
 {
-    // memset(_topics, 0, sizeof(_topics));
-    _topicCount = 0;
+    if (_unsubTopicCount < TOPIC_CACHE_SIZE) {
+        _unsubTopics[_unsubTopicCount] = topic;
+        ++_unsubTopicCount;
+    }
 }
 
-bool MqttClient::connectServer()
+void MqttClient::unsubscribeTopics()
 {
-    if (_inited) {
-        Wifi::waitConnected(); // block wait
-        // set connect opts
-        struct mg_connect_opts opts;
-        memset(&opts, 0, sizeof(opts));
-        opts.user_data = static_cast<void*>(this);
-        // create connection
-        struct mg_connection *nc;
-        nc = mg_connect_opt(&_manager, _serverAddress, mongoose_mqtt_event_handler, opts);
-        if (nc == NULL) {
-            APP_LOGE("[MqttClient]", "connect to server failed");
-            return false;
-        }
-        return true;
+    if (_connected && _subscribeSucceeded) {
+        APP_LOGI("[MqttClient]", "unsubscribe to topics:");
+        printTopics(_unsubTopics, _unsubTopicCount);
+        mg_mqtt_unsubscribe(_manager.active_connections, const_cast<char**>(_unsubTopics), _topicCount, createMsgId());
     }
-    APP_LOGE("[MqttClient]", "must be inited before connection");
-    return false;
+}
+
+void MqttClient::publish(const char *topic, const void *data, size_t len, uint8_t qos, bool retain, bool dup)
+{
+    uint16_t msgId = qos > 0 ? createMsgId() : 0;
+    int flag = 0;
+    if (retain) flag |= MG_MQTT_RETAIN;
+    if (dup) flag |= MG_MQTT_DUP;
+    MG_MQTT_SET_QOS(flag, qos);
+    mg_mqtt_publish(_manager.active_connections, topic, msgId, flag, data, len);
 }
