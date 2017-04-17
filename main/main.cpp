@@ -77,17 +77,8 @@ static void sntp_task(void *pvParams)
 /////////////////////////////////////////////////////////////////////////////////////////
 // Mongoose task
 /////////////////////////////////////////////////////////////////////////////////////////
-
-// #include "Mongoose.h"
-
 static void mongoose_task(void *pvParams)
 {
-    // Mongoose mongoose;
-    // mongoose.init(MQTT_MODE);
-    // while (true) {
-    //     mongoose.poll();
-    // }
-
     MqttClient mqtt;
     mqtt.init();
     mqtt.addSubTopic("/mqtttest", 0);
@@ -155,6 +146,7 @@ void app_main()
 
     xTaskCreate(&display_task, "display_task", 4096, NULL, 12, NULL);
     xTaskCreate(&wifi_connection_task, "wifi_connection_task", 4096, NULL, 5, &wifiConnectionTaskHandle);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
     xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, 4, &sntpTaskHandle);
     xTaskCreate(&mongoose_task, "mongoose_task", 4096, NULL, 4, NULL);
     xTaskCreate(pm_sensor_task, "pm_sensor_task", 4096, NULL, 10, NULL);

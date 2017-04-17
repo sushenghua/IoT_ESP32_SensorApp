@@ -158,7 +158,12 @@ MqttClient::MqttClient()
 , _unsubTopicCount(0)
 , _msgInterpreter(NULL)
 {
+    _handShakeOpt.flags = 0;
     _handShakeOpt.keep_alive = MQTT_KEEP_ALIVE_DEFAULT_VALUE;
+    _handShakeOpt.will_topic = NULL;
+    _handShakeOpt.will_message = NULL;
+    _handShakeOpt.user_name = NULL;
+    _handShakeOpt.password = NULL;
 }
 
 void MqttClient::setServerAddress(const char* serverAddress)

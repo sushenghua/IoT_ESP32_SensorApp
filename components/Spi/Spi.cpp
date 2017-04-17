@@ -26,6 +26,9 @@ SpiBus::SpiBus(spi_host_device_t host)
 : _host(host)
 , _initialized(false)
 {
+    _config.miso_io_num = -1;
+    _config.mosi_io_num = -1;
+    _config.sclk_io_num = -1;
     _config.quadwp_io_num = -1;
     _config.quadhd_io_num = -1;
 }
