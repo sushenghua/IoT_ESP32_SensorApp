@@ -49,6 +49,7 @@ public:
     MessagePubPool(TickType_t loopInterval = POOL_PROCESS_LOOP_DEFAULT_INTERVAL);
 
     TickType_t loopInterval() { return _loopInterval; }
+    void setLoopInterval(TickType_t interval) { _loopInterval = interval; }
     void setPubDelegate(MessagePubDelegate *delegate);
 
     // task loop
