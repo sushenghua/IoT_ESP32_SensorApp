@@ -101,7 +101,7 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
 
         case MG_EV_MQTT_PUBACK:  // for QoS(1)
             APP_LOGI("[MqttClient]", "message QoS(1) Pub acknowledged (msg_id: %d)", msg->message_id);
-            // clear cache
+            mqttClient->onPubAck(msg->message_id);
             break;
 
         case MG_EV_MQTT_PUBREC:  // for QoS(2)
@@ -111,7 +111,7 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
 
         case MG_EV_MQTT_PUBCOMP: // for QoS(2)
             APP_LOGI("[MqttClient]", "message QoS(2) Pub-Complete acknowledged (msg_id: %d)", msg->message_id);
-            // clear cache
+            mqttClient->onPubAck(msg->message_id);
             break;
 
         case MG_EV_MQTT_PUBLISH:
@@ -136,9 +136,29 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
     }  
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// Message pub pool process loop task
+/////////////////////////////////////////////////////////////////////////////////////////
+static TaskHandle_t _msgTaskHandle = 0;
+static void msg_pool_task(void *pvParams)
+{
+    MessagePubPool *pool = static_cast<MessagePubPool*>(pvParams);
+    while (true) {
+        pool->processLoop();
+        vTaskDelay(pool->loopInterval() / portTICK_PERIOD_MS);
+    }
+    // vTaskDelete(sntpTaskHandle);
+}
+
+
 /////////////////////////////////////////////////////////////////////////////////////////
 // ------ MqttClient class
 /////////////////////////////////////////////////////////////////////////////////////////
+// FreeRTOS semaphore
+static xSemaphoreHandle _pubSemaphore = 0;
+
+// --- default values
 #define MQTT_KEEP_ALIVE_DEFAULT_VALUE                           60     // 60 seconds
 #define MQTT_RECONNECT_DEFAULT_DELAY_TICKS                      5000   // 1 second
 #define MQTT_SERVER_UNAVAILABLE_RECONNECT_DEFAULT_DELAY_TICKS   300000 // 5 minutes
@@ -267,6 +287,8 @@ bool MqttClient::makeConnection()
 
 void MqttClient::start()
 {
+    _pubSemaphore = xSemaphoreCreateMutex();
+    xTaskCreate(&msg_pool_task, "msg_pool_task", 4096, &_msgPubPool, 4, &_msgTaskHandle);
     makeConnection();
 }
 
@@ -311,12 +333,44 @@ void MqttClient::unsubscribeTopics()
     }
 }
 
+void MqttClient::onPubAck(uint16_t msgId)
+{
+    _msgPubPool.drainPoolMessage(msgId);
+}
+
+#define SEMAPHORE_TAKE_WAIT_TICKS  5000   /// TickType_t
+
 void MqttClient::publish(const char *topic, const void *data, size_t len, uint8_t qos, bool retain, bool dup)
 {
-    uint16_t msgId = qos > 0 ? createMsgId() : 0;
-    int flag = 0;
-    if (retain) flag |= MG_MQTT_RETAIN;
-    if (dup) flag |= MG_MQTT_DUP;
-    MG_MQTT_SET_QOS(flag, qos);
-    mg_mqtt_publish(_manager.active_connections, topic, msgId, flag, data, len);
+    if (!_connected) return;
+    if (xSemaphoreTake(_pubSemaphore, SEMAPHORE_TAKE_WAIT_TICKS)) {
+        uint16_t msgId = qos > 0 ? createMsgId() : 0;
+        int flag = 0;
+        if (retain) flag |= MG_MQTT_RETAIN;
+        if (dup) flag |= MG_MQTT_DUP;
+        MG_MQTT_SET_QOS(flag, qos);
+        mg_mqtt_publish(_manager.active_connections, topic, msgId, flag, data, len);
+        if (qos > 0) {
+            _msgPubPool.addMessage(msgId, topic, data, len, qos, retain);
+        }
+        xSemaphoreGive(_pubSemaphore);
+    }
+}
+
+void MqttClient::repubMessage(PoolMessage *message)
+{
+    if (!_connected) return;
+    if (xSemaphoreTake(_pubSemaphore, SEMAPHORE_TAKE_WAIT_TICKS)) {
+        int flag = MG_MQTT_DUP;
+        if (message->retain) flag |= MG_MQTT_RETAIN;
+        MG_MQTT_SET_QOS(flag, message->qos);
+        mg_mqtt_publish(_manager.active_connections,
+                        message->topic,
+                        message->msgId,
+                        flag,
+                        message->data,
+                        message->length);
+        message->pubCount++;
+        xSemaphoreGive(_pubSemaphore);
+    }
 }

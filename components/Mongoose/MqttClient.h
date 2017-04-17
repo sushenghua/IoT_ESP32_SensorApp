@@ -9,14 +9,18 @@
 
 #include "mongoose.h"
 #include "MqttMessageInterpreter.h"
+#include "MessagePubPool.h"
 
 #define MONGOOSE_DEFAULT_POLL_SLEEP     1000   // 1 second
 
-class MqttClient
+class MqttClient : public MessagePubDelegate
 {
 public:
     // constructor
     MqttClient();
+
+    // MessagePubDelegate
+    virtual void repubMessage(PoolMessage *message);
 
     // loop poll
     void poll(int sleepMilli = MONGOOSE_DEFAULT_POLL_SLEEP) {
@@ -47,7 +51,12 @@ public:
     void subscribeTopics();
     void addUnsubTopic(const char *topic);
     void unsubscribeTopics();
-    void publish(const char *topic, const void *data, size_t len, uint8_t qos, bool retain = false, bool dup = false);
+    void publish(const char *topic,
+                 const void *data,
+                 size_t      len,
+                 uint8_t     qos,
+                 bool        retain = false,
+                 bool        dup = false);
 
     // message interpreter
     MqttMessageInterpreter* msgInterpreter() { return _msgInterpreter; }
@@ -64,6 +73,7 @@ public:
     TickType_t reconnectTicksOnServerUnavailable() { return _reconnectTicksOnServerUnavailable; }    
     TickType_t reconnectTicksOnDisconnection() { return _reconnectTicksOnDisconnection; }
     bool makeConnection();
+    void onPubAck(uint16_t msgId);
 
 protected:
     // init and connection
@@ -88,6 +98,9 @@ protected:
 
     // message interpreter
     MqttMessageInterpreter             *_msgInterpreter;
+
+    // message publish pool
+    MessagePubPool                      _msgPubPool;
 };
 
 #endif // _MQTT_CLIENT_H
