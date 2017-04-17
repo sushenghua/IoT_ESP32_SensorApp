@@ -52,8 +52,9 @@ void reconnectCountDelay(TickType_t ticks)
 {
     int seconds = ticks / 1000;
     while (seconds > 0) {
-        APP_LOGI("[MqttClient]", "reconnect in %d seconds", seconds--);
+        APP_LOGI("[MqttClient]", "reconnect in %d second%s", seconds, seconds > 1 ? "s" : "");
         vTaskDelay(1000/portTICK_RATE_MS);
+        --seconds;
     }
 }
 
