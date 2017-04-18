@@ -13,7 +13,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 // ------ helper functions
 /////////////////////////////////////////////////////////////////////////////////////////
-void printTopics(const struct mg_mqtt_topic_expression *topics, uint16_t count)
+void printTopics(const MqttSubTopic *topics, uint16_t count)
 {
     for (uint16_t i = 0; i < count; ++i) {
         printf("[%d] %s\n", i, topics->topic);
@@ -71,68 +71,44 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
 
     switch (ev) {
         case MG_EV_CONNECT:
-            APP_LOGI("[MqttClient]", "try to connect to server: %s (client id: %s, nc: %p)",
-                                     mqttClient->serverAddress(), mqttClient->clientId(), nc);
-            mg_set_protocol_mqtt(nc);
-            mg_send_mqtt_handshake_opt(nc, mqttClient->clientId(), mqttClient->handShakeOpt());
+            mqttClient->onConnect(nc);
             break;
 
         case MG_EV_MQTT_CONNACK:
-            if (msg->connack_ret_code == MG_EV_MQTT_CONNACK_ACCEPTED) {
-                APP_LOGI("[MqttClient]", "connection established");
-                mqttClient->setConnected(true);
-                if (mqttClient->subscribeImmediatelyOnConnected()) {
-                    mqttClient->subscribeTopics();
-                }
-            }
-            else {
-                APP_LOGE("[MqttClient]", "connection error: %d", msg->connack_ret_code);
-                if (msg->connack_ret_code == MG_EV_MQTT_CONNACK_SERVER_UNAVAILABLE) {
-                    reconnectCountDelay(mqttClient->reconnectTicksOnServerUnavailable());
-                    mqttClient->makeConnection();
-                }
-            }
-            break;
-
-        case MG_EV_MQTT_SUBACK:
-            APP_LOGI("[MqttClient]", "subscription acknowledged");
-            mqttClient->setSubscribeSucceeded(true);
+            mqttClient->onConnAck(msg);
             break;
 
         case MG_EV_MQTT_PUBACK:  // for QoS(1)
-            APP_LOGI("[MqttClient]", "message QoS(1) Pub acknowledged (msg_id: %d)", msg->message_id);
-            mqttClient->onPubAck(msg->message_id);
+            mqttClient->onPubAck(msg);
             break;
 
         case MG_EV_MQTT_PUBREC:  // for QoS(2)
-            APP_LOGI("[MqttClient]", "message QoS(2) Pub-Receive acknowledged (msg_id: %d)", msg->message_id);
-            mg_mqtt_pubrel(nc, msg->message_id);
+            mqttClient->onPubRec(nc, msg);
             break;
 
         case MG_EV_MQTT_PUBCOMP: // for QoS(2)
-            APP_LOGI("[MqttClient]", "message QoS(2) Pub-Complete acknowledged (msg_id: %d)", msg->message_id);
-            mqttClient->onPubAck(msg->message_id);
+            mqttClient->onPubComp(msg);
+            break;
+
+        case MG_EV_MQTT_SUBACK:
+            mqttClient->onSubAck(msg);
+            break;
+
+        case MG_EV_MQTT_UNSUBACK:
+            mqttClient->onUnsubAct(msg);
             break;
 
         case MG_EV_MQTT_PUBLISH:
-            printf("Got incoming message (msg_id: %d) %.*s: %.*s\n", msg->message_id,
-                   (int) msg->topic.len, msg->topic.p, (int) msg->payload.len, msg->payload.p);
-            if (mqttClient->msgInterpreter()) {
-                mqttClient->msgInterpreter()->interprete(msg->topic.p, msg->topic.len, msg->payload.p, msg->payload.len);
-            }
+            mqttClient->onRxPubMessage(msg);
             break;
 
         case MG_EV_MQTT_PINGRESP:
+            mqttClient->onPingResp(msg);
             break;
 
-        case MG_EV_CLOSE: {
-            APP_LOGI("[MqttClient]", "connection to server %s closed (nc: %p)", mqttClient->serverAddress(), nc);
-            mqttClient->setConnected(false);
-            mqttClient->setSubscribeSucceeded(false);
-            reconnectCountDelay(mqttClient->reconnectTicksOnDisconnection());
-            mqttClient->makeConnection();
+        case MG_EV_CLOSE:
+            mqttClient->onClose(nc);
             break;
-        }
     }  
 }
 
@@ -172,18 +148,21 @@ MqttClient::MqttClient()
 , _reconnectTicksOnServerUnavailable(MQTT_SERVER_UNAVAILABLE_RECONNECT_DEFAULT_DELAY_TICKS)
 , _reconnectTicksOnDisconnection(MQTT_RECONNECT_DEFAULT_DELAY_TICKS)
 , _serverAddress(MQTT_SERVER_ADDR)
-, _subscribeSucceeded(false)
 , _clientId(macAddress())
-, _topicCount(0)
-, _unsubTopicCount(0)
 , _msgInterpreter(NULL)
 {
+    // init hand shake option
     _handShakeOpt.flags = 0;
     _handShakeOpt.keep_alive = MQTT_KEEP_ALIVE_DEFAULT_VALUE;
     _handShakeOpt.will_topic = NULL;
     _handShakeOpt.will_message = NULL;
     _handShakeOpt.user_name = NULL;
     _handShakeOpt.password = NULL;
+
+    // init topic cache
+    _topicsSubscribed.clear();
+    _topicsToSubscribe.clear();
+    _topicsToUnsubscribe.clear();
 }
 
 void MqttClient::setServerAddress(const char* serverAddress)
@@ -292,50 +271,43 @@ void MqttClient::start()
     makeConnection();
 }
 
-void MqttClient::clearSubTopics()
+const SubTopics & MqttClient::topicsSubscribed()
 {
-    // memset(_topics, 0, sizeof(_topics));
-    _topicCount = 0;
+    return _topicsSubscribed;
 }
 
 void MqttClient::addSubTopic(const char *topic, uint8_t qos)
 {
-    if (_topicCount < TOPIC_CACHE_SIZE) {
-        _topics[_topicCount].topic = topic;
-        _topics[_topicCount].qos = qos;
-        ++_topicCount;
-    }
+    _topicsToSubscribe.addSubTopic(topic, qos);
 }
 
 void MqttClient::subscribeTopics()
 {
-    if (_connected && !_subscribeSucceeded) {
+    if (_connected && _topicsToSubscribe.count > 0) {
         APP_LOGI("[MqttClient]", "subscribe to topics:");
-        printTopics(_topics, _topicCount);
-        mg_mqtt_subscribe(_manager.active_connections, _topics, _topicCount, createMsgId());
+        printTopics(_topicsToSubscribe.topics, _topicsToSubscribe.count);
+        mg_mqtt_subscribe(_manager.active_connections,
+                          _topicsToSubscribe.topics,
+                          _topicsToSubscribe.count,
+                          createMsgId());
     }
 }
 
 void MqttClient::addUnsubTopic(const char *topic)
 {
-    if (_unsubTopicCount < TOPIC_CACHE_SIZE) {
-        _unsubTopics[_unsubTopicCount] = topic;
-        ++_unsubTopicCount;
-    }
+    _topicsToUnsubscribe.addUnsubTopic(topic);
 }
 
 void MqttClient::unsubscribeTopics()
 {
-    if (_connected && _subscribeSucceeded) {
+    if (_connected && _topicsToUnsubscribe.count > 0) {
         APP_LOGI("[MqttClient]", "unsubscribe to topics:");
-        printTopics(_unsubTopics, _unsubTopicCount);
-        mg_mqtt_unsubscribe(_manager.active_connections, const_cast<char**>(_unsubTopics), _topicCount, createMsgId());
+        printTopics(_topicsToUnsubscribe.topics, _topicsToUnsubscribe.count);
+        mg_mqtt_unsubscribe(_manager.active_connections,
+                            const_cast<char**>(_topicsToUnsubscribe.topics),
+                            _topicsToUnsubscribe.count,
+                            createMsgId());
     }
-}
-
-void MqttClient::onPubAck(uint16_t msgId)
-{
-    _msgPubPool.drainPoolMessage(msgId);
 }
 
 #define SEMAPHORE_TAKE_WAIT_TICKS  5000   /// TickType_t
@@ -373,4 +345,84 @@ void MqttClient::repubMessage(PoolMessage *message)
         message->pubCount++;
         xSemaphoreGive(_pubSemaphore);
     }
+}
+
+void MqttClient::onConnect(struct mg_connection *nc)
+{
+    APP_LOGI("[MqttClient]", "try to connect to server: %s (client id: %s, nc: %p)",
+                             _serverAddress, _clientId, nc);
+    mg_set_protocol_mqtt(nc);
+    mg_send_mqtt_handshake_opt(nc, _clientId, _handShakeOpt);
+}
+
+void MqttClient::onConnAck(struct mg_mqtt_message *msg)
+{
+    if (msg->connack_ret_code == MG_EV_MQTT_CONNACK_ACCEPTED) {
+        APP_LOGI("[MqttClient]", "connection established");
+        _connected = true;
+        if (_subscribeImmediatelyOnConnected) {
+            subscribeTopics();
+        }
+    }
+    else {
+        APP_LOGE("[MqttClient]", "connection error: %d", msg->connack_ret_code);
+        if (msg->connack_ret_code == MG_EV_MQTT_CONNACK_SERVER_UNAVAILABLE) {
+            reconnectCountDelay(_reconnectTicksOnServerUnavailable);
+            makeConnection();
+        }
+    }
+}
+
+void MqttClient::onPubAck(struct mg_mqtt_message *msg)
+{
+    APP_LOGI("[MqttClient]", "message QoS(1) Pub acknowledged (msg_id: %d)", msg->message_id);
+    _msgPubPool.drainPoolMessage(msg->message_id);
+}
+
+void MqttClient::onPubRec(struct mg_connection *nc, struct mg_mqtt_message *msg)
+{
+    APP_LOGI("[MqttClient]", "message QoS(2) Pub-Receive acknowledged (msg_id: %d)", msg->message_id);
+    mg_mqtt_pubrel(nc, msg->message_id);
+}
+
+void MqttClient::onPubComp(struct mg_mqtt_message *msg)
+{
+    APP_LOGI("[MqttClient]", "message QoS(2) Pub-Complete acknowledged (msg_id: %d)", msg->message_id);
+    onPubAck(msg);
+}
+
+void MqttClient::onSubAck(struct mg_mqtt_message *msg)
+{
+    APP_LOGI("[MqttClient]", "subscription acknowledged");
+    _topicsSubscribed.addSubTopics(_topicsToSubscribe);
+    _topicsToSubscribe.clear();
+}
+
+void MqttClient::onUnsubAct(struct mg_mqtt_message *msg)
+{
+    APP_LOGI("[MqttClient]", "unsubscription acknowledged");
+    _topicsSubscribed.removeUnsubTopics(_topicsToUnsubscribe);
+    _topicsToUnsubscribe.clear();
+}
+
+void MqttClient::onRxPubMessage(struct mg_mqtt_message *msg)
+{
+    printf("Got incoming message (msg_id: %d) %.*s: %.*s\n", msg->message_id,
+           (int) msg->topic.len, msg->topic.p, (int) msg->payload.len, msg->payload.p);
+    if (_msgInterpreter) {
+        _msgInterpreter->interprete(msg->topic.p, msg->topic.len, msg->payload.p, msg->payload.len);
+    }
+}
+
+void MqttClient::onPingResp(struct mg_mqtt_message *msg)
+{
+
+}
+
+void MqttClient::onClose(struct mg_connection *nc)
+{
+    APP_LOGI("[MqttClient]", "connection to server %s closed (nc: %p)", _serverAddress, nc);
+    _connected = false;
+    reconnectCountDelay(_reconnectTicksOnDisconnection);
+    makeConnection();
 }

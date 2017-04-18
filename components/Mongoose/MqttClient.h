@@ -10,7 +10,110 @@
 #include "mongoose.h"
 #include "MqttMessageInterpreter.h"
 #include "MessagePubPool.h"
+#include <string.h>
 
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// ------ SubTopicCache, UnsubTopicCache
+/////////////////////////////////////////////////////////////////////////////////////////
+#define TOPIC_CACHE_CAPACITY            10
+typedef struct mg_mqtt_topic_expression MqttSubTopic;
+
+struct UnsubTopics
+{
+    void addUnsubTopic(const char *topic) {
+        if (count < TOPIC_CACHE_CAPACITY) {
+            topics[count++] = topic;
+        }
+    }
+
+    void clear() {
+        for (uint16_t i = 0; i < TOPIC_CACHE_CAPACITY; ++i) {
+            topics[i] = NULL;
+        }
+        count = 0;
+    }
+
+    uint16_t        count;
+    const char     *topics[TOPIC_CACHE_CAPACITY];
+};
+
+struct SubTopics
+{
+    void addSubTopic(const char *topic, uint8_t qos) {
+        if (findTopic(topic) == -1 && count < TOPIC_CACHE_CAPACITY) {
+            topics[count].topic = topic;
+            topics[count].qos = qos;
+            ++count;
+        }
+    }
+
+    void addSubTopics(SubTopics &subTopics) {
+        if (subTopics.count + count > TOPIC_CACHE_CAPACITY)
+            return;
+        for (uint16_t i = 0; i < subTopics.count; ++i) {
+            if (findTopic(subTopics.topics[i].topic) == -1) {
+                topics[count] = subTopics.topics[i];
+                ++count;
+            }
+        }
+    }
+
+    void removeUnsubTopics(UnsubTopics &unsubTopics) {
+        bool needCleanupNull = false;
+        for (uint16_t i = 0; i < unsubTopics.count; ++i) {
+            int index = findTopic(unsubTopics.topics[i]);
+            if (index != -1) {
+                topics[index].topic = NULL;
+                needCleanupNull = true;
+            }
+        }
+        if (needCleanupNull) cleanupNull();
+    }
+
+    void cleanupNull() {
+        uint16_t searchCount = count;
+        uint16_t j = 0;
+        for (uint16_t i = 0; i < searchCount; ++i) {
+            if (topics[i].topic == NULL) {
+                --count;
+                if (j == 0) j = i;
+                while (++j < searchCount) {
+                    if (topics[j].topic != NULL) {
+                        topics[i].topic = topics[j].topic;
+                        topics[i].qos = topics[j].qos;
+                        topics[j].topic = NULL;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    int findTopic(const char *topic) {
+        for (uint16_t i = 0; i < count; ++i) {
+            if (strcmp(topics[i].topic, topic) == 0)
+                return i;
+        }
+        return -1;
+    }
+
+    void clear() {
+        for (uint16_t i = 0; i < TOPIC_CACHE_CAPACITY; ++i) {
+            topics[i].topic = NULL;
+            topics[i].qos = 0;
+        }
+        count = 0;
+    }
+
+    uint16_t        count;
+    MqttSubTopic    topics[TOPIC_CACHE_CAPACITY];
+};
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// ------ MqttClient class
+/////////////////////////////////////////////////////////////////////////////////////////
 #define MONGOOSE_DEFAULT_POLL_SLEEP     1000   // 1 second
 
 class MqttClient : public MessagePubDelegate
@@ -46,11 +149,15 @@ public:
 
     // communication
     void start();
-    void clearSubTopics();
+    bool makeConnection();
+
+    const SubTopics & topicsSubscribed();
     void addSubTopic(const char *topic, uint8_t qos = 0);
     void subscribeTopics();
+
     void addUnsubTopic(const char *topic);
     void unsubscribeTopics();
+
     void publish(const char *topic,
                  const void *data,
                  size_t      len,
@@ -59,21 +166,20 @@ public:
                  bool        dup = false);
 
     // message interpreter
-    MqttMessageInterpreter* msgInterpreter() { return _msgInterpreter; }
     void setMessageInterpreter(MqttMessageInterpreter *interpreter) { _msgInterpreter = interpreter; }
 
 public:
     // for event handler
-    const char * serverAddress() { return _serverAddress; }
-    const char* clientId() { return _clientId; }
-    void setConnected(bool connected) { _connected = connected; }
-    void setSubscribeSucceeded(bool succeeded) { _subscribeSucceeded = succeeded; }
-    mg_send_mqtt_handshake_opts& handShakeOpt() { return _handShakeOpt; }
-    bool subscribeImmediatelyOnConnected() { return _subscribeImmediatelyOnConnected; }
-    TickType_t reconnectTicksOnServerUnavailable() { return _reconnectTicksOnServerUnavailable; }    
-    TickType_t reconnectTicksOnDisconnection() { return _reconnectTicksOnDisconnection; }
-    bool makeConnection();
-    void onPubAck(uint16_t msgId);
+    void onConnect(struct mg_connection *nc);
+    void onConnAck(struct mg_mqtt_message *msg);
+    void onPubAck(struct mg_mqtt_message *msg);
+    void onPubRec(struct mg_connection *nc, struct mg_mqtt_message *msg);
+    void onPubComp(struct mg_mqtt_message *msg);
+    void onSubAck(struct mg_mqtt_message *msg);
+    void onUnsubAct(struct mg_mqtt_message *msg);
+    void onRxPubMessage(struct mg_mqtt_message *msg);
+    void onPingResp(struct mg_mqtt_message *msg);
+    void onClose(struct mg_connection *nc);
 
 protected:
     // init and connection
@@ -83,18 +189,18 @@ protected:
     TickType_t                          _reconnectTicksOnServerUnavailable;
     TickType_t                          _reconnectTicksOnDisconnection;
     const char                         *_serverAddress;
+
     // mqtt connection protocol
-    bool                                _subscribeSucceeded;
     const char                         *_clientId;
     struct mg_mgr                       _manager;
     struct mg_send_mqtt_handshake_opts  _handShakeOpt;
 
     // mqtt topics
-    #define TOPIC_CACHE_SIZE            10    
-    uint16_t                            _topicCount;
-    struct mg_mqtt_topic_expression     _topics[TOPIC_CACHE_SIZE];
-    uint8_t                             _unsubTopicCount;
-    const char                         *_unsubTopics[TOPIC_CACHE_SIZE];
+    bool                                _subscribeInProgress;
+    bool                                _unsubscribeInProgress;
+    SubTopics                           _topicsSubscribed;
+    SubTopics                           _topicsToSubscribe;
+    UnsubTopics                         _topicsToUnsubscribe;
 
     // message interpreter
     MqttMessageInterpreter             *_msgInterpreter;
