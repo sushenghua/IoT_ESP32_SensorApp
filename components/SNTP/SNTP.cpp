@@ -63,6 +63,7 @@ bool SNTP::sync(int trials)
 void SNTP::waitSync()
 {
     // block wait wifi connected and sync successfully
+    APP_LOGI("[SNTP]", "waiting time sync ...");
     while (!SNTP::sync()) {
         vTaskDelay(500 / portTICK_PERIOD_MS);
     }

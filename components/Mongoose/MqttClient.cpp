@@ -449,7 +449,7 @@ void MqttClient::onUnsubAct(struct mg_mqtt_message *msg)
 
 void MqttClient::onRxPubMessage(struct mg_mqtt_message *msg)
 {
-    printf("Got incoming message (msg_id: %d) %.*s: %.*s\n", msg->message_id,
+    APP_LOGC("[MqttClient]", "got incoming message (msg_id: %d) %.*s: %.*s\n", msg->message_id,
            (int) msg->topic.len, msg->topic.p, (int) msg->payload.len, msg->payload.p);
     if (_msgInterpreter) {
         _msgInterpreter->interprete(msg->topic.p, msg->topic.len, msg->payload.p, msg->payload.len);
