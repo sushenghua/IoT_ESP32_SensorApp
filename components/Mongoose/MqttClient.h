@@ -9,6 +9,7 @@
 
 #include "mongoose.h"
 #include "MqttMessageInterpreter.h"
+#include "MqttClientDelegate.h"
 #include "MessagePubPool.h"
 #include <string.h>
 
@@ -116,7 +117,7 @@ struct SubTopics
 /////////////////////////////////////////////////////////////////////////////////////////
 #define MONGOOSE_DEFAULT_POLL_SLEEP     1000   // 1 second
 
-class MqttClient : public MessagePubDelegate
+class MqttClient : public MessagePubDelegate, MqttClientDelegate
 {
 public:
     // constructor
@@ -153,18 +154,20 @@ public:
     void start();
 
     const SubTopics & topicsSubscribed();
-    void addSubTopic(const char *topic, uint8_t qos = 0);
-    void subscribeTopics();
 
-    void addUnsubTopic(const char *topic);
-    void unsubscribeTopics();
+    // MqttClientDelegate interface
+    virtual void addSubTopic(const char *topic, uint8_t qos = 0);
+    virtual void subscribeTopics();
 
-    void publish(const char *topic,
-                 const void *data,
-                 size_t      len,
-                 uint8_t     qos,
-                 bool        retain = false,
-                 bool        dup = false);
+    virtual void addUnsubTopic(const char *topic);
+    virtual void unsubscribeTopics();
+
+    virtual void publish(const char *topic,
+                         const void *data,
+                         size_t      len,
+                         uint8_t     qos,
+                         bool        retain = false,
+                         bool        dup = false);
 
     // for alive guard check task
     void aliveGuardCheck();

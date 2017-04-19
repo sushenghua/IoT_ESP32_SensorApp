@@ -452,7 +452,7 @@ void MqttClient::onRxPubMessage(struct mg_mqtt_message *msg)
     APP_LOGC("[MqttClient]", "got incoming message (msg_id: %d) %.*s: %.*s\n", msg->message_id,
            (int) msg->topic.len, msg->topic.p, (int) msg->payload.len, msg->payload.p);
     if (_msgInterpreter) {
-        _msgInterpreter->interprete(msg->topic.p, msg->topic.len, msg->payload.p, msg->payload.len);
+        _msgInterpreter->interpreteMqttMsg(msg->topic.p, msg->topic.len, msg->payload.p, msg->payload.len);
     }
     _recentActiveTime = time(NULL);
 }
