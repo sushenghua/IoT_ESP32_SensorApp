@@ -17,6 +17,7 @@
 #include "tcpip_adapter.h"
 
 #include "AppLog.h"
+#include "System.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // ------ enterprise AP
@@ -218,7 +219,9 @@ APP_LOGI("[Wifi]", "connected, got ip event");
             break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
 APP_LOGI("[Wifi]", "disconnected");
-            ESP_ERROR_CHECK( esp_wifi_connect() );
+            if (!System::restartInProgress()) {
+                ESP_ERROR_CHECK( esp_wifi_connect() );
+            }
             xEventGroupClearBits(wifiEventGroup, CONNECTED_BIT);
             _connected = false;
             break;

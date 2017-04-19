@@ -9,13 +9,16 @@
 
 #include "MqttMessageInterpreter.h"
 #include "MqttClientDelegate.h"
+#include "CmdKey.h"
 
 class CmdEngine : public MqttMessageInterpreter
 {
 public:
     CmdEngine();
 
-    void init();
+    bool init();
+
+    int execCmd(CmdKey cmdKey, uint8_t *args = NULL, size_t argsCount = 0);
 
     void setMqttClientDelegate(MqttClientDelegate *delegate);
 

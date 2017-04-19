@@ -13,6 +13,7 @@ class MqttClientDelegate
 {
 public:
     // virtual functions
+    virtual void setMessageInterpreter(MqttMessageInterpreter *interpreter) = 0;
     virtual void addSubTopic(const char *topic, uint8_t qos = 0) = 0;
     virtual void subscribeTopics() = 0;
 

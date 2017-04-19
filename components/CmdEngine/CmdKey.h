@@ -10,10 +10,12 @@
 typedef enum CmdKey {
 
     DoNothing               = 0,
-    Reset                   = 1,
+    Restart                 = 1,
     GetUID                  = 2,
     GetFirmwareVersion      = 3,
     GetRawData              = 4,
+    GetIdfVersion           = 5,
+    TurnOffLed,
 
 } CmdKey;
 

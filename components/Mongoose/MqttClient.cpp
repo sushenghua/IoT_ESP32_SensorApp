@@ -6,10 +6,10 @@
 
 #include "MqttClient.h"
 
-#include "esp_system.h"
 #include "AppLog.h"
 #include "Wifi.h"
 #include "SNTP.h"
+#include "System.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // ------ helper functions
@@ -26,27 +26,6 @@ void printTopics(const char **topics, uint16_t count)
     for (uint16_t i = 0; i < count; ++i) {
         printf("[%d] %s\n", i, topics[i]);
     }
-}
-
-static char MAC_ADDR[13] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF };
-
-static void initMacADDR()
-{
-    uint8_t macAddr[6];
-    char *target = MAC_ADDR;
-    esp_efuse_read_mac(macAddr);
-    for (int i = 0; i < 6; ++i) {
-        sprintf(target, "%02x", macAddr[i]);
-        target += 2;
-    }
-    MAC_ADDR[12] = '\0';
-}
-
-static const char* macAddress()
-{
-    if (MAC_ADDR[12] == 0xFF)
-        initMacADDR();
-    return MAC_ADDR;
 }
 
 static uint16_t _mqttMsgId = 0;
@@ -173,7 +152,7 @@ MqttClient::MqttClient()
 , _reconnectTicksOnDisconnection(MQTT_RECONNECT_DEFAULT_DELAY_TICKS)
 , _aliveGuardInterval(MQTT_ALIVE_GUARD_REGULAR_INTERVAL_DEFAULT)
 , _serverAddress(MQTT_SERVER_ADDR)
-, _clientId(macAddress())
+, _clientId(System::macAddress())
 , _msgInterpreter(NULL)
 {
     // init hand shake option

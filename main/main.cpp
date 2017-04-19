@@ -24,6 +24,8 @@
 // as mongoose.h has macro write (s, b, l)
 #include "MqttClient.h"
 
+#include "CmdEngine.h"
+
 /////////////////////////////////////////////////////////////////////////////////////////
 // Wifi task
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -74,10 +76,15 @@ static void sntp_task(void *pvParams)
 /////////////////////////////////////////////////////////////////////////////////////////
 static void mongoose_task(void *pvParams)
 {
+    CmdEngine cmdEngine;
     MqttClient mqtt;
     mqtt.init();
-    mqtt.addSubTopic("/mqtttest", 0);
+    // mqtt.addSubTopic("/mqtttest", 0);
     mqtt.start();
+
+    cmdEngine.setMqttClientDelegate(&mqtt);
+    cmdEngine.init();
+
     while (true) {
         mqtt.poll();
         vTaskDelay(10 / portTICK_PERIOD_MS);

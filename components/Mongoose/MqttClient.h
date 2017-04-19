@@ -11,7 +11,6 @@
 #include "MqttMessageInterpreter.h"
 #include "MqttClientDelegate.h"
 #include "MessagePubPool.h"
-#include <string.h>
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -117,7 +116,7 @@ struct SubTopics
 /////////////////////////////////////////////////////////////////////////////////////////
 #define MONGOOSE_DEFAULT_POLL_SLEEP     1000   // 1 second
 
-class MqttClient : public MessagePubDelegate, MqttClientDelegate
+class MqttClient : public MessagePubDelegate, public MqttClientDelegate
 {
 public:
     // constructor
@@ -156,6 +155,7 @@ public:
     const SubTopics & topicsSubscribed();
 
     // MqttClientDelegate interface
+    virtual void setMessageInterpreter(MqttMessageInterpreter *interpreter) { _msgInterpreter = interpreter; }
     virtual void addSubTopic(const char *topic, uint8_t qos = 0);
     virtual void subscribeTopics();
 
@@ -171,9 +171,6 @@ public:
 
     // for alive guard check task
     void aliveGuardCheck();
-
-    // message interpreter
-    void setMessageInterpreter(MqttMessageInterpreter *interpreter) { _msgInterpreter = interpreter; }
 
 public:
     // for event handler
