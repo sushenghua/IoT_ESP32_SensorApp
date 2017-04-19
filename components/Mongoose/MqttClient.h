@@ -151,7 +151,6 @@ public:
 
     // communication
     void start();
-    bool makeConnection();
 
     const SubTopics & topicsSubscribed();
     void addSubTopic(const char *topic, uint8_t qos = 0);
@@ -188,7 +187,7 @@ public:
     void onClose(struct mg_connection *nc);
 
 protected:
-    // mutex operation
+    bool _makeConnection();
     void _closeProcess();
 
 protected:

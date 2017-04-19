@@ -271,7 +271,7 @@ void MqttClient::deinit()
     }
 }
 
-bool MqttClient::makeConnection()
+bool MqttClient::_makeConnection()
 {
     if (_inited) {
         Wifi::waitConnected(); // block wait wifi
@@ -296,7 +296,7 @@ bool MqttClient::makeConnection()
 void MqttClient::start()
 {
     SNTP::waitSynced();    // block wait time sync
-    makeConnection();
+    _makeConnection();
     _pubSemaphore = xSemaphoreCreateMutex();
     _closeProcessSemaphore = xSemaphoreCreateMutex();
     xTaskCreate(&alive_guard_task, "alive_guard_task", 4096, this, ALIVE_GUARD_TASK_PRIORITY, &_aliveGuardTaskHandle);
@@ -403,7 +403,7 @@ void MqttClient::onConnAck(struct mg_mqtt_message *msg)
         APP_LOGE("[MqttClient]", "connection error: %d", msg->connack_ret_code);
         if (msg->connack_ret_code == MG_EV_MQTT_CONNACK_SERVER_UNAVAILABLE) {
             reconnectCountDelay(_reconnectTicksOnServerUnavailable);
-            makeConnection();
+            _makeConnection();
         }
     }
 }
@@ -488,7 +488,7 @@ void MqttClient::_closeProcess()
     _connected = false;
     //vTaskDelete(_aliveGuardTaskHandle);
     reconnectCountDelay(_reconnectTicksOnDisconnection);
-    makeConnection();
+    _makeConnection();
 }
 
 void MqttClient::aliveGuardCheck()
