@@ -493,12 +493,12 @@ void MqttClient::_closeProcess()
 
 void MqttClient::aliveGuardCheck()
 {
-    APP_LOGI("[MqttClient]", "alive guard check");
+    // APP_LOGI("[MqttClient]", "alive guard check");
     if (_connected) {
         time_t timeNow = time(NULL);
         if (timeNow - _recentActiveTime > _handShakeOpt.keep_alive) {
             // server does not response, connection dead
-            APP_LOGI("[MqttClient]", "server not response for a while, connection dead");
+            APP_LOGI("[MqttClient]", "client has received no response for a while, connection considered to be lost");
             if (xSemaphoreTake(_closeProcessSemaphore, CLOSE_SEMAPHORE_TAKE_WAIT_TICKS)) {
                 if (_connected) {
                     // mg_mqtt_disconnect(_manager.active_connections);
