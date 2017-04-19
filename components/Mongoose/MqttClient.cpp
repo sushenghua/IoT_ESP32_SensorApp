@@ -121,6 +121,7 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
 /////////////////////////////////////////////////////////////////////////////////////////
 // alive guard check task
 /////////////////////////////////////////////////////////////////////////////////////////
+#define ALIVE_GUARD_TASK_PRIORITY  10
 static xSemaphoreHandle _closeProcessSemaphore = 0;
 static TaskHandle_t _aliveGuardTaskHandle = 0;
 static void alive_guard_task(void *pvParams)
@@ -128,8 +129,8 @@ static void alive_guard_task(void *pvParams)
     MqttClient *client = static_cast<MqttClient*>(pvParams);
     TickType_t delayTicks = client->aliveGuardInterval() * 1000;
     while (true) {
-        vTaskDelay(delayTicks / portTICK_PERIOD_MS);
         client->aliveGuardCheck();
+        vTaskDelay(delayTicks / portTICK_PERIOD_MS);
     }
 }
 
@@ -137,6 +138,7 @@ static void alive_guard_task(void *pvParams)
 /////////////////////////////////////////////////////////////////////////////////////////
 // Message pub pool process loop task
 /////////////////////////////////////////////////////////////////////////////////////////
+#define MSG_POOL_TASK_PRIORITY     10
 static TaskHandle_t _msgTaskHandle = 0;
 static void msg_pool_task(void *pvParams)
 {
@@ -273,13 +275,13 @@ bool MqttClient::makeConnection()
 {
     if (_inited) {
         Wifi::waitConnected(); // block wait wifi
-        SNTP::waitSynced();    // block wait time sync
         // set connect opts
         struct mg_connect_opts opts;
         memset(&opts, 0, sizeof(opts));
         opts.user_data = static_cast<void*>(this);
         // create connection
         struct mg_connection *nc;
+        APP_LOGI("[MqttClient]", "try to connect to server: %s", _serverAddress);
         nc = mg_connect_opt(&_manager, _serverAddress, mongoose_mqtt_event_handler, opts);
         if (nc == NULL) {
             APP_LOGE("[MqttClient]", "connect to server failed");
@@ -293,11 +295,12 @@ bool MqttClient::makeConnection()
 
 void MqttClient::start()
 {
+    SNTP::waitSynced();    // block wait time sync
     makeConnection();
     _pubSemaphore = xSemaphoreCreateMutex();
     _closeProcessSemaphore = xSemaphoreCreateMutex();
-    xTaskCreate(&alive_guard_task, "alive_guard_task", 4096, this, 4, &_aliveGuardTaskHandle);
-    xTaskCreate(&msg_pool_task, "msg_pool_task", 4096, &_msgPubPool, 4, &_msgTaskHandle);
+    xTaskCreate(&alive_guard_task, "alive_guard_task", 4096, this, ALIVE_GUARD_TASK_PRIORITY, &_aliveGuardTaskHandle);
+    xTaskCreate(&msg_pool_task, "msg_pool_task", 4096, &_msgPubPool, MSG_POOL_TASK_PRIORITY, &_msgTaskHandle);
 }
 
 const SubTopics & MqttClient::topicsSubscribed()
@@ -379,7 +382,7 @@ void MqttClient::repubMessage(PoolMessage *message)
 
 void MqttClient::onConnect(struct mg_connection *nc)
 {
-    APP_LOGI("[MqttClient]", "try to connect to server: %s (client id: %s, nc: %p)",
+    APP_LOGI("[MqttClient]", "... connecting to server: %s (client id: %s, nc: %p)",
                              _serverAddress, _clientId, nc);
     mg_set_timer(nc, 0);        // Clear connect timer
     mg_set_protocol_mqtt(nc);
@@ -482,12 +485,10 @@ void MqttClient::onClose(struct mg_connection *nc)
 
 void MqttClient::_closeProcess()
 {
-    if (_connected) {
-        _connected = false;
-        //vTaskDelete(_aliveGuardTaskHandle);
-        reconnectCountDelay(_reconnectTicksOnDisconnection);
-        makeConnection();
-    }
+    _connected = false;
+    //vTaskDelete(_aliveGuardTaskHandle);
+    reconnectCountDelay(_reconnectTicksOnDisconnection);
+    makeConnection();
 }
 
 void MqttClient::aliveGuardCheck()

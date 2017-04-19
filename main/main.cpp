@@ -31,9 +31,9 @@
 
 Wifi wifi;
 
-TaskHandle_t wifiConnectionTaskHandle;
+TaskHandle_t wifiTaskHandle;
 
-void wifi_connection_task(void *pvParameters)
+void wifi_task(void *pvParameters)
 {
     // config and start wifi
     if (wifi.loadConfig()) {
@@ -47,12 +47,12 @@ void wifi_connection_task(void *pvParameters)
     }
     wifi.init();
     wifi.start(true);
-    vTaskDelete(wifiConnectionTaskHandle);
+    vTaskDelete(wifiTaskHandle);
 
-    while (true) {
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-        if (wifi.connected()) vTaskDelete(wifiConnectionTaskHandle);
-    }
+    // while (true) {
+    //     vTaskDelay(2000 / portTICK_PERIOD_MS);
+    //     if (wifi.connected()) vTaskDelete(wifiTaskHandle);
+    // }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -135,18 +135,25 @@ void orientation_sensor_task(void *p)
 extern "C" {
 #endif
 
+#define DISPLAY_TASK_PRIORITY               100
+#define WIFI_TASK_PRIORITY                  50
+#define SNTP_TASK_PRIORITY                  40
+#define MQTTCLIENT_TASK_PRIORITY            30
+#define PM_SENSOR_TASK_PRIORITY             80
+#define ORIENTATION_TASK_PRIORITY           81
+
 void app_main()
 {
     NvsFlash::init();
 
-    xTaskCreate(&display_task, "display_task", 4096, NULL, 12, NULL);
-    xTaskCreate(&wifi_connection_task, "wifi_connection_task", 4096, NULL, 5, &wifiConnectionTaskHandle);
+    xTaskCreate(&display_task, "display_task", 4096, NULL, DISPLAY_TASK_PRIORITY, NULL);
+    xTaskCreate(&wifi_task, "wifi_connection_task", 4096, NULL, WIFI_TASK_PRIORITY, &wifiTaskHandle);
     vTaskDelay(100 / portTICK_PERIOD_MS);
-    xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, 4, &sntpTaskHandle);
+    xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, SNTP_TASK_PRIORITY, &sntpTaskHandle);
     vTaskDelay(100 / portTICK_PERIOD_MS);
-    xTaskCreate(&mongoose_task, "mongoose_task", 4096, NULL, 4, NULL);
-    xTaskCreate(pm_sensor_task, "pm_sensor_task", 4096, NULL, 10, NULL);
-    xTaskCreate(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, 11, NULL);
+    xTaskCreate(&mongoose_task, "mongoose_task", 4096, NULL, MQTTCLIENT_TASK_PRIORITY, NULL);
+    xTaskCreate(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, NULL);
+    xTaskCreate(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, NULL);
 
     // while (true) {
     //     vTaskDelay(portMAX_DELAY/portTICK_RATE_MS);
