@@ -9,6 +9,7 @@
 #include "esp_system.h"
 #include "AppLog.h"
 #include "Wifi.h"
+#include "SNTP.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // ------ helper functions
@@ -271,7 +272,8 @@ void MqttClient::deinit()
 bool MqttClient::makeConnection()
 {
     if (_inited) {
-        Wifi::waitConnected(); // block wait
+        Wifi::waitConnected(); // block wait wifi
+        SNTP::waitSynced();    // block wait time sync
         // set connect opts
         struct mg_connect_opts opts;
         memset(&opts, 0, sizeof(opts));

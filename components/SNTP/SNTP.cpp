@@ -7,15 +7,22 @@
 #include "SNTP.h"
 #include "AppLog.h"
 #include "Wifi.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
 #include <string.h>
 
 bool       SNTP::_inited = false;
 time_t     SNTP::_timeNow = 0;
 struct tm  SNTP::_timeInfo;
 
+// FreeRTOS event group to signal when we time get synced
+static EventGroupHandle_t sntpEventGroup;
+static const int SYNCED_BIT = BIT0;
+
 void SNTP::init(uint8_t operationMode) {
     if (!_inited) {
         APP_LOGI("[SNTP]", "init SNTP");
+        sntpEventGroup = xEventGroupCreate();
         Wifi::waitConnected(); // block wait
         sntp_setoperatingmode(operationMode);
         // sntp_setservername(0, (char*)("pool.ntp.org"));
@@ -30,6 +37,12 @@ void SNTP::stop()
     if (_inited) {
         sntp_stop();
     }
+}
+
+void SNTP::setTimezone(const char* zone)
+{
+    setenv("TZ", zone, 1);
+    tzset();
 }
 
 bool SNTP::sync(int trials)
@@ -47,10 +60,18 @@ bool SNTP::sync(int trials)
     return _timeInfo.tm_year > (2016 - 1900);
 }
 
-void SNTP::setTimezone(const char* zone)
+void SNTP::waitSync()
 {
-    setenv("TZ", zone, 1);
-    tzset();
+    // block wait wifi connected and sync successfully
+    while (!SNTP::sync()) {
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+    }
+    xEventGroupSetBits(sntpEventGroup, SYNCED_BIT);
+}
+
+void SNTP::waitSynced()
+{
+    xEventGroupWaitBits(sntpEventGroup, SYNCED_BIT, false, true, portMAX_DELAY);
 }
 
 void SNTP::test()

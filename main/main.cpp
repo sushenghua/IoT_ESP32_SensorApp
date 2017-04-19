@@ -62,12 +62,7 @@ TaskHandle_t sntpTaskHandle;
 static void sntp_task(void *pvParams)
 {
     SNTP::init();
-    // block wait wifi connected and sync successfully
-    while (!SNTP::sync()) {
-        //SNTP::stop();
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-        //SNTP::init();
-    }
+    SNTP::waitSync();
 
     SNTP::test();
     vTaskDelete(sntpTaskHandle);
@@ -148,6 +143,7 @@ void app_main()
     xTaskCreate(&wifi_connection_task, "wifi_connection_task", 4096, NULL, 5, &wifiConnectionTaskHandle);
     vTaskDelay(100 / portTICK_PERIOD_MS);
     xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, 4, &sntpTaskHandle);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
     xTaskCreate(&mongoose_task, "mongoose_task", 4096, NULL, 4, NULL);
     xTaskCreate(pm_sensor_task, "pm_sensor_task", 4096, NULL, 10, NULL);
     xTaskCreate(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, 11, NULL);

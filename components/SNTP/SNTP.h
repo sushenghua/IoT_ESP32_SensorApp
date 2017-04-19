@@ -27,6 +27,8 @@ public:
         localtime_r(&t, &_timeInfo);
         return _timeInfo;
     }
+    static void waitSync();
+    static void waitSynced();
 
 public:
 	static void test();
