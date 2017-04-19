@@ -6,6 +6,7 @@
 
 #include "MessagePubPool.h"
 #include "AppLog.h"
+#include <algorithm>
 
 PoolMessage * MessagePubPool::_message(uint16_t msgId)
 {
@@ -54,8 +55,11 @@ inline bool MessagePubPool::_pushFreeSlot(int slot)
     return false;
 }
 
+#define MESSAGE_CHECK_DUE_DURATION_DEFAULT     20
+
 MessagePubPool::MessagePubPool(TickType_t loopInterval)
-: _loopInterval(loopInterval)
+: _messageCheckDueDuration(MESSAGE_CHECK_DUE_DURATION_DEFAULT)
+, _loopInterval(loopInterval)
 , _delegate(NULL)
 {
 	_initFreeSlotStack();
@@ -68,7 +72,28 @@ void MessagePubPool::setPubDelegate(MessagePubDelegate *delegate)
 
 void MessagePubPool::processLoop()
 {
-	APP_LOGI("[MessagePubPool]", "porcess loop");
+    //APP_LOGI("[MessagePubPool]", "porcess loop");
+    time_t timeNow = time(NULL);
+    // std::map<uint16_t, int>::iterator it = _messageMap.begin();
+    // while (it != _messageMap.end()) {
+    //     if (timeNow - _messageBuf[element.second].rebornTime > _messageCheckDueDuration) {
+    //         // repub
+    //         if (_delegate) {
+    //             _delegate->repubMessage(&_messageBuf[it->second]);
+    //             _messageBuf[it->second].pubCount++;
+    //             _messageBuf[it->second].rebornTime = timeNow;
+    //         }
+    //     }
+    // }
+    std::for_each(_messageMap.begin(), _messageMap.end(), [&](std::pair<uint16_t, int> element) {
+        if (timeNow - _messageBuf[element.second].rebornTime > _messageCheckDueDuration) {
+            if (_delegate) {
+                _delegate->repubMessage(&_messageBuf[element.second]);
+                _messageBuf[element.second].pubCount++;
+                _messageBuf[element.second].rebornTime = timeNow;
+            }
+        }
+    });
 }
 
 bool MessagePubPool::addMessage(uint16_t    msgId,
@@ -94,7 +119,7 @@ bool MessagePubPool::addMessage(uint16_t    msgId,
         _messageBuf[slot].qos = qos;
         _messageBuf[slot].retain = retain;
         _messageBuf[slot].pubCount = 1;
-        _messageBuf[slot].life = 0;
+        _messageBuf[slot].rebornTime = time(NULL);
         return true;
     }
 

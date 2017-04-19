@@ -208,16 +208,16 @@ static esp_err_t wifi_app_event_handler(void *ctx, system_event_t *event)
 {
     switch (event->event_id) {
         case SYSTEM_EVENT_STA_START:
-APP_LOGI("[Wifi]", "connect event");
+APP_LOGI("[Wifi]", "try to connect ...");
             ESP_ERROR_CHECK( esp_wifi_connect() );
             break;
         case SYSTEM_EVENT_STA_GOT_IP:
-APP_LOGI("[Wifi]", "got ip event");
+APP_LOGI("[Wifi]", "connected, got ip event");
             xEventGroupSetBits(wifiEventGroup, CONNECTED_BIT);
             _connected = true;
             break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
-APP_LOGI("[Wifi]", "disconnected event");
+APP_LOGI("[Wifi]", "disconnected");
             ESP_ERROR_CHECK( esp_wifi_connect() );
             xEventGroupClearBits(wifiEventGroup, CONNECTED_BIT);
             _connected = false;

@@ -18,7 +18,8 @@ void SNTP::init(uint8_t operationMode) {
         APP_LOGI("[SNTP]", "init SNTP");
         Wifi::waitConnected(); // block wait
         sntp_setoperatingmode(operationMode);
-        sntp_setservername(0, (char*)("pool.ntp.org"));
+        // sntp_setservername(0, (char*)("pool.ntp.org"));
+        sntp_setservername(0, (char*)("cn.pool.ntp.org"));
         sntp_init();
         _inited = true;
     }
@@ -38,7 +39,7 @@ bool SNTP::sync(int trials)
     memset(&_timeInfo, 0, sizeof(_timeInfo));
     int retry = 0;
     while(_timeInfo.tm_year < (2016 - 1900) && ++retry <= trials) {
-        APP_LOGI("[SNTP]", "waiting for system time to be set... (%d/%d)", retry, trials);
+        //APP_LOGI("[SNTP]", "waiting for system time to be set... (%d/%d)", retry, trials);
         vTaskDelay(2000 / portTICK_PERIOD_MS);
         time(&_timeNow);
         localtime_r(&_timeNow, &_timeInfo);

@@ -8,6 +8,7 @@
 #define _MESSAGE_PUB_POOL_H
 
 #include "freertos/FreeRTOS.h"
+#include <time.h>
 #include <map>
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -23,7 +24,7 @@ public:
     uint8_t       qos;
     bool          retain;
     uint16_t      pubCount;
-    uint32_t      life;   // seconds
+    time_t        rebornTime;   // seconds
 };
 
 
@@ -50,6 +51,7 @@ public:
 
     TickType_t loopInterval() { return _loopInterval; }
     void setLoopInterval(TickType_t interval) { _loopInterval = interval; }
+    void setMessageCheckDueDuration(uint16_t duration) { _messageCheckDueDuration = duration; }
     void setPubDelegate(MessagePubDelegate *delegate);
 
     // task loop
@@ -78,6 +80,8 @@ protected:
     bool _pushFreeSlot(int slot);
 
 protected:
+	// message alive check due duration
+	uint16_t                    _messageCheckDueDuration;
 	// loop interval
 	TickType_t                  _loopInterval;
     // delegate

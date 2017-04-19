@@ -14,7 +14,7 @@
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-// ------ SubTopicCache, UnsubTopicCache
+// ------ SubTopics, UnsubTopics
 /////////////////////////////////////////////////////////////////////////////////////////
 #define TOPIC_CACHE_CAPACITY            10
 typedef struct mg_mqtt_topic_expression MqttSubTopic;
@@ -132,6 +132,8 @@ public:
 
     // config connection
     void setServerAddress(const char* serverAddress);
+    void setAliveGuardInterval(time_t interval) { _aliveGuardInterval = interval; }
+    time_t aliveGuardInterval() { return _aliveGuardInterval; }
     void setOnServerUnavailableReconnectDelay(TickType_t delayTicks);
     void setOnDisconnectedReconnectDelay(TickType_t delayTicks);
     void setSubscribeImmediateOnConnected(bool immediate = true);
@@ -165,6 +167,9 @@ public:
                  bool        retain = false,
                  bool        dup = false);
 
+    // for alive guard check task
+    void aliveGuardCheck();
+
     // message interpreter
     void setMessageInterpreter(MqttMessageInterpreter *interpreter) { _msgInterpreter = interpreter; }
 
@@ -179,7 +184,12 @@ public:
     void onUnsubAct(struct mg_mqtt_message *msg);
     void onRxPubMessage(struct mg_mqtt_message *msg);
     void onPingResp(struct mg_mqtt_message *msg);
+    void onTimeout(struct mg_connection *nc);
     void onClose(struct mg_connection *nc);
+
+protected:
+    // mutex operation
+    void _closeProcess();
 
 protected:
     // init and connection
@@ -188,6 +198,8 @@ protected:
     bool                                _subscribeImmediatelyOnConnected;
     TickType_t                          _reconnectTicksOnServerUnavailable;
     TickType_t                          _reconnectTicksOnDisconnection;
+    time_t                              _aliveGuardInterval;
+    time_t                              _recentActiveTime;
     const char                         *_serverAddress;
 
     // mqtt connection protocol
