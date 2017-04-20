@@ -26,7 +26,7 @@ public:
     virtual void interpreteMqttMsg(const char* topic, size_t topicLen, const char* msg, size_t msgLen);
 
 protected:
-	MqttClientDelegate      *_delegate;
+    MqttClientDelegate      *_delegate;
 };
 
 #endif // _CMD_ENGINE_H

@@ -17,6 +17,7 @@
 
 #include "PMSensor.h"
 #include "OrientationSensor.h"
+#include "SensorDataPacker.h"
 
 #include "SNTP.h"
 
@@ -117,6 +118,7 @@ void pm_sensor_task(void *p)
     PMSensor pmSensor;
     pmSensor.init();
     pmSensor.setDisplayDelegate(&dc);
+    SensorDataPacker::sharedInstance()->setPmSensor(&pmSensor);
     while (true) {
         pmSensor.sampleData();
         vTaskDelay(500/portTICK_RATE_MS);
