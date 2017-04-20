@@ -18,7 +18,7 @@ public:
 
     bool init();
 
-    int execCmd(CmdKey cmdKey, uint8_t *args = NULL, size_t argsCount = 0);
+    int execCmd(CmdKey cmdKey, uint8_t *args = NULL, size_t argsSize = 0);
 
     void setMqttClientDelegate(MqttClientDelegate *delegate);
 

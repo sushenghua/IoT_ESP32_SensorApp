@@ -14,50 +14,81 @@
 #include "DisplayController.h"
 
 
+#define TOPIC_API_CMD           "/api/mydev/cmd"
+#define TOPIC_API_STR_CMD       "/api/mydev/strcmd"
+
+#define CMD_RET_MSG_TOPIC       "/api/mydev/cmdret"
+#define PUB_MSG_QOS             1
+
+
 CmdEngine::CmdEngine()
 : _delegate(NULL)
 {}
 
 void CmdEngine::setMqttClientDelegate(MqttClientDelegate *delegate)
 {
-	_delegate = delegate;
-	_delegate->setMessageInterpreter(this);
+    _delegate = delegate;
+    _delegate->setMessageInterpreter(this);
 }
 
 bool CmdEngine::init()
 {
     bool succeeded = false;
     if (_delegate) {
-        _delegate->addSubTopic("/api/mydev/cmd");
+        _delegate->addSubTopic(TOPIC_API_CMD);
+        _delegate->addSubTopic(TOPIC_API_STR_CMD);
         _delegate->subscribeTopics();
         succeeded = true;
     }
     return succeeded;
 }
 
-void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char* msg, size_t msgLen)
+uint8_t  _cmdBuf[1024];
+
+CmdKey _parseStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_t &argsSize)
 {
-    // data size check
-    if (msgLen < CMD_DATA_AT_LEAST_SIZE) {
-        APP_LOGE("[CmdEngine]", "mqtt msg data size must be at least %d", CMD_DATA_AT_LEAST_SIZE);
-        return;
-    }
-
-    // exec cmd accordingly
-    uint8_t *data = (uint8_t *)msg;
-    CmdKey cmdKey = (CmdKey)( *(uint16_t *)(data + CMD_DATA_KEY_OFFSET) );
-
-    // only test, should be removed later
-    cmdKey = (CmdKey)(msg[0] - '0');
-
-    // execute cmd
-    execCmd(cmdKey, (data + CMD_DATA_ARG_OFFSET), msgLen - CMD_DATA_KEY_SIZE);
+    // parse string
+    args = _cmdBuf + 2;
+    argsSize = 1;
+    args[0] = msg[1] - '0';
+    return (CmdKey)(msg[0] - '0');
 }
 
-#define CMD_RET_MSG_TOPIC   "/api/mydev/cmdret"
-#define PUB_MSG_QOS         1
+void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char* msg, size_t msgLen)
+{
+    bool exec = false;
+    CmdKey cmdKey;
+    uint8_t *data = NULL;
+    size_t size = 0;
 
-int CmdEngine::execCmd(CmdKey cmdKey, uint8_t *args, size_t argsCount)
+    do {
+        // binary data command
+        if (topicLen == strlen(TOPIC_API_CMD) && strncmp(topic, TOPIC_API_CMD, topicLen) == 0) {
+            // data size check
+            if (msgLen >= CMD_DATA_AT_LEAST_SIZE) {
+                data = (uint8_t *)msg;
+                cmdKey = (CmdKey)( *(uint16_t *)(data + CMD_DATA_KEY_OFFSET) );
+                data += CMD_DATA_ARG_OFFSET;
+                size = msgLen - CMD_DATA_KEY_SIZE;
+                exec = true;
+            }
+            else {
+                APP_LOGE("[CmdEngine]", "mqtt msg data size must be at least %d", CMD_DATA_AT_LEAST_SIZE);
+            }
+            break;
+        }
+        // string data command
+        if (topicLen == strlen(TOPIC_API_STR_CMD) && strncmp(topic, TOPIC_API_STR_CMD, topicLen) == 0) {
+            cmdKey = _parseStringCmd(msg, msgLen, data, size);
+            exec = true;
+            break;
+        }
+    } while (false);
+
+    if (exec) execCmd(cmdKey, data, size);
+}
+
+int CmdEngine::execCmd(CmdKey cmdKey, uint8_t *args, size_t argsSize)
 {
     switch (cmdKey) {
 
@@ -87,11 +118,9 @@ int CmdEngine::execCmd(CmdKey cmdKey, uint8_t *args, size_t argsCount)
             _delegate->publish(CMD_RET_MSG_TOPIC, System::firmwareVersion(), strlen(System::firmwareVersion()), PUB_MSG_QOS);
             break;
 
-        case TurnOnLed: {
-            bool on = bool(args[0] - '0');
-            DisplayController::activeInstance()->turnOn(on);
+        case TurnOnDisplay:
+            DisplayController::activeInstance()->turnOn(args[0] != 0);
             break;
-        }
 
         case Restart:
             // Todo: save those need to save ...

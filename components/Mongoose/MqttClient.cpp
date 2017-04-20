@@ -17,7 +17,7 @@
 void printTopics(const MqttSubTopic *topics, uint16_t count)
 {
     for (uint16_t i = 0; i < count; ++i) {
-        printf("[%d] %s\n", i, topics->topic);
+        printf("[%d] %s\n", i, topics[i].topic);
     }
 }
 
