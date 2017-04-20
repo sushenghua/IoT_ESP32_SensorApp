@@ -87,6 +87,7 @@ public:
 	// virtual methods
 	virtual void init();
 	virtual void reset();
+	virtual void turnOn(bool on = true);
 
 	virtual void drawPixel(int16_t x, int16_t y, uint16_t color);
 	virtual void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
@@ -114,7 +115,9 @@ public:
 	uint16_t color565(uint8_t r, uint8_t g, uint8_t b);
 
 protected:
+	void _initBus();
 	void _init();
+	void _fireResetSignal();
 
 	void writeCommand(uint8_t cmd);
 	void writeData(uint8_t data);

@@ -45,24 +45,26 @@ const uint8_t* SensorDataPacker::dataBlock(size_t &size)
     return _dataBlockBuf;
 }
 
-char _tmpBuf[1024];
+char _dataStringBuf[1024];
 
 const char* SensorDataPacker::dataString(size_t &size)
 {
 	size_t packCount = 0;
     if (_pmSensor) {
         #if SENSOR_TYPE >= PMS5003
-            sprintf(_tmpBuf + packCount, "pm 2.5: %.1f", _pmSensor->pmData().pm2d5);
-            packCount += strlen(_tmpBuf + packCount);
+            PMData& pmData = _pmSensor->pmData();
+            sprintf(_dataStringBuf + packCount, "pm1.0: %.1f, pm2.5: %.1f (index: %d), pm10: %.1f (index: %d)",
+                    pmData.pm1d0, pmData.pm2d5, pmData.aqiPm2d5US, pmData.pm10, pmData.aqiPm10US);
+            packCount += strlen(_dataStringBuf + packCount);
         #endif
         #if SENSOR_TYPE >= PMS5003S
-            sprintf(_tmpBuf + packCount, ", hcho: %.2f", _pmSensor->hchoData().hcho);
-            packCount += strlen(_tmpBuf + packCount);
+            sprintf(_dataStringBuf + packCount, ", hcho: %.2f", _pmSensor->hchoData().hcho);
+            packCount += strlen(_dataStringBuf + packCount);
         #endif
         #if SENSOR_TYPE >= PMS5003ST
         #endif
     }
 
     size = packCount;
-    return _tmpBuf;
+    return _dataStringBuf;
 }

@@ -81,6 +81,7 @@ public:
   // all subclass should implement these common method
   virtual void init() = 0;
   virtual void reset() = 0;
+  virtual void turnOn(bool on = true) = 0;
 
   // device-specific method
   virtual void drawPixel(int16_t x, int16_t y, uint16_t color) = 0;

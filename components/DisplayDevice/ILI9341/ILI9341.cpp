@@ -61,31 +61,46 @@ ILI9341::ILI9341()
 #define ILI9341_SPI_TRANS_MAX 5
 static spi_transaction_t _ili9341SpiTrans[ILI9341_SPI_TRANS_MAX];
 
-void ILI9341::init()
+void ILI9341::_initBus()
 {
     // initialize non-SPI GPIOs
     gpio_set_direction((gpio_num_t)PIN_NUM_DC, GPIO_MODE_OUTPUT);
     gpio_set_direction((gpio_num_t)PIN_NUM_RST, GPIO_MODE_OUTPUT);
     gpio_set_direction((gpio_num_t)PIN_NUM_BCKL, GPIO_MODE_OUTPUT);
 
-    // turn on led
-    gpio_set_level((gpio_num_t)PIN_NUM_BCKL, 1);
-
-    // reset
-    reset();
-
-    // bus init
+    // spi bus init
     SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
     bus->init(PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK);
     _spiChannel.setParams(0, PIN_NUM_CS, 5, 25000000);
     _spiChannel.bindTransactionCache(_ili9341SpiTrans, ILI9341_SPI_TRANS_MAX);
     bus->addChannel(_spiChannel);
+}
+
+void ILI9341::init()
+{
+    _initBus();
+
+    reset();
+}
+
+void ILI9341::reset()
+{
+    // turn on led
+    gpio_set_level((gpio_num_t)PIN_NUM_BCKL, 1);
+
+    // reset
+    _fireResetSignal();
 
     // init self
     _init();
 }
 
-void ILI9341::reset()
+void ILI9341::turnOn(bool on)
+{
+	gpio_set_level((gpio_num_t)PIN_NUM_BCKL, on ? 1 : 0);
+}
+
+void ILI9341::_fireResetSignal()
 {
     gpio_set_level((gpio_num_t)PIN_NUM_RST, 0);
     delay(RESET_DELAY_TIME);

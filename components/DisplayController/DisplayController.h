@@ -1,5 +1,5 @@
 /*
- * DisplayController: manage content display on oled device
+ * DisplayController: manage content display on device
  * Copyright (c) 2017 Shenghua Su
  *
  */
@@ -12,12 +12,17 @@
 class DisplayController
 {
 public:
-    DisplayController(DisplayGFX *dev): _dev(dev) {}
+    static DisplayController * activeInstance();
+
+    DisplayController(DisplayGFX *dev);
 
 public:
     virtual void init() {};
     virtual void tick() {};
     virtual void update() = 0;
+
+    void reset() { _dev->reset(); }
+    void turnOn(bool on) { _dev->turnOn(on); }
 
 protected:
     DisplayGFX *_dev;

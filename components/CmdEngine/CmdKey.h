@@ -16,7 +16,8 @@ typedef enum CmdKey {
     GetRawData              = 4,
     GetIdfVersion           = 5,
     GetSensorData           = 6,
-    TurnOffLed,
+    GetSensorDataString     = 7,
+    TurnOnLed               = 8,
 
 } CmdKey;
 
