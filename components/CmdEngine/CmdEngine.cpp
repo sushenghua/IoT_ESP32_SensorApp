@@ -14,10 +14,10 @@
 #include "DisplayController.h"
 
 
-#define TOPIC_API_CMD           "/api/mydev/cmd"
-#define TOPIC_API_STR_CMD       "/api/mydev/strcmd"
+#define TOPIC_API_CMD           "api/mydev/cmd"
+#define TOPIC_API_STR_CMD       "api/mydev/strcmd"
 
-#define CMD_RET_MSG_TOPIC       "/api/mydev/cmdret"
+#define CMD_RET_MSG_TOPIC       "api/mydev/cmdret"
 #define PUB_MSG_QOS             1
 
 
