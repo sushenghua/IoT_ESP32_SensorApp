@@ -11,7 +11,6 @@
 #include "MqttClientDelegate.h"
 #include "MessagePubPool.h"
 
-#define MG_ENABLE_SSL 1
 #include "mongoose.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
