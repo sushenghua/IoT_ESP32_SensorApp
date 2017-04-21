@@ -130,6 +130,23 @@ static void msg_pool_task(void *pvParams)
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
+// MQTT over TSL
+/////////////////////////////////////////////////////////////////////////////////////////
+#if MG_ENABLE_SSL
+
+#include "mqtt_crt.h"
+#include "mqtt_key.h"
+
+// void print_test()
+// {
+//     printf("===> mqtt crt (%d) : \n%s\n", strlen(mqttCrt), mqttCrt);
+//     printf("===> mqtt key (%d) : \n%s\n", strlen(mqttKey), mqttKey);
+// }
+
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
 // ------ MqttClient class
 /////////////////////////////////////////////////////////////////////////////////////////
 // FreeRTOS semaphore
@@ -258,6 +275,14 @@ bool MqttClient::_makeConnection()
         struct mg_connect_opts opts;
         memset(&opts, 0, sizeof(opts));
         opts.user_data = static_cast<void*>(this);
+
+#if MG_ENABLE_SSL
+        opts.ssl_cert = mqttCrt;
+        // opts.ssl_key  = mqttKey;
+        // opts.ssl_ca_cert = "*";
+        // opts.ssl_server_name = "*";
+#endif
+
         // create connection
         struct mg_connection *nc;
         APP_LOGI("[MqttClient]", "try to connect to server: %s", _serverAddress);

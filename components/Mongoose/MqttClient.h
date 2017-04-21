@@ -7,11 +7,12 @@
 #ifndef _MQTT_CLIENT_H
 #define _MQTT_CLIENT_H
 
-#include "mongoose.h"
 #include "MqttMessageInterpreter.h"
 #include "MqttClientDelegate.h"
 #include "MessagePubPool.h"
 
+#define MG_ENABLE_SSL 1
+#include "mongoose.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // ------ SubTopics, UnsubTopics
