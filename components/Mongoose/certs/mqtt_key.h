@@ -8,7 +8,7 @@
 #ifndef _MQTTKEY_H
 #define _MQTTKEY_H
 
-const char mqttKey[] =
+static const char mqttKey[] =
 "-----BEGIN RSA PRIVATE KEY-----\n"\
 "Proc-Type: 4,ENCRYPTED\n"\
 "DEK-Info: DES-EDE3-CBC,4C0FA026DEAE0A8B\n"\

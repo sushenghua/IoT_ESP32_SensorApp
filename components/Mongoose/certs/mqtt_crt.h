@@ -8,7 +8,7 @@
 #ifndef _MQTTCRT_H
 #define _MQTTCRT_H
 
-const char mqttCrt[] =
+static const char mqttCrt[] =
 "-----BEGIN CERTIFICATE-----\n"\
 "MIIDrzCCApegAwIBAgIJAPi2DUC1tm0AMA0GCSqGSIb3DQEBCwUAMG4xCzAJBgNV\n"\
 "BAYTAkNOMRAwDgYDVQQIDAdCZWlqaW5nMRAwDgYDVQQHDAdCZWlqaW5nMRkwFwYD\n"\
