@@ -275,7 +275,10 @@ bool MqttClient::_makeConnection()
         struct mg_connect_opts opts;
         memset(&opts, 0, sizeof(opts));
         opts.user_data = static_cast<void*>(this);
-
+#if MG_ENABLE_SSL
+        opts.ssl_cert = mqttCrt;
+        opts.ssl_key = mqttKey;
+#endif
         // create connection
         struct mg_connection *nc;
         APP_LOGI("[MqttClient]", "try to connect to server: %s", _serverAddress);
