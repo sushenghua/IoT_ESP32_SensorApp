@@ -16,7 +16,6 @@
 #include "ILI9341.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
-// #include "esp_log.h"
 
 // delay definition
 #define RESET_DELAY_TIME         5
@@ -37,7 +36,7 @@
 #define MADCTL_BGR 0x08
 #define MADCTL_MH  0x04
 
-// SPI in definition
+// SPI pin definition
 #define PIN_NUM_MISO 25
 #define PIN_NUM_MOSI 23
 #define PIN_NUM_CLK  19
@@ -46,6 +45,9 @@
 #define PIN_NUM_DC   21
 #define PIN_NUM_RST  18
 #define PIN_NUM_BCKL 5
+
+#define ILI9341_CHANNEL_CLK_SPEED   10000000
+#define ILI9341_CHANNEL_QUEQUE_SIZE 10
 
 
 uint16_t ILI9341::color565(uint8_t r, uint8_t g, uint8_t b)
@@ -71,7 +73,7 @@ void ILI9341::_initBus()
     // spi bus init
     SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
     bus->init(PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK);
-    _spiChannel.setParams(0, PIN_NUM_CS, 5, 25000000);
+    _spiChannel.setParams(0, PIN_NUM_CS, ILI9341_CHANNEL_QUEQUE_SIZE, ILI9341_CHANNEL_CLK_SPEED);
     _spiChannel.bindTransactionCache(_ili9341SpiTrans, ILI9341_SPI_TRANS_MAX);
     bus->addChannel(_spiChannel);
 }

@@ -98,14 +98,19 @@ static void mongoose_task(void *pvParams)
 /////////////////////////////////////////////////////////////////////////////////////////
 ILI9341 dev;
 SensorDisplayController dc(&dev);
+static xSemaphoreHandle _dcUpdateSemaphore = 0;
+// #define DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS 1000
 
 void display_task(void *p)
 {
     dc.init();
-
+    // _dcUpdateSemaphore = xSemaphoreCreateMutex();
     while (true) {
-        dc.update();
-        vTaskDelay(15/portTICK_RATE_MS);
+        // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
+            dc.update();
+        //     xSemaphoreGive(_dcUpdateSemaphore);
+        // }
+        vTaskDelay(30/portTICK_RATE_MS);
     }
 }
 
@@ -120,7 +125,10 @@ void pm_sensor_task(void *p)
     pmSensor.setDisplayDelegate(&dc);
     SensorDataPacker::sharedInstance()->setPmSensor(&pmSensor);
     while (true) {
-        pmSensor.sampleData();
+        // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
+            pmSensor.sampleData();
+            // xSemaphoreGive(_dcUpdateSemaphore);
+        // }
         vTaskDelay(500/portTICK_RATE_MS);
     }
 }
@@ -131,7 +139,10 @@ void orientation_sensor_task(void *p)
     orientationSensor.init();
     orientationSensor.setDisplayDelegate(&dc);
     while (true) {
-        orientationSensor.tick();
+        // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
+            orientationSensor.tick();
+        //     xSemaphoreGive(_dcUpdateSemaphore);
+        // }
         vTaskDelay(250/portTICK_RATE_MS);
     }
 }
@@ -154,13 +165,12 @@ extern "C" {
 void app_main()
 {
     NvsFlash::init();
-
-    xTaskCreate(&display_task, "display_task", 4096, NULL, DISPLAY_TASK_PRIORITY, NULL);
+    xTaskCreate(&display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, NULL);
     xTaskCreate(&wifi_task, "wifi_connection_task", 4096, NULL, WIFI_TASK_PRIORITY, &wifiTaskHandle);
     vTaskDelay(100 / portTICK_PERIOD_MS);
     xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, SNTP_TASK_PRIORITY, &sntpTaskHandle);
     vTaskDelay(100 / portTICK_PERIOD_MS);
-    xTaskCreate(&mongoose_task, "mongoose_task", 4096, NULL, MQTTCLIENT_TASK_PRIORITY, NULL);
+    xTaskCreate(&mongoose_task, "mongoose_task", 8192, NULL, MQTTCLIENT_TASK_PRIORITY, NULL);
     xTaskCreate(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, NULL);
     xTaskCreate(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, NULL);
 

@@ -288,8 +288,8 @@ bool MqttClient::_makeConnection()
         memset(&opts, 0, sizeof(opts));
         opts.user_data = static_cast<void*>(this);
 #if MG_ENABLE_SSL
-        opts.ssl_cert = mqttCrt;
-        opts.ssl_key = mqttKey;
+        // opts.ssl_cert = mqttCrt;
+        // opts.ssl_key = mqttKey;
         opts.ssl_ca_cert = mqttCrt;
 #endif
         // create connection
@@ -308,7 +308,7 @@ bool MqttClient::_makeConnection()
 
 void MqttClient::start()
 {
-    // SNTP::waitSynced();    // block wait time sync
+    SNTP::waitSynced();    // block wait time sync
     _makeConnection();
     _pubSemaphore = xSemaphoreCreateMutex();
     _closeProcessSemaphore = xSemaphoreCreateMutex();
@@ -516,6 +516,7 @@ void MqttClient::aliveGuardCheck()
                 if (_connected) {
                     // mg_mqtt_disconnect(_manager.active_connections);
                     mg_set_timer(_manager.active_connections, mg_time() + 1);
+                    // _manager.active_connections->flags |= MG_F_SEND_AND_CLOSE;
                 }
                 xSemaphoreGive(_closeProcessSemaphore);
             }
