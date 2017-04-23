@@ -2,7 +2,7 @@
  * CmdSetUtility utility methods
  * Copyright (c) 2016 Shenghua Su
  *
- * build:  g++ -o f2sh file2StrHeader.cpp
+ * build:  g++ -std=c++11 -o f2sh file2StrHeader.cpp
  * export: ./f2sh -i inputfile -o outputfile
  *
  */
@@ -74,9 +74,14 @@ int main( int argc, const char* argv[])
 		while (!fi.eof()) {
 			std::getline(fi, linestr);
 			if (linestr.length() > 0) {
+				// if (linestr.back() == '\r') linestr.pop_back();
 				fo << "\"";
 				fo << linestr;
 				fo << "\\n\"";
+				// if (fi.peek() != EOF) 
+				// 	fo << "\\n\"";
+				// else
+				// 	fo << "\\n\0\"";
 			}
 			else {
 				fo << "\"";

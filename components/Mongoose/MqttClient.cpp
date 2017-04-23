@@ -11,6 +11,18 @@
 #include "SNTP.h"
 #include "System.h"
 
+int mg_ssl_if_mbed_random(void *ctx, unsigned char *buf, size_t len) {
+  while (len > 0) {
+    uint32_t r = esp_random(); /* Uses hardware RNG. */
+    for (int i = 0; i < 4 && len > 0; i++, len--) {
+      *buf++ = (uint8_t) r;
+      r >>= 8;
+    }
+  }
+  (void) ctx;
+  return 0;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////
 // ------ helper functions
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -278,6 +290,7 @@ bool MqttClient::_makeConnection()
 #if MG_ENABLE_SSL
         opts.ssl_cert = mqttCrt;
         opts.ssl_key = mqttKey;
+        opts.ssl_ca_cert = mqttCrt;
 #endif
         // create connection
         struct mg_connection *nc;
@@ -295,7 +308,7 @@ bool MqttClient::_makeConnection()
 
 void MqttClient::start()
 {
-    SNTP::waitSynced();    // block wait time sync
+    // SNTP::waitSynced();    // block wait time sync
     _makeConnection();
     _pubSemaphore = xSemaphoreCreateMutex();
     _closeProcessSemaphore = xSemaphoreCreateMutex();

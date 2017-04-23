@@ -4212,17 +4212,15 @@ static enum mg_ssl_if_result mg_use_cert(SSL_CTX *ctx, const char *cert,
   if (key == NULL) key = cert;
   if (cert == NULL || cert[0] == '\0' || key == NULL || key[0] == '\0') {
     return MG_SSL_OK;
-  // } else if (SSL_CTX_use_certificate_file(ctx, cert, 1) == 0) {
-  } else if (SSL_CTX_use_certificate_ASN1(ctx, (int)strlen(cert), (const unsigned char *)cert) == 0) {
+  } else if (SSL_CTX_use_certificate_file(ctx, cert, 1) == 0) {
     MG_SET_PTRPTR(err_msg, "Invalid SSL cert");
     return MG_SSL_ERROR;
-  // } else if (SSL_CTX_use_PrivateKey_file(ctx, key, 1) == 0) {
-  } else if (SSL_CTX_use_PrivateKey_ASN1(0, ctx, (const unsigned char *)key, (int)strlen(key)) == 0) {
+  } else if (SSL_CTX_use_PrivateKey_file(ctx, key, 1) == 0) {
     MG_SET_PTRPTR(err_msg, "Invalid SSL key");
     return MG_SSL_ERROR;
-  // } else if (SSL_CTX_use_certificate_chain_file(ctx, cert) == 0) {
-  //   MG_SET_PTRPTR(err_msg, "Invalid CA bundle");
-  //   return MG_SSL_ERROR;
+  } else if (SSL_CTX_use_certificate_chain_file(ctx, cert) == 0) {
+    MG_SET_PTRPTR(err_msg, "Invalid CA bundle");
+    return MG_SSL_ERROR;
   } else {
     SSL_CTX_set_mode(ctx, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 #if !MG_DISABLE_PFS && !defined(KR_VERSION)
@@ -4394,10 +4392,12 @@ struct mg_ssl_if_ctx {
   struct mbuf cipher_suites;
 };
 
+#ifndef MONGOOSE_ESP32_ADAPTION
 /* Must be provided by the platform. ctx is struct mg_connection. */
-// extern int mg_ssl_if_mbed_random(void *ctx, unsigned char *buf, size_t len);
-
+extern int mg_ssl_if_mbed_random(void *ctx, unsigned char *buf, size_t len);
+#else
 #include "esp_system.h"
+// for esp32 platform copied from mongooose-os/fw/platforms/esp32/src/esp32_hal.c
 int mg_ssl_if_mbed_random(void *ctx, unsigned char *buf, size_t len) {
   while (len > 0) {
     uint32_t r = esp_random(); /* Uses hardware RNG. */
@@ -4409,7 +4409,7 @@ int mg_ssl_if_mbed_random(void *ctx, unsigned char *buf, size_t len) {
   (void) ctx;
   return 0;
 }
-
+#endif
 
 void mg_ssl_if_init() {
 }
@@ -4654,9 +4654,16 @@ static enum mg_ssl_if_result mg_use_ca_cert(struct mg_ssl_if_ctx *ctx,
   }
   ctx->ca_cert = (mbedtls_x509_crt *) MG_CALLOC(1, sizeof(*ctx->ca_cert));
   mbedtls_x509_crt_init(ctx->ca_cert);
+
+#ifdef MONGOOSE_ESP32_ADAPTION
+  if (mbedtls_x509_crt_parse(ctx->ca_cert, (const unsigned char*)ca_cert, strlen(ca_cert)+1) != 0) {
+    printf("Invalid SSL CA cert\n");
+#else
   if (mbedtls_x509_crt_parse_file(ctx->ca_cert, ca_cert) != 0) {
+#endif
     return MG_SSL_ERROR;
   }
+
   mbedtls_ssl_conf_ca_chain(ctx->conf, ctx->ca_cert, NULL);
   mbedtls_ssl_conf_authmode(ctx->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
   return MG_SSL_OK;
@@ -4673,16 +4680,27 @@ static enum mg_ssl_if_result mg_use_cert(struct mg_ssl_if_ctx *ctx,
   mbedtls_x509_crt_init(ctx->cert);
   ctx->key = (mbedtls_pk_context *) MG_CALLOC(1, sizeof(*ctx->key));
   mbedtls_pk_init(ctx->key);
-  // if (mbedtls_x509_crt_parse_file(ctx->cert, cert) != 0) {
-  if (mbedtls_x509_crt_parse(ctx->cert, (const unsigned char*)cert, strlen(cert)) != 0) {
+
+#ifdef MONGOOSE_ESP32_ADAPTION
+  if (mbedtls_x509_crt_parse(ctx->cert, (const unsigned char*)cert, strlen(cert)+1) != 0) {
+    printf("Invalid SSL cert\n");
+#else
+  if (mbedtls_x509_crt_parse_file(ctx->cert, cert) != 0) {
+#endif
     MG_SET_PTRPTR(err_msg, "Invalid SSL cert");
     return MG_SSL_ERROR;
   }
-  // if (mbedtls_pk_parse_keyfile(ctx->key, key, NULL) != 0) {
-  if (mbedtls_pk_parse_key(ctx->key, (const unsigned char*)key, strlen(key), NULL, 0) != 0) {
+
+#ifdef MONGOOSE_ESP32_ADAPTION
+  if (mbedtls_pk_parse_key(ctx->key, (const unsigned char*)key, strlen(key)+1, (const unsigned char *)("mqtttest"), 8) != 0) {
+    printf("Invalid SSL key\n");
+#else
+  if (mbedtls_pk_parse_keyfile(ctx->key, key, NULL) != 0) {
+#endif
     MG_SET_PTRPTR(err_msg, "Invalid SSL key");
     return MG_SSL_ERROR;
   }
+
   if (mbedtls_ssl_conf_own_cert(ctx->conf, ctx->cert, ctx->key) != 0) {
     MG_SET_PTRPTR(err_msg, "Invalid SSL key or cert");
     return MG_SSL_ERROR;
