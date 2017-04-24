@@ -20,7 +20,12 @@ public:
     enum UpdateState {
         UPDATE_STATE_IDLE,
         UPDATE_STATE_WAIT_VERSION_INFO,
-        UPDATE_STATE_WAIT_DATA
+        UPDATE_STATE_WAIT_DATA,
+        UPDATE_STATE_WAIT_VERIFY_BITS
+    };
+    struct WriteFlag {
+        size_t index;
+        size_t amount;
     };
     typedef uint16_t VersionNoType;
 
@@ -38,13 +43,14 @@ protected:
     bool _beforeUpdateCheck();
     void _prepareUpdate();	
     void _onRxDataComplete();
+    bool _verifyData(const char *verifyBits, size_t length);
 
 protected:
     UpdateState              _state;
     const VersionNoType      _currentVersion;
     size_t                   _rxTopicLen;
     size_t                   _newVersionSize;
-    size_t                   _writeCount;
+    WriteFlag                _writeFlag;
     esp_ota_handle_t         _updateHandle;
     const esp_partition_t *  _updatePartition;
     MqttClientDelegate      *_delegate;
