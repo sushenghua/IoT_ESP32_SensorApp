@@ -91,7 +91,7 @@ void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char
             break;
         }
         // app update topic
-        if (strncmp(topic, _appUpdater.updateRxTopic(), _appUpdater.updateRxTopicLen())) {
+        if (strncmp(topic, _appUpdater.updateRxTopic(), _appUpdater.updateRxTopicLen()) == 0) {
             _appUpdater.updateLoop(msg, msgLen);
         }
     } while (false);

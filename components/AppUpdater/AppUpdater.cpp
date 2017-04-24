@@ -190,6 +190,7 @@ bool AppUpdater::_verifyData(const char *verifyBits, size_t length)
 
 void AppUpdater::updateLoop(const char* data, size_t dataLen)
 {
+    APP_LOGI(TAG, "update loop");
     switch (_state) {
         case UPDATE_STATE_WAIT_VERSION_INFO: {
             VersionNoType newVersion = *((VersionNoType *)data);
@@ -258,6 +259,7 @@ void AppUpdater::updateLoop(const char* data, size_t dataLen)
 
 void AppUpdater::update()
 {
+    APP_LOGI(TAG, "receive update command");
     if (!_beforeUpdateCheck()) return;
 
     Wifi::waitConnected();
