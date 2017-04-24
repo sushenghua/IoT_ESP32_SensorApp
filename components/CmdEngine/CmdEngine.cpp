@@ -12,6 +12,7 @@
 #include "System.h"
 #include "SensorDataPacker.h"
 #include "DisplayController.h"
+#include "AppUpdater.h"
 
 
 #define TOPIC_API_CMD           "api/mydev/cmd"
@@ -20,6 +21,8 @@
 #define CMD_RET_MSG_TOPIC       "api/mydev/cmdret"
 #define PUB_MSG_QOS             1
 
+
+AppUpdater _appUpdater;
 
 CmdEngine::CmdEngine()
 : _delegate(NULL)
@@ -35,6 +38,10 @@ bool CmdEngine::init()
 {
     bool succeeded = false;
     if (_delegate) {
+
+        _appUpdater.init();
+        _appUpdater.setMqttClientDelegate(_delegate);
+
         _delegate->addSubTopic(TOPIC_API_CMD);
         _delegate->addSubTopic(TOPIC_API_STR_CMD);
         _delegate->subscribeTopics();
@@ -62,7 +69,7 @@ void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char
     size_t size = 0;
 
     do {
-        // binary data command
+        // binary data command topic
         if (topicLen == strlen(TOPIC_API_CMD) && strncmp(topic, TOPIC_API_CMD, topicLen) == 0) {
             // data size check
             if (msgLen >= CMD_DATA_AT_LEAST_SIZE) {
@@ -77,11 +84,16 @@ void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char
             }
             break;
         }
-        // string data command
+        // string data command topic
         if (topicLen == strlen(TOPIC_API_STR_CMD) && strncmp(topic, TOPIC_API_STR_CMD, topicLen) == 0) {
             cmdKey = _parseStringCmd(msg, msgLen, data, size);
             exec = true;
             break;
+        }
+
+        // app update topic
+        if (strncmp(topic, _appUpdater.updateRxTopic(), _appUpdater.updateRxTopicLen())) {
+            _appUpdater.updateLoop(msg, msgLen);
         }
     } while (false);
 
@@ -120,6 +132,10 @@ int CmdEngine::execCmd(CmdKey cmdKey, uint8_t *args, size_t argsSize)
 
         case TurnOnDisplay:
             DisplayController::activeInstance()->turnOn(args[0] != 0);
+            break;
+
+        case UpdateFirmware:
+            _appUpdater.update();
             break;
 
         case Restart:

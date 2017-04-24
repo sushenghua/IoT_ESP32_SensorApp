@@ -12,16 +12,18 @@
 #include "System.h"
 #include "AppLog.h"
 
+#define TAG      "[AppUpdater]"
+#define VERSION  0x0100
 #define APP_UPDATE_TOPIC             "api/update"
 
-#define TAG  "[AppUpdater]"
+static char _updateDrxDataTopic[32];   // device rx
+static char _updateDtxDataTopic[32];   // device tx
 
-char _updateDrxDataTopic[32];   // device rx
-char _updateDtxDataTopic[32];   // device tx
 
 AppUpdater::AppUpdater()
 : _state(UPDATE_STATE_IDLE)
-, _currentVersion(0x0100)
+, _currentVersion(VERSION)
+, _rxTopicLen(0)
 , _newVersionSize(0)
 , _writeCount(0)
 , _updateHandle(0)
@@ -30,8 +32,8 @@ AppUpdater::AppUpdater()
 
 void AppUpdater::init()
 {
-    int index = 0;
-    int slen = 0;
+    size_t index = 0;
+    size_t slen = 0;
 
     slen = strlen(APP_UPDATE_TOPIC);
     memcpy(_updateDrxDataTopic, APP_UPDATE_TOPIC, slen);
@@ -50,10 +52,22 @@ void AppUpdater::init()
     memcpy(_updateDtxDataTopic + index, "/dtx", 4);
     index += 4;
 
+    _rxTopicLen = index;
+
     _updateDrxDataTopic[index] = '\0';
     _updateDtxDataTopic[index] = '\0';
 
     _state = UPDATE_STATE_IDLE;
+}
+
+size_t AppUpdater::updateRxTopicLen()
+{
+	return _rxTopicLen;
+}
+
+const char* AppUpdater::updateRxTopic()
+{
+    return _updateDrxDataTopic;
 }
 
 void AppUpdater::_sendUpdateCmd()

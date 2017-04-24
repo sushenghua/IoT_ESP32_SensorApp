@@ -16,16 +16,20 @@
 class AppUpdater
 {
 public:
-	// type
+    // type
     enum UpdateState {
         UPDATE_STATE_IDLE,
         UPDATE_STATE_WAIT_VERSION_INFO,
         UPDATE_STATE_WAIT_DATA
     };
     typedef uint16_t VersionNoType;
+
 public:
     AppUpdater();
     void init();
+    size_t updateRxTopicLen();
+    const char* updateRxTopic();
+    void setMqttClientDelegate(MqttClientDelegate *delegate) { _delegate = delegate; }
     void update();
     void updateLoop(const char* data, size_t dataLen);
 
@@ -35,10 +39,10 @@ protected:
     void _prepareUpdate();	
     void _onRxDataComplete();
 
-
 protected:
     UpdateState              _state;
     const VersionNoType      _currentVersion;
+    size_t                   _rxTopicLen;
     size_t                   _newVersionSize;
     size_t                   _writeCount;
     esp_ota_handle_t         _updateHandle;

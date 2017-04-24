@@ -44,9 +44,10 @@ void wifi_task(void *pvParameters)
     }
     else {
       wifi.setDefaultConfig();
-      // if (wifi.saveConfig()) {
-      //   ESP_LOGI("wifi", "save config succeeded");
-      // }
+      wifi.setStaConfig("woody@home", "58897@mljd-abcde");
+      if (wifi.saveConfig()) {
+        ESP_LOGI("wifi", "save config succeeded");
+      }
     }
     wifi.init();
     wifi.start(true);
@@ -98,7 +99,7 @@ static void mongoose_task(void *pvParams)
 /////////////////////////////////////////////////////////////////////////////////////////
 ILI9341 dev;
 SensorDisplayController dc(&dev);
-static xSemaphoreHandle _dcUpdateSemaphore = 0;
+// static xSemaphoreHandle _dcUpdateSemaphore = 0;
 // #define DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS 1000
 
 void display_task(void *p)
