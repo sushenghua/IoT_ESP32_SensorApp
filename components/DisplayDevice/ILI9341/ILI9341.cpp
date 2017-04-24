@@ -47,7 +47,7 @@
 #define PIN_NUM_BCKL 5
 
 #define ILI9341_CHANNEL_CLK_SPEED   10000000
-#define ILI9341_CHANNEL_QUEQUE_SIZE 10
+#define ILI9341_CHANNEL_QUEQUE_SIZE 5
 
 
 uint16_t ILI9341::color565(uint8_t r, uint8_t g, uint8_t b)

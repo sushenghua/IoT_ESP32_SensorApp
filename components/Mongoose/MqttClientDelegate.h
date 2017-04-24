@@ -8,6 +8,7 @@
 #define _MQTT_CLIENT_DELEGATE_H
 
 #include <stdint.h>
+#include "MqttMessageInterpreter.h"
 
 class MqttClientDelegate
 {

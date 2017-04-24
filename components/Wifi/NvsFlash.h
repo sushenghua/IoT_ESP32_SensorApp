@@ -7,18 +7,10 @@
 #ifndef _NVS_FLASH_H
 #define _NVS_FLASH_H
 
-#include "esp_err.h"
-#include "nvs_flash.h"
-
 class NvsFlash
 {
 public:
-    static void init() {
-        if (!_inited) {
-            ESP_ERROR_CHECK( nvs_flash_init() );
-            _inited = true;
-        }
-    }
+    static void init();
     static bool inited() { return _inited; }
 
 protected:
