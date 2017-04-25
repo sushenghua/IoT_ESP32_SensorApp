@@ -1,28 +1,21 @@
 /*
- * Mongoose: Wrap the mongoose lib
+ * HttpServer: Wrap the mongoose lib
  * Copyright (c) 2017 Shenghua Su
  *
  */
 
-#ifndef _MONGOOSE_H
-#define _MONGOOSE_H
+#ifndef _HTTPSERVER_H
+#define _HTTPSERVER_H
 
 #include "mongoose.h"
 
 #define MONGOOSE_DEFAULT_POLL_SLEEP 1000
 
-enum MongooseMode {
-    UNDEFINED,
-    HTTP_MODE,
-    WEBSOCKET_MODE,
-    MQTT_MODE
-};
-
-class Mongoose
+class HttpServer
 {
 public:
     // constructor
-    Mongoose();
+    HttpServer();
 
     // loop poll
     void poll(int sleepMilli = MONGOOSE_DEFAULT_POLL_SLEEP) {
@@ -30,13 +23,12 @@ public:
     }
 
     // config, init and deinit
-    void init(MongooseMode mode);
+    void init();
     void deinit();
 
 protected:
     bool                     _inited;
-    enum MongooseMode        _mode;
     struct mg_mgr            _manager;
 };
 
-#endif // _MONGOOSE_H
+#endif // _HTTPSERVER_H
