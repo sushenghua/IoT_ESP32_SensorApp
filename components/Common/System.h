@@ -10,6 +10,7 @@
 class System
 {
 public:
+    // type define
     enum State {
         Uninitialized,
         Initializing,
@@ -18,9 +19,10 @@ public:
         Error
     };
     enum ConfigMode {
-        HTTPServer,
-        MQTTClient
+        HTTPServerMode,
+        MQTTClientMode
     };
+
 public:
     // singleton
     static System * instance();
@@ -33,12 +35,13 @@ public:
     const char* idfVersion();
     const char* firmwareVersion();
 
+    void setConfigMode(ConfigMode mode);
     void restart();
-
     bool restarting();
 
 private:
-    void _loadConfig();
+    bool _loadConfig();
+    bool _saveConfig();
     void _launchTasks();
 
 private:

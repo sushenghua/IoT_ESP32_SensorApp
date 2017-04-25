@@ -9,7 +9,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_log.h"
+#include "AppLog.h"
 
 //----------------------------------------------
 // Wifi task
@@ -25,13 +25,13 @@ void wifi_task(void *pvParameters)
 {
     // config and start wifi
     if (wifi.loadConfig()) {
-      ESP_LOGI("wifi", "load config succeeded");
+      APP_LOGI("wifi", "load config succeeded");
     }
     else {
       wifi.setDefaultConfig();
       wifi.setStaConfig("woody@home", "58897@mljd-abcde");
       if (wifi.saveConfig()) {
-        ESP_LOGI("wifi", "save config succeeded");
+        APP_LOGI("wifi", "save config succeeded");
       }
     }
     wifi.init();
@@ -181,7 +181,7 @@ System * System::instance()
 
 System::System()
 : _state(Uninitialized)
-, _mode(HTTPServer)
+, _mode(HTTPServerMode)
 {}
 
 void System::init()
@@ -194,8 +194,105 @@ void System::init()
     _state = Running;
 }
 
-void System::_loadConfig()
+#include "nvs.h"
+#define SYSTEM_STORAGE_NAMESPACE          "app"
+#define SYSTEM_CONFIG_TAG                 "appConf"
+
+bool System::_loadConfig()
 {
+    bool succeeded = false;
+    bool nvsOpened = false;
+
+    nvs_handle nvsHandle;
+    esp_err_t err;
+
+    do {
+        // open nvs
+        err = nvs_open(SYSTEM_STORAGE_NAMESPACE, NVS_READONLY, &nvsHandle);
+        if (err != ESP_OK) {
+            APP_LOGE("[System]", "loadConfig open nvs failed %d", err);
+            break;
+        }
+        nvsOpened = true;
+
+        // read sys config
+        size_t requiredSize = 0;  // value will default to 0, if not set yet in NVS
+        err = nvs_get_blob(nvsHandle, SYSTEM_CONFIG_TAG, NULL, &requiredSize);
+        if (err == ESP_ERR_NVS_NOT_FOUND) {
+            _mode = HTTPServerMode;
+            break;
+        }
+        if (err != ESP_OK) {
+            APP_LOGE("[System]", "loadConfig read \"sys-config-size\" failed %d", err);
+            break;
+        }
+        if (requiredSize != sizeof(_mode)) {
+            APP_LOGE("[System]", "loadConfig read \"sys-config-size\" got unexpected value");
+            break;
+        }
+        // read previously saved config
+        err = nvs_get_blob(nvsHandle, SYSTEM_CONFIG_TAG, &_mode, &requiredSize);
+        if (err != ESP_OK) {
+            _mode = MQTTClientMode;
+            APP_LOGE("[System]", "loadConfig read \"sys-config-content\" failed %d", err);
+            break;
+        }
+        succeeded = true;
+
+    } while(false);
+
+    // close nvs
+    if (nvsOpened) nvs_close(nvsHandle);
+
+    return succeeded;
+}
+
+bool System::_saveConfig()
+{
+    bool succeeded = false;
+    bool nvsOpened = false;
+
+    nvs_handle nvsHandle;
+    esp_err_t err;
+
+    do {
+        // open nvs
+        err = nvs_open(SYSTEM_STORAGE_NAMESPACE, NVS_READWRITE, &nvsHandle);
+        if (err != ESP_OK) {
+            APP_LOGE("[System]", "saveConfig open nvs failed %d", err);
+            break;
+        }
+        nvsOpened = true;
+
+        // write wifi config
+        err = nvs_set_blob(nvsHandle, SYSTEM_CONFIG_TAG, &_mode, sizeof(_mode));
+        if (err != ESP_OK) {
+            APP_LOGE("[System]", "saveConfig write \"system-config\" failed %d", err);
+            break;
+        }
+
+        // commit written value.
+        err = nvs_commit(nvsHandle);
+        if (err != ESP_OK) {
+            ESP_LOGE("[System]", "saveConfig commit failed %d", err);
+            break;
+        }
+        succeeded = true;
+
+    } while(false);
+
+    // close nvs
+    if (nvsOpened) nvs_close(nvsHandle);
+
+    return succeeded;
+}
+
+void System::setConfigMode(ConfigMode mode)
+{
+    if (_mode != mode) {
+        _mode = mode;
+        _saveConfig();
+    }
 }
 
 #define DISPLAY_TASK_PRIORITY               100
