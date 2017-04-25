@@ -98,7 +98,7 @@ void AppUpdater::init()
 
 size_t AppUpdater::updateRxTopicLen()
 {
-	return _rxTopicLen;
+    return _rxTopicLen;
 }
 
 const char* AppUpdater::updateRxTopic()
@@ -225,8 +225,8 @@ void AppUpdater::updateLoop(const char* data, size_t dataLen)
                 APP_LOGI(TAG, "write data complete %d%%", int(_writeFlag.index/(float)_newVersionSize) * 100);
                 if (_writeFlag.index == _newVersionSize) {
                     APP_LOGI(TAG, "total write binary data length : %d", _newVersionSize);
-                	_writeFlag.index = REQUIRE_VERIFY_BIT_CMD;
-                	_writeFlag.amount = REQUIRE_VERIFY_BIT_CMD;
+                    _writeFlag.index = REQUIRE_VERIFY_BIT_CMD;
+                    _writeFlag.amount = REQUIRE_VERIFY_BIT_CMD;
                     _delegate->publish(_updateDtxDataTopic, &_writeFlag, sizeof(_writeFlag), 1);
                 }
                 else {
