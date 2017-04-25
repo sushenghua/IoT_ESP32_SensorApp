@@ -99,7 +99,7 @@ void ILI9341::reset()
 
 void ILI9341::turnOn(bool on)
 {
-	gpio_set_level((gpio_num_t)PIN_NUM_BCKL, on ? 1 : 0);
+    gpio_set_level((gpio_num_t)PIN_NUM_BCKL, on ? 1 : 0);
 }
 
 void ILI9341::_fireResetSignal()
@@ -163,7 +163,7 @@ static const ILI9341InitCmd ili9341InitCmd[]={
 
 void ILI9341::_init()
 {
-	int i = 0;
+    int i = 0;
     // send all the commands and data
     while (ili9341InitCmd[i].databytes != 0xFF) {
         writeCommand(ili9341InitCmd[i].cmd);
@@ -177,59 +177,59 @@ void ILI9341::_init()
 
 void ILI9341::setRotation(uint8_t m)
 {
-	if (_rotation == m) return;
-	_rotation = m;
-	switch (_rotation) {
-			case DISPLAY_ROTATION_CW_0:
-					m = (MADCTL_MX | MADCTL_BGR);
-					_width  = ILI9341_TFTWIDTH;
-					_height = ILI9341_TFTHEIGHT;
-					break;
-			case DISPLAY_ROTATION_CW_90:
-					m = (MADCTL_MV | MADCTL_BGR);
-					_width  = ILI9341_TFTHEIGHT;
-					_height = ILI9341_TFTWIDTH;
-					break;
-			case DISPLAY_ROTATION_CW_180:
-					m = (MADCTL_MY | MADCTL_BGR);
-					_width  = ILI9341_TFTWIDTH;
-					_height = ILI9341_TFTHEIGHT;
-					break;
-			case DISPLAY_ROTATION_CW_270:
-					m = (MADCTL_MX | MADCTL_MY | MADCTL_MV | MADCTL_BGR);
-					_width  = ILI9341_TFTHEIGHT;
-					_height = ILI9341_TFTWIDTH;
-					break;
-	}
-	writeCommand(ILI9341_MADCTL);
-	_spiChannel.tx(m);
+    if (_rotation == m) return;
+    _rotation = m;
+    switch (_rotation) {
+            case DISPLAY_ROTATION_CW_0:
+                    m = (MADCTL_MX | MADCTL_BGR);
+                    _width  = ILI9341_TFTWIDTH;
+                    _height = ILI9341_TFTHEIGHT;
+                    break;
+            case DISPLAY_ROTATION_CW_90:
+                    m = (MADCTL_MV | MADCTL_BGR);
+                    _width  = ILI9341_TFTHEIGHT;
+                    _height = ILI9341_TFTWIDTH;
+                    break;
+            case DISPLAY_ROTATION_CW_180:
+                    m = (MADCTL_MY | MADCTL_BGR);
+                    _width  = ILI9341_TFTWIDTH;
+                    _height = ILI9341_TFTHEIGHT;
+                    break;
+            case DISPLAY_ROTATION_CW_270:
+                    m = (MADCTL_MX | MADCTL_MY | MADCTL_MV | MADCTL_BGR);
+                    _width  = ILI9341_TFTHEIGHT;
+                    _height = ILI9341_TFTWIDTH;
+                    break;
+    }
+    writeCommand(ILI9341_MADCTL);
+    _spiChannel.tx(m);
 }
 
 void ILI9341::invertDisplay(bool i)
 {
-	writeCommand(i ? ILI9341_INVON : ILI9341_INVOFF);
+    writeCommand(i ? ILI9341_INVON : ILI9341_INVOFF);
 }
 
 void ILI9341::scrollTo(uint16_t y)
 {
-	writeCommand(ILI9341_VSCRSADD);
-	_spiChannel.tx16(y);
+    writeCommand(ILI9341_VSCRSADD);
+    _spiChannel.tx16(y);
 }
 
 void ILI9341::setViewPort(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
 {
-	uint32_t xa = ((uint32_t)x << 16) | (x+w-1);
-	uint32_t ya = ((uint32_t)y << 16) | (y+h-1);
-	writeCommand(ILI9341_CASET); // Column addr set
-	_spiChannel.tx32(xa);
-	writeCommand(ILI9341_PASET); // Row addr set
-	_spiChannel.tx32(ya);
-	writeCommand(ILI9341_RAMWR); // write to RAM
+    uint32_t xa = ((uint32_t)x << 16) | (x+w-1);
+    uint32_t ya = ((uint32_t)y << 16) | (y+h-1);
+    writeCommand(ILI9341_CASET); // Column addr set
+    _spiChannel.tx32(xa);
+    writeCommand(ILI9341_PASET); // Row addr set
+    _spiChannel.tx32(ya);
+    writeCommand(ILI9341_RAMWR); // write to RAM
 }
 
 void ILI9341::writePixel(uint16_t color)
 {
-	_spiChannel.tx16(color);
+    _spiChannel.tx16(color);
 }
 
 #define SPI_MAX_PIXELS_AT_ONCE  128
@@ -237,136 +237,136 @@ static uint16_t _ili9431ColorTxBuf[SPI_MAX_PIXELS_AT_ONCE];
 
 void ILI9341::writePixels(uint16_t *colors, uint32_t len)
 {
-	uint32_t colorIndex = 0;
-	uint32_t txLen = 0;
-	uint32_t bufLen = (len > SPI_MAX_PIXELS_AT_ONCE)? SPI_MAX_PIXELS_AT_ONCE : len;
+    uint32_t colorIndex = 0;
+    uint32_t txLen = 0;
+    uint32_t bufLen = (len > SPI_MAX_PIXELS_AT_ONCE)? SPI_MAX_PIXELS_AT_ONCE : len;
 
-	while (len > 0) {
-		txLen = (len > bufLen) ? bufLen : len;
-		// cover 16-bit color to bytes array
-		for (uint32_t i = 0;  i < txLen; ++i) {
-			_ili9431ColorTxBuf[i] = (colors[colorIndex] << 8) | (colors[colorIndex] >> 8);
-			++colorIndex;
-		}
-		_spiChannel.tx((uint8_t*)_ili9431ColorTxBuf , txLen * 2);
-		len -= txLen;
-	}
+    while (len > 0) {
+        txLen = (len > bufLen) ? bufLen : len;
+        // cover 16-bit color to bytes array
+        for (uint32_t i = 0;  i < txLen; ++i) {
+            _ili9431ColorTxBuf[i] = (colors[colorIndex] << 8) | (colors[colorIndex] >> 8);
+            ++colorIndex;
+        }
+        _spiChannel.tx((uint8_t*)_ili9431ColorTxBuf , txLen * 2);
+        len -= txLen;
+    }
 }
 
 void ILI9341::writeColor(uint16_t color, uint32_t len)
 {
-	uint32_t blen = (len > SPI_MAX_PIXELS_AT_ONCE)? SPI_MAX_PIXELS_AT_ONCE : len;
-	uint32_t tlen = 0;
+    uint32_t blen = (len > SPI_MAX_PIXELS_AT_ONCE)? SPI_MAX_PIXELS_AT_ONCE : len;
+    uint32_t tlen = 0;
 
-	for (uint16_t t = 0;  t < blen; ++t)
-		_ili9431ColorTxBuf[t] = (color << 8) | (color >> 8);
+    for (uint16_t t = 0;  t < blen; ++t)
+        _ili9431ColorTxBuf[t] = (color << 8) | (color >> 8);
 
-	while(len) {
-		tlen = (len > blen)? blen : len;
-		_spiChannel.tx((uint8_t*)_ili9431ColorTxBuf, tlen * 2);
-		len -= tlen;
-	}
+    while(len) {
+        tlen = (len > blen)? blen : len;
+        _spiChannel.tx((uint8_t*)_ili9431ColorTxBuf, tlen * 2);
+        len -= tlen;
+    }
 }
 
 uint8_t ILI9341::readcommand8(uint8_t c, uint8_t index)
 {
-	writeCommand(0xD9);  // woo sekret command?
-	_spiChannel.tx(0x10 + index);
-	writeCommand(c);
+    writeCommand(0xD9);  // woo sekret command?
+    _spiChannel.tx(0x10 + index);
+    writeCommand(c);
 
-	uint8_t r = 0;
-	_spiChannel.rx(&r, 1);
-	return r;
+    uint8_t r = 0;
+    _spiChannel.rx(&r, 1);
+    return r;
 }
 
 void ILI9341::drawPixel(int16_t x, int16_t y, uint16_t color)
 {
-	if((x < 0) ||(x >= _width) || (y < 0) || (y >= _height)) return;
-	setViewPort(x,y,1,1);
-	writePixel(color);
+    if((x < 0) ||(x >= _width) || (y < 0) || (y >= _height)) return;
+    setViewPort(x,y,1,1);
+    writePixel(color);
 }
 
 void ILI9341::drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color)
 {
-	fillRect(x, y, 1, h, color);
+    fillRect(x, y, 1, h, color);
 }
 
 void ILI9341::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color)
 {
-	fillRect(x, y, w, 1, color);
+    fillRect(x, y, w, 1, color);
 }
 
 void ILI9341::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
 {
-	if((x >= _width) || (y >= _height)) return;
-	int16_t x2 = x + w - 1, y2 = y + h - 1;
-	if((x2 < 0) || (y2 < 0)) return;
+    if((x >= _width) || (y >= _height)) return;
+    int16_t x2 = x + w - 1, y2 = y + h - 1;
+    if((x2 < 0) || (y2 < 0)) return;
 
-	// Clip left/top
-	if(x < 0) {
-			x = 0;
-			w = x2 + 1;
-	}
-	if(y < 0) {
-			y = 0;
-			h = y2 + 1;
-	}
+    // Clip left/top
+    if(x < 0) {
+            x = 0;
+            w = x2 + 1;
+    }
+    if(y < 0) {
+            y = 0;
+            h = y2 + 1;
+    }
 
-	// Clip right/bottom
-	if(x2 >= _width)  w = _width  - x;
-	if(y2 >= _height) h = _height - y;
+    // Clip right/bottom
+    if(x2 >= _width)  w = _width  - x;
+    if(y2 >= _height) h = _height - y;
 
-	int32_t len = (int32_t)w * h;
-	setViewPort(x, y, w, h);
-	writeColor(color, len);
+    int32_t len = (int32_t)w * h;
+    setViewPort(x, y, w, h);
+    writeColor(color, len);
 }
 
 // This code was ported/adapted from https://github.com/PaulStoffregen/ILI9341_t3
 // by Marc MERLIN. See examples/pictureEmbed to use this.
 void ILI9341::drawBitmap(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors)
 {
-	int16_t x2, y2; // Lower-right coord
-	if(( x             >= _width ) ||      // Off-edge right
-		 ( y             >= _height) ||      // " top
-		 ((x2 = (x+w-1)) <  0      ) ||      // " left
-		 ((y2 = (y+h-1)) <  0)     ) return; // " bottom
+    int16_t x2, y2; // Lower-right coord
+    if(( x             >= _width ) ||      // Off-edge right
+         ( y             >= _height) ||      // " top
+         ((x2 = (x+w-1)) <  0      ) ||      // " left
+         ((y2 = (y+h-1)) <  0)     ) return; // " bottom
 
-	int16_t bx1=0, by1=0, // Clipped top-left within bitmap
-					saveW=w;      // Save original bitmap width value
-	if(x < 0) { // Clip left
-			w  +=  x;
-			bx1 = -x;
-			x   =  0;
-	}
-	if(y < 0) { // Clip top
-			h  +=  y;
-			by1 = -y;
-			y   =  0;
-	}
-	if(x2 >= _width ) w = _width  - x; // Clip right
-	if(y2 >= _height) h = _height - y; // Clip bottom
+    int16_t bx1=0, by1=0, // Clipped top-left within bitmap
+                    saveW=w;      // Save original bitmap width value
+    if(x < 0) { // Clip left
+            w  +=  x;
+            bx1 = -x;
+            x   =  0;
+    }
+    if(y < 0) { // Clip top
+            h  +=  y;
+            by1 = -y;
+            y   =  0;
+    }
+    if(x2 >= _width ) w = _width  - x; // Clip right
+    if(y2 >= _height) h = _height - y; // Clip bottom
 
-	pcolors += by1 * saveW + bx1; // Offset bitmap ptr to clipped top-left
+    pcolors += by1 * saveW + bx1; // Offset bitmap ptr to clipped top-left
 
-	setViewPort(x, y, w, h); // Clipped area
-	while(h--) { // For each (clipped) scanline...
-		_spiChannel.tx((uint8_t*)pcolors, w * 2); // Push one (clipped) row
-		pcolors += saveW; // Advance pointer by one full (unclipped) line
-	}
+    setViewPort(x, y, w, h); // Clipped area
+    while(h--) { // For each (clipped) scanline...
+        _spiChannel.tx((uint8_t*)pcolors, w * 2); // Push one (clipped) row
+        pcolors += saveW; // Advance pointer by one full (unclipped) line
+    }
 }
 
 void ILI9341::test()
 {
-	this->fillScreen(RGB565_RED);
-	// setViewPort(0, 40, 240, 240);
-	// fillRect(0, 40, 240, 240, RGB565_GREEN);
-	//this->scrollTo(100);
-	this->setCursor(0, 100);
-	this->setTextSize(2);
-	this->write("oooooooppppp");
-	// for (int i=0; i<100; ++i)
-	// 	this->writeColor(RGB565_GREEN, 240);
-	drawCircle(120, 160, 50, RGB565_WHITE);
+    this->fillScreen(RGB565_RED);
+    // setViewPort(0, 40, 240, 240);
+    // fillRect(0, 40, 240, 240, RGB565_GREEN);
+    //this->scrollTo(100);
+    this->setCursor(0, 100);
+    this->setTextSize(2);
+    this->write("oooooooppppp");
+    // for (int i=0; i<100; ++i)
+    //     this->writeColor(RGB565_GREEN, 240);
+    drawCircle(120, 160, 50, RGB565_WHITE);
 //     int         n, i, i2,
 //                 cx = _width  / 2,
 //                 cy = _height / 2;
@@ -377,13 +377,13 @@ void ILI9341::test()
 // //  }
 //     i2 = n / 2;
 
-// //	for(int j=0; j<10; ++j) {
-// //	fillRect(cx-i2, cy-i2, n, n, ILI9341_RED);
-// //	drawFastHLine(15, 50, 30, ILI9341_CYAN);
-// //	drawCircle(120, 160, 50, ILI9341_YELLOW);
+// //    for(int j=0; j<10; ++j) {
+// //    fillRect(cx-i2, cy-i2, n, n, ILI9341_RED);
+// //    drawFastHLine(15, 50, 30, ILI9341_CYAN);
+// //    drawCircle(120, 160, 50, ILI9341_YELLOW);
 
-	// setCursor(0, 100);
-	// setTextSize(2);
-	// write("fffffff\n");
-	//}
+    // setCursor(0, 100);
+    // setTextSize(2);
+    // write("fffffff\n");
+    //}
 }
