@@ -219,7 +219,7 @@ APP_LOGI("[Wifi]", "connected, got ip event");
             break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
 APP_LOGI("[Wifi]", "disconnected");
-            if (!System::restartInProgress()) {
+            if (!System::instance()->restarting()) {
                 ESP_ERROR_CHECK( esp_wifi_connect() );
             }
             xEventGroupClearBits(wifiEventGroup, CONNECTED_BIT);

@@ -78,8 +78,8 @@ void AppUpdater::init()
     _updateDrxDataTopic[index] = '/';
     index += 1;
 
-    slen = strlen(System::macAddress());
-    memcpy(_updateDrxDataTopic + index, System::macAddress(), slen);
+    slen = strlen(System::instance()->macAddress());
+    memcpy(_updateDrxDataTopic + index, System::instance()->macAddress(), slen);
     index += slen;
 
     memcpy(_updateDtxDataTopic, _updateDrxDataTopic, index);
@@ -111,7 +111,8 @@ void AppUpdater::_sendUpdateCmd()
     if (_delegate) {
         _delegate->addSubTopic(_updateDrxDataTopic);
         _delegate->subscribeTopics();
-        _delegate->publish(APP_UPDATE_TOPIC, System::macAddress(), strlen(System::macAddress()), 1);
+        _delegate->publish(APP_UPDATE_TOPIC, System::instance()->macAddress(),
+                           strlen(System::instance()->macAddress()), 1);
     }
 }
 
@@ -159,7 +160,7 @@ void AppUpdater::_onRxDataComplete()
 
     if (succeeded) {
         APP_LOGE(TAG, "update completed, prepare to restart system");
-        System::restart();
+        System::instance()->restart();
     }
 }
 

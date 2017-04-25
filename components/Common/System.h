@@ -10,13 +10,40 @@
 class System
 {
 public:
-	static const char* macAddress();
-	static const char* idfVersion();
-	static const char* firmwareVersion();
+    enum State {
+        Uninitialized,
+        Initializing,
+        Running,
+        Restarting,
+        Error
+    };
+    enum ConfigMode {
+        HTTPServer,
+        MQTTClient
+    };
+public:
+    // singleton
+    static System * instance();
 
-	static void restart();
+public:
+    System();
+    void init();
+    const char* uid();
+    const char* macAddress();
+    const char* idfVersion();
+    const char* firmwareVersion();
 
-	static bool restartInProgress();
+    void restart();
+
+    bool restarting();
+
+private:
+    void _loadConfig();
+    void _launchTasks();
+
+private:
+    State        _state;
+    ConfigMode   _mode;
 };
 
 #endif // _SYSTEM_H_

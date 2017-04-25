@@ -118,15 +118,18 @@ int CmdEngine::execCmd(CmdKey cmdKey, uint8_t *args, size_t argsSize)
         }
 
         case GetUID:
-            _delegate->publish(CMD_RET_MSG_TOPIC, System::macAddress(), strlen(System::macAddress()), PUB_MSG_QOS);
+            _delegate->publish(CMD_RET_MSG_TOPIC, System::instance()->macAddress(),
+                               strlen(System::instance()->macAddress()), PUB_MSG_QOS);
             break;
 
         case GetIdfVersion:
-            _delegate->publish(CMD_RET_MSG_TOPIC, System::idfVersion(), strlen(System::idfVersion()), PUB_MSG_QOS);
+            _delegate->publish(CMD_RET_MSG_TOPIC, System::instance()->idfVersion(),
+                               strlen(System::instance()->idfVersion()), PUB_MSG_QOS);
             break;
 
         case GetFirmwareVersion:
-            _delegate->publish(CMD_RET_MSG_TOPIC, System::firmwareVersion(), strlen(System::firmwareVersion()), PUB_MSG_QOS);
+            _delegate->publish(CMD_RET_MSG_TOPIC, System::instance()->firmwareVersion(),
+                               strlen(System::instance()->firmwareVersion()), PUB_MSG_QOS);
             break;
 
         case TurnOnDisplay:
@@ -139,7 +142,7 @@ int CmdEngine::execCmd(CmdKey cmdKey, uint8_t *args, size_t argsSize)
 
         case Restart:
             // Todo: save those need to save ...
-            System::restart();
+            System::instance()->restart();
             break;
 
         default:
