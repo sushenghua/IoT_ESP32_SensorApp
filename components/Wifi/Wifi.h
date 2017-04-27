@@ -17,7 +17,7 @@
 #define WIFI_DEFAULT_AP_MAX_CONNECTION 4
 
 // ------ EAP
-#define ENABLE_EAP
+// #define ENABLE_EAP // enable eap will occupy about 50K more byts
 #ifdef ENABLE_EAP
 #define EAP_ID_MAX_LEN                 127
 #define EAP_USERNAME_MAX_LEN           32
@@ -27,12 +27,7 @@ enum EapMode {
     EAP_PEAP,
     EAP_TTLS
 };
-#endif
-
-// ------ host info
-#define HOST_NAME_MAX_LEN              32
-
-// ------ EAP config structure
+// ------ EAP config
 struct WifiEapConfig {
     bool                     enabled;
     EapMode                  eapMode;
@@ -40,12 +35,19 @@ struct WifiEapConfig {
     char                     eapUsername[EAP_USERNAME_MAX_LEN];
     char                     eapPassword[EAP_PASSWORD_MAX_LEN];
 };
+#endif
 
+// ------ host info
+#define HOST_NAME_MAX_LEN              32
+
+// ------ wifi config
 struct WifiConfig {
     wifi_mode_t              mode;
     wifi_config_t            apConfig;
     wifi_config_t            staConfig;
+#ifdef ENABLE_EAP
     WifiEapConfig            eapConfig;
+#endif
     char                     hostName[HOST_NAME_MAX_LEN+1];
 };
 

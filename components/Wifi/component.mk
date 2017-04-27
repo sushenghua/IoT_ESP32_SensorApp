@@ -5,9 +5,9 @@
 
 
 # embed files from the "certs" directory as binary data symbols in the app
-COMPONENT_EMBED_TXTFILES := wpa2_ca.pem
-COMPONENT_EMBED_TXTFILES += wpa2_client.crt
-COMPONENT_EMBED_TXTFILES += wpa2_client.key
+# COMPONENT_EMBED_TXTFILES := wpa2_ca.pem
+# COMPONENT_EMBED_TXTFILES += wpa2_client.crt
+# COMPONENT_EMBED_TXTFILES += wpa2_client.key
 
 # COMPONENT_PRIV_INCLUDEDIRS=
 # COMPONENT_ADD_LDFLAGS=

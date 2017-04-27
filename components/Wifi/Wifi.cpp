@@ -72,8 +72,10 @@ Wifi::Wifi()
 {
     // set default config value
     _config.mode = WIFI_MODE_STA;
+#ifdef ENABLE_EAP
     _config.eapConfig.enabled = false;
     _config.eapConfig.eapMode = EAP_PEAP;
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -84,8 +86,10 @@ void Wifi::setDefaultConfig()
     setStaConfig("ssid", "ssidpasswd");
     setApConfig("dodosensor", "dodosensor");
     setHostName("SensorApp");
+#ifdef ENABLE_EAP
     enableEap(false);
     setEapConfig("eapid", "eapusername", "eapuserpassword");
+#endif
 }
 
 void Wifi::setWifiMode(wifi_mode_t mode)
