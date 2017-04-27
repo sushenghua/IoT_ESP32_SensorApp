@@ -67,6 +67,8 @@ Wifi * Wifi::instance()
 Wifi::Wifi()
 : _initialized(false)
 , _started(false)
+, _connected(false)
+, _autoreconnect(true)
 {
     // set default config value
     _config.mode = WIFI_MODE_STA;
@@ -136,7 +138,6 @@ bool Wifi::setApConfig(const char      *ssid,
 
     return true;
 }
-
 
 #ifdef ENABLE_EAP
 
@@ -212,32 +213,64 @@ static EventGroupHandle_t wifiEventGroup;
    but we only care about one event - are we connected
    to the AP with an IP? */
 static const int CONNECTED_BIT = BIT0;
-static bool _connected = false;
 
 static esp_err_t wifi_app_event_handler(void *ctx, system_event_t *event)
 {
     switch (event->event_id) {
+
         case SYSTEM_EVENT_STA_START:
-APP_LOGI("[Wifi]", "try to connect ...");
-            ESP_ERROR_CHECK( esp_wifi_connect() );
+            Wifi::instance()->onStaStart();
             break;
+
         case SYSTEM_EVENT_STA_GOT_IP:
-APP_LOGI("[Wifi]", "connected, got ip event");
-            xEventGroupSetBits(wifiEventGroup, CONNECTED_BIT);
-            _connected = true;
+            Wifi::instance()->onStaGotIp();
             break;
+
         case SYSTEM_EVENT_STA_DISCONNECTED:
-APP_LOGI("[Wifi]", "disconnected");
-            if (!System::instance()->restarting()) {
-                ESP_ERROR_CHECK( esp_wifi_connect() );
-            }
-            xEventGroupClearBits(wifiEventGroup, CONNECTED_BIT);
-            _connected = false;
+            Wifi::instance()->onStaDisconnected();
             break;
+
         default:
             break;
     }
     return ESP_OK;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// ------ event handler
+void Wifi::onScanDone()
+{
+}
+
+void Wifi::onStaStart()
+{
+    APP_LOGI("[Wifi]", "try to connect to ap");
+    ESP_ERROR_CHECK( esp_wifi_connect() );
+}
+
+void Wifi::onStaGotIp()
+{
+    APP_LOGI("[Wifi]", "connected, got ip");
+    xEventGroupSetBits(wifiEventGroup, CONNECTED_BIT);
+    _connected = true;
+}
+
+void Wifi::onStaStop()
+{
+}
+
+void Wifi::onStaConnected()
+{
+}
+
+void Wifi::onStaDisconnected()
+{
+    APP_LOGI("[Wifi]", "disconnected");
+    xEventGroupClearBits(wifiEventGroup, CONNECTED_BIT);
+    _connected = false;
+    if (!System::instance()->restarting() && _autoreconnect) {
+        ESP_ERROR_CHECK( esp_wifi_connect() );
+    }
 }
 
 void Wifi::waitConnected()
@@ -250,6 +283,26 @@ bool Wifi::connected()
     return _connected;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+// ------ connect, disconnect
+void Wifi::connect(bool autoreconnect)
+{
+    _autoreconnect = autoreconnect;
+    if (_started && !_connected) {
+        ESP_ERROR_CHECK( esp_wifi_connect() );
+    }
+}
+
+void Wifi::disconnect()
+{
+    if (_started && _connected) {
+        _autoreconnect = false;
+        ESP_ERROR_CHECK( esp_wifi_disconnect() );
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// ------ init, deinit
 void Wifi::init()
 {
     if (_initialized) return;
@@ -294,6 +347,29 @@ void Wifi::deinit()
     if (_initialized) {
         ESP_ERROR_CHECK( esp_wifi_deinit() );
         _initialized = false;
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// ------ start, stop
+void Wifi::start(bool waitConnected)
+{
+    if (!_started) {
+        ESP_ERROR_CHECK( esp_wifi_start() );
+        if (waitConnected) this->waitConnected();
+        if ( (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) &&_config.hostName[0] != '\0') {
+            if (!waitConnected) this->waitConnected();  // wait connect anyway
+            ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
+        }
+        _started = true;
+    }
+}
+
+void Wifi::stop()
+{
+    if (_started) {
+        ESP_ERROR_CHECK( esp_wifi_stop() );
+        _started = false;
     }
 }
 
@@ -411,42 +487,4 @@ bool Wifi::saveConfig()
     if (nvsOpened) nvs_close(nvsHandle);
 
     return succeeded;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////
-// ------ connect, disconnect
-// void Wifi::connect()
-// {
-//     if (_started && !_connected) {
-//         ESP_ERROR_CHECK( esp_wifi_connect() );
-//     }
-// }
-
-// void Wifi::disconnect()
-// {
-//     if (_started && _connected) {
-//         ESP_ERROR_CHECK( esp_wifi_disconnect() );
-//     }
-// }
-
-// ------ start, stop
-void Wifi::start(bool waitConnected)
-{
-    if (!_started) {
-        ESP_ERROR_CHECK( esp_wifi_start() );
-        if (waitConnected) Wifi::waitConnected(); 
-        if ( (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) &&_config.hostName[0] != '\0') {
-            if (!waitConnected) Wifi::waitConnected();  // wait connect anyway
-            ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
-        }
-        _started = true;
-    }
-}
-
-void Wifi::stop()
-{
-    if (_started) {
-        ESP_ERROR_CHECK( esp_wifi_stop() );
-        _started = false;
-    }
 }

@@ -53,6 +53,8 @@ struct WifiConfig {
 /////////////////////////////////////////////////////////////////////////////////////////
 // Wifi class
 /////////////////////////////////////////////////////////////////////////////////////////
+#undef connect // mongoose lib define 'connect' macro
+
 class Wifi
 {
 public:
@@ -86,16 +88,17 @@ protected:
 
 public:
     bool setHostName(const char* hostname);
+    void setAutoReconnect(bool autoreconnect = true) { _autoreconnect = autoreconnect; }
 
     // init, deinit
     void init();
     void deinit();
 
-    // start, stop, status
+    // start, stop, connect, disconnect, status
     void start(bool waitConnected = false);
     void stop();
-    // void connect();
-    // void disconnect();
+    void connect(bool autoreconnect = true);
+    void disconnect();
     void waitConnected();
     bool connected();
 
@@ -103,10 +106,21 @@ public:
     bool loadConfig();
     bool saveConfig();
 
+public:
+    // event handler
+    void onScanDone();
+    void onStaStart();
+    void onStaStop();
+    void onStaConnected();
+    void onStaDisconnected();
+    void onStaGotIp();
+
 protected:
-    // init
+    // flags
     bool                     _initialized;
     bool                     _started;
+    bool                     _connected;
+    bool                     _autoreconnect;
     // config
     WifiConfig               _config;
 };
