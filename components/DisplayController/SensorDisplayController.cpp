@@ -112,7 +112,7 @@ void SensorDisplayController::setCO2Data(CO2Data &co2Data, bool update)
 void SensorDisplayController::update()
 {
 	// update rotation	
-	if (_rotationNeedUpdate) {
+	if (_rotationNeedUpdate) {APP_LOGE("[SensorDC]", "rotation update");
 		_devUpdateRotationInProgress = true;  // lock
 		_dev->fillScreen(RGB565_BLACK);
 		_dev->setRotation(_rotation);
@@ -120,7 +120,7 @@ void SensorDisplayController::update()
 		_devUpdateRotationInProgress = false; // unlock
 	}
 	// update content
-	if (_contentNeedUpdate) {
+	if (_contentNeedUpdate) {APP_LOGE("[SensorDC]", "content update");
 		_dev->setCursor(0, 0);
 
 		_dev->setTextColor(RGB565_CYAN, RGB565_BLACK);
