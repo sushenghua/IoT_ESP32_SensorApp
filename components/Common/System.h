@@ -20,7 +20,8 @@ public:
     };
     enum ConfigMode {
         HTTPServerMode,
-        MQTTClientMode
+        MQTTClientMode,
+        MQTTClientAndHTTPServerMode
     };
 
 public:

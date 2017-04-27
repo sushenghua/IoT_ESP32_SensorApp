@@ -52,7 +52,7 @@ protected:
     size_t                   _newVersionSize;
     WriteFlag                _writeFlag;
     esp_ota_handle_t         _updateHandle;
-    const esp_partition_t *  _updatePartition;
+    const esp_partition_t  * _updatePartition;
     MqttClientDelegate      *_delegate;
 };
 

@@ -182,7 +182,6 @@ MqttClient::MqttClient()
 , _aliveGuardInterval(MQTT_ALIVE_GUARD_REGULAR_INTERVAL_DEFAULT)
 , _serverAddress(MQTT_SERVER_ADDR)
 , _clientId(System::instance()->macAddress())
-, _msgInterpreter(NULL)
 {
     // init hand shake option
     _handShakeOpt.flags = 0;

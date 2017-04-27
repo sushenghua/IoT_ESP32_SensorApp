@@ -8,13 +8,23 @@
 #define _MQTT_CLIENT_DELEGATE_H
 
 #include <stdint.h>
-#include "MqttMessageInterpreter.h"
+// #include <stddef.h>
+#include "ProtocolMessageInterpreter.h"
+#include "ProtocolDelegate.h"
 
-class MqttClientDelegate
+class MqttClientDelegate : public ProtocolDelegate
 {
 public:
-    // virtual functions
-    virtual void setMessageInterpreter(MqttMessageInterpreter *interpreter) = 0;
+    static const char * cmdTopic();
+    static const char * strCmdTopic();
+    static const char * cmdRetTopic();
+
+public:
+    // ProtocolDelegate virtual
+    virtual void setup();
+    virtual void replyMessage(const void *data, size_t length);
+
+    // mqtt sepcific vritual
     virtual void addSubTopic(const char *topic, uint8_t qos = 0) = 0;
     virtual void subscribeTopics() = 0;
 

@@ -7,7 +7,7 @@
 #ifndef _MQTT_CLIENT_H
 #define _MQTT_CLIENT_H
 
-#include "MqttMessageInterpreter.h"
+#include "ProtocolMessageInterpreter.h"
 #include "MqttClientDelegate.h"
 #include "MessagePubPool.h"
 
@@ -116,7 +116,7 @@ struct SubTopics
 /////////////////////////////////////////////////////////////////////////////////////////
 // ------ MqttClient class
 /////////////////////////////////////////////////////////////////////////////////////////
-#define MONGOOSE_DEFAULT_POLL_SLEEP     0
+#define MONGOOSE_MQTT_DEFAULT_POLL_SLEEP     0
 
 class MqttClient : public MessagePubDelegate, public MqttClientDelegate
 {
@@ -128,7 +128,7 @@ public:
     virtual void repubMessage(PoolMessage *message);
 
     // loop poll
-    void poll(int sleepMilli = MONGOOSE_DEFAULT_POLL_SLEEP) {
+    void poll(int sleepMilli = MONGOOSE_MQTT_DEFAULT_POLL_SLEEP) {
         mg_mgr_poll(&_manager, sleepMilli);
     }
 
@@ -157,7 +157,6 @@ public:
     const SubTopics & topicsSubscribed();
 
     // MqttClientDelegate interface
-    virtual void setMessageInterpreter(MqttMessageInterpreter *interpreter) { _msgInterpreter = interpreter; }
     virtual void addSubTopic(const char *topic, uint8_t qos = 0);
     virtual void subscribeTopics();
 
@@ -214,9 +213,6 @@ protected:
     SubTopics                           _topicsSubscribed;
     SubTopics                           _topicsToSubscribe;
     UnsubTopics                         _topicsToUnsubscribe;
-
-    // message interpreter
-    MqttMessageInterpreter             *_msgInterpreter;
 
     // message publish pool
     MessagePubPool                      _msgPubPool;

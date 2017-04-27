@@ -13,6 +13,7 @@
 #include "SensorDataPacker.h"
 #include "DisplayController.h"
 #include "AppUpdater.h"
+#include "MqttClientDelegate.h"
 
 
 #define TOPIC_API_CMD           "api/mydev/cmd"
@@ -28,7 +29,7 @@ CmdEngine::CmdEngine()
 : _delegate(NULL)
 {}
 
-void CmdEngine::setMqttClientDelegate(MqttClientDelegate *delegate)
+void CmdEngine::setProtocolDelegate(ProtocolDelegate *delegate)
 {
     _delegate = delegate;
     _delegate->setMessageInterpreter(this);
@@ -38,16 +39,21 @@ bool CmdEngine::init()
 {
     bool succeeded = false;
     if (_delegate) {
-
-        _appUpdater.init();
-        _appUpdater.setMqttClientDelegate(_delegate);
-
-        _delegate->addSubTopic(TOPIC_API_CMD);
-        _delegate->addSubTopic(TOPIC_API_STR_CMD);
-        _delegate->subscribeTopics();
+        _delegate->setup();
         succeeded = true;
     }
     return succeeded;
+}
+
+void CmdEngine::enableUpdate(bool enabled)
+{
+    if (_updateEnabled != enabled) {
+        _updateEnabled = enabled;
+        if (_updateEnabled && _delegate) {
+            _appUpdater.init();
+            _appUpdater.setMqttClientDelegate(static_cast<MqttClientDelegate*>(_delegate));
+        }
+    }
 }
 
 uint8_t  _cmdBuf[1024];
@@ -70,7 +76,8 @@ void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char
 
     do {
         // binary data command topic
-        if (topicLen == strlen(TOPIC_API_CMD) && strncmp(topic, TOPIC_API_CMD, topicLen) == 0) {
+        if (topicLen == strlen(MqttClientDelegate::cmdTopic()) &&
+            strncmp(topic, MqttClientDelegate::cmdTopic(), topicLen) == 0) {
             // data size check
             if (msgLen >= CMD_DATA_AT_LEAST_SIZE) {
                 data = (uint8_t *)msg;
@@ -85,7 +92,8 @@ void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char
             break;
         }
         // string data command topic
-        if (topicLen == strlen(TOPIC_API_STR_CMD) && strncmp(topic, TOPIC_API_STR_CMD, topicLen) == 0) {
+        if (topicLen == strlen(MqttClientDelegate::strCmdTopic()) &&
+            strncmp(topic, MqttClientDelegate::strCmdTopic(), topicLen) == 0) {
             cmdKey = _parseStringCmd(msg, msgLen, data, size);
             exec = true;
             break;
@@ -99,6 +107,11 @@ void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char
     if (exec) execCmd(cmdKey, data, size);
 }
 
+void CmdEngine::interpreteSocketMsg(const char* msg, size_t msgLen)
+{
+
+}
+
 int CmdEngine::execCmd(CmdKey cmdKey, uint8_t *args, size_t argsSize)
 {
     switch (cmdKey) {
@@ -106,30 +119,30 @@ int CmdEngine::execCmd(CmdKey cmdKey, uint8_t *args, size_t argsSize)
         case GetSensorData: {
             size_t count;
             const uint8_t * data = SensorDataPacker::sharedInstance()->dataBlock(count);
-            _delegate->publish(CMD_RET_MSG_TOPIC, data, count, PUB_MSG_QOS);
+            _delegate->replyMessage(data, count);
             break;
         }
 
         case GetSensorDataString: {
             size_t count;
             const char * data = SensorDataPacker::sharedInstance()->dataString(count);
-            _delegate->publish(CMD_RET_MSG_TOPIC, data, count, PUB_MSG_QOS);
+            _delegate->replyMessage(data, count);
             break;
         }
 
         case GetUID:
-            _delegate->publish(CMD_RET_MSG_TOPIC, System::instance()->macAddress(),
-                               strlen(System::instance()->macAddress()), PUB_MSG_QOS);
+            _delegate->replyMessage(System::instance()->macAddress(),
+                                    strlen(System::instance()->macAddress()));
             break;
 
         case GetIdfVersion:
-            _delegate->publish(CMD_RET_MSG_TOPIC, System::instance()->idfVersion(),
-                               strlen(System::instance()->idfVersion()), PUB_MSG_QOS);
+            _delegate->replyMessage(System::instance()->idfVersion(),
+                                    strlen(System::instance()->idfVersion()));
             break;
 
         case GetFirmwareVersion:
-            _delegate->publish(CMD_RET_MSG_TOPIC, System::instance()->firmwareVersion(),
-                               strlen(System::instance()->firmwareVersion()), PUB_MSG_QOS);
+            _delegate->replyMessage(System::instance()->firmwareVersion(),
+                                    strlen(System::instance()->firmwareVersion()));
             break;
 
         case TurnOnDisplay:

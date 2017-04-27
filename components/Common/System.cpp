@@ -125,14 +125,14 @@ static void sntp_task(void *pvParams)
 
 
 //----------------------------------------------
-// Mongoose task
+// Mqtt client task
 //----------------------------------------------
 // the following line must be place after #include "ILI9341.h", 
 // as mongoose.h has macro write (s, b, l)
 #include "MqttClient.h"
 #include "CmdEngine.h"
 
-static void mongoose_task(void *pvParams)
+static void mqtt_task(void *pvParams)
 {
     CmdEngine cmdEngine;
     MqttClient mqtt;
@@ -140,11 +140,30 @@ static void mongoose_task(void *pvParams)
     // mqtt.addSubTopic("/mqtttest", 0);
     mqtt.start();
 
-    cmdEngine.setMqttClientDelegate(&mqtt);
+    cmdEngine.setProtocolDelegate(&mqtt);
     cmdEngine.init();
 
     while (true) {
         mqtt.poll();
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
+}
+
+
+//----------------------------------------------
+// Http server task
+//----------------------------------------------
+// the following line must be place after #include "ILI9341.h", 
+// as mongoose.h has macro write (s, b, l)
+#include "HttpServer.h"
+
+static void http_task(void *pvParams)
+{
+    HttpServer server;
+    server.init();
+
+    while (true) {
+        server.poll();
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
@@ -192,6 +211,31 @@ void System::init()
     _loadConfig();
     _launchTasks();
     _state = Running;
+}
+
+#define DISPLAY_TASK_PRIORITY               100
+#define WIFI_TASK_PRIORITY                  50
+#define SNTP_TASK_PRIORITY                  40
+#define MQTTCLIENT_TASK_PRIORITY            30
+#define HTTPSERVER_TASK_PRIORITY            30
+#define PM_SENSOR_TASK_PRIORITY             80
+#define ORIENTATION_TASK_PRIORITY           81
+
+void System::_launchTasks()
+{
+    xTaskCreate(&display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, NULL);
+    xTaskCreate(&wifi_task, "wifi_connection_task", 4096, NULL, WIFI_TASK_PRIORITY, &wifiTaskHandle);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+    xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, SNTP_TASK_PRIORITY, &sntpTaskHandle);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+
+    if (_mode == MQTTClientMode)
+        xTaskCreate(&mqtt_task, "mqtt_task", 8192, NULL, MQTTCLIENT_TASK_PRIORITY, NULL);
+    else if (_mode == HTTPServerMode)
+        xTaskCreate(&http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL);
+
+    xTaskCreate(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, NULL);
+    xTaskCreate(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, NULL);
 }
 
 #include "nvs.h"
@@ -293,25 +337,6 @@ void System::setConfigMode(ConfigMode mode)
         _mode = mode;
         _saveConfig();
     }
-}
-
-#define DISPLAY_TASK_PRIORITY               100
-#define WIFI_TASK_PRIORITY                  50
-#define SNTP_TASK_PRIORITY                  40
-#define MQTTCLIENT_TASK_PRIORITY            30
-#define PM_SENSOR_TASK_PRIORITY             80
-#define ORIENTATION_TASK_PRIORITY           81
-
-void System::_launchTasks()
-{
-    xTaskCreate(&display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, NULL);
-    xTaskCreate(&wifi_task, "wifi_connection_task", 4096, NULL, WIFI_TASK_PRIORITY, &wifiTaskHandle);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-    xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, SNTP_TASK_PRIORITY, &sntpTaskHandle);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
-    xTaskCreate(&mongoose_task, "mongoose_task", 8192, NULL, MQTTCLIENT_TASK_PRIORITY, NULL);
-    xTaskCreate(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, NULL);
-    xTaskCreate(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, NULL);
 }
 
 const char* System::macAddress()
