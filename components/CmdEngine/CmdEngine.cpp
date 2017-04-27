@@ -14,6 +14,7 @@
 #include "DisplayController.h"
 #include "AppUpdater.h"
 #include "MqttClientDelegate.h"
+#include "Wifi.h"
 
 
 #define TOPIC_API_CMD           "api/mydev/cmd"
@@ -164,6 +165,21 @@ int CmdEngine::execCmd(CmdKey cmdKey, uint8_t *args, size_t argsSize, void *user
         case Restart:
             // Todo: save those need to save ...
             System::instance()->restart();
+            break;
+
+        case SetStaSsidPasswd: {
+            uint8_t ssidLen = args[0];
+            char ssid[32] = {0};
+            char pass[64] = {0};
+            strncat(ssid, (const char*)(args+1), ssidLen);
+            strncat(pass, (const char*)(args+1+ssidLen), argsSize-1-ssidLen);
+            Wifi::instance()->setStaConfig(ssid, pass);
+            Wifi::instance()->saveConfig();
+            break;
+        }
+
+        case SetSystemConfigMode:
+            System::instance()->setConfigMode((System::ConfigMode)args[0]);
             break;
 
         default:
