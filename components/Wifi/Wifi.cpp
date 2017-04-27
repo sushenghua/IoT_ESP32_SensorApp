@@ -244,7 +244,7 @@ void Wifi::onScanDone()
 
 void Wifi::onStaStart()
 {
-    APP_LOGI("[Wifi]", "try to connect to ap");
+    APP_LOGI("[Wifi]", "try to connect to %s", _config.staConfig.sta.ssid);
     ESP_ERROR_CHECK( esp_wifi_connect() );
 }
 
@@ -376,7 +376,7 @@ void Wifi::stop()
 /////////////////////////////////////////////////////////////////////////////////////////
 // ------ laod, save config
 #include "nvs.h"
-#define STORAGE_NAMESPACE               "storage"
+#define WIFI_STORAGE_NAMESPACE          "wifi"
 #define WIFI_CONFIG_TAG                 "wifiConf"
 #define WIFI_CONFIG_SAVE_COUNT_TAG      "wifiConfSC"  // wifi config save count
 
@@ -390,8 +390,12 @@ bool Wifi::loadConfig()
 
     do {
         // open nvs
-        err = nvs_open(STORAGE_NAMESPACE, NVS_READONLY, &nvsHandle);
-        if (err != ESP_OK) {
+        err = nvs_open(WIFI_STORAGE_NAMESPACE, NVS_READONLY, &nvsHandle);
+        if (err == ESP_ERR_NVS_NOT_FOUND) {
+            APP_LOGE("[Wifi]", "loadConfig open nvs: storage \"%s\" not found", WIFI_STORAGE_NAMESPACE);
+            break;
+        }
+        else if (err != ESP_OK) {
             APP_LOGE("[Wifi]", "loadConfig open nvs failed %d", err);
             break;
         }
@@ -443,7 +447,7 @@ bool Wifi::saveConfig()
 
     do {
         // open nvs
-        err = nvs_open(STORAGE_NAMESPACE, NVS_READWRITE, &nvsHandle);
+        err = nvs_open(WIFI_STORAGE_NAMESPACE, NVS_READWRITE, &nvsHandle);
         if (err != ESP_OK) {
             APP_LOGE("[Wifi]", "saveConfig open nvs failed %d", err);
             break;

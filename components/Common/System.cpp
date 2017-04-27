@@ -23,13 +23,13 @@ void wifi_task(void *pvParameters)
 {
     // config and start wifi
     if (Wifi::instance()->loadConfig()) {
-      APP_LOGI("wifi", "load config succeeded");
+      APP_LOGI("[Wifi]", "load config succeeded");
     }
     else {
       Wifi::instance()->setDefaultConfig();
       Wifi::instance()->setStaConfig("woody@home", "58897@mljd-abcde");
       if (Wifi::instance()->saveConfig()) {
-        APP_LOGI("wifi", "save config succeeded");
+        APP_LOGI("[Wifi]", "save config succeeded");
       }
     }
     Wifi::instance()->init();
@@ -256,7 +256,11 @@ bool System::_loadConfig()
     do {
         // open nvs
         err = nvs_open(SYSTEM_STORAGE_NAMESPACE, NVS_READONLY, &nvsHandle);
-        if (err != ESP_OK) {
+        if (err == ESP_ERR_NVS_NOT_FOUND) {
+            APP_LOGE("[System]", "loadConfig open nvs: storage \"%s\" not found", SYSTEM_STORAGE_NAMESPACE);
+            break;
+        }
+        else if (err != ESP_OK) {
             APP_LOGE("[System]", "loadConfig open nvs failed %d", err);
             break;
         }
