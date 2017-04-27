@@ -22,7 +22,7 @@ public:
 public:
     // ProtocolDelegate virtual
     virtual void setup();
-    virtual void replyMessage(const void *data, size_t length);
+    virtual void replyMessage(const void *data, size_t length, void *userdata, int flag);
 
     // mqtt sepcific vritual
     virtual void addSubTopic(const char *topic, uint8_t qos = 0) = 0;

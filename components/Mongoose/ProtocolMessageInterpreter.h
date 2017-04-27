@@ -14,7 +14,7 @@ class ProtocolMessageInterpreter
 public:
     // virtual interface
     virtual void interpreteMqttMsg(const char* topic, size_t topicLen, const char* msg, size_t msgLen) = 0;
-    virtual void interpreteSocketMsg(const char* msg, size_t msgLen) = 0;
+    virtual void interpreteSocketMsg(const void* msg, size_t msgLen, void *userdata) = 0;
 };
 
 #endif // _MQTT_MESSAGE_INTERPRETER_H

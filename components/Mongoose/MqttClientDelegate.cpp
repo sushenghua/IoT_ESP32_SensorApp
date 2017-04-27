@@ -54,7 +54,9 @@ void MqttClientDelegate::setup()
     this->subscribeTopics();
 }
 
-void MqttClientDelegate::replyMessage(const void *data, size_t length)
+void MqttClientDelegate::replyMessage(const void *data, size_t length, void *userdata, int flag)
 {
+    (void)userdata;
+    (void)flag;
     this->publish(_cmdRetTopic, data, length, PUB_MSG_QOS);
 }

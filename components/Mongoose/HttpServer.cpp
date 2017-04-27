@@ -99,6 +99,18 @@ void HttpServer::start()
     }
 }
 
+void HttpServer::setup()
+{}
+
+void HttpServer::replyMessage(const void *data, size_t length, void *userdata, int flag)
+{
+    // WEBSOCKET_OP_TEXT 1,   WEBSOCKET_OP_BINARY 2
+    if (flag == PROTOCOL_MSG_FORMAT_BINARY)
+        mg_send_websocket_frame((mg_connection *)userdata, WEBSOCKET_OP_BINARY, data, length);
+    else if (flag == PROTOCOL_MSG_FORMAT_TEXT)
+        mg_send_websocket_frame((mg_connection *)userdata, WEBSOCKET_OP_TEXT, data, length);
+}
+
 static char addr[32];
 
 void HttpServer::onAccept(struct mg_connection *nc)
@@ -137,9 +149,10 @@ void HttpServer::onWebsocketHandshakeDone(struct mg_connection *nc)
 void HttpServer::onWebsocketFrame(struct mg_connection *nc, struct websocket_message *wm)
 {
     // struct mg_str d = {(char *) wm->data, wm->size};
-    APP_LOGI("[HttpServer]", "got message: %.*s", wm->size, wm->data);
-    // reply message
-    mg_send_websocket_frame(nc, WEBSOCKET_OP_TEXT, wm->data, wm->size);
+    APP_LOGI("[HttpServer]", "got message: %.*s (nc: %p)", wm->size, wm->data, nc);
+    if (_msgInterpreter) {
+        _msgInterpreter->interpreteSocketMsg(wm->data, wm->size, nc);
+    }
 }
 
 void HttpServer::onClose(struct mg_connection *nc)
@@ -151,12 +164,3 @@ void HttpServer::onClose(struct mg_connection *nc)
         APP_LOGI("[HttpServer]", "http connection closed (nc: %p)", nc);
     }
 }
-
-
-
-
-
-
-
-
-

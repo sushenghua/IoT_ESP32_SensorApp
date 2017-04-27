@@ -7,11 +7,14 @@
 #ifndef _HTTPSERVER_H
 #define _HTTPSERVER_H
 
+#include "ProtocolMessageInterpreter.h"
+#include "ProtocolDelegate.h"
+
 #include "mongoose.h"
 
 #define MONGOOSE_HTTP_DEFAULT_POLL_SLEEP 1000
 
-class HttpServer
+class HttpServer : public ProtocolDelegate
 {
 public:
     // constructor
@@ -27,6 +30,10 @@ public:
     void deinit();
 
     void start();
+
+    // ProtocolDelegate virtual
+    virtual void setup();
+    virtual void replyMessage(const void *data, size_t length, void *userdata, int flag);
 
 public:
     // for event handler

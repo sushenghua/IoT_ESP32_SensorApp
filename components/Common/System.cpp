@@ -137,11 +137,11 @@ static void mqtt_task(void *pvParams)
     CmdEngine cmdEngine;
     MqttClient mqtt;
     mqtt.init();
-    // mqtt.addSubTopic("/mqtttest", 0);
     mqtt.start();
 
     cmdEngine.setProtocolDelegate(&mqtt);
     cmdEngine.init();
+    cmdEngine.enableUpdate();
 
     while (true) {
         mqtt.poll();
@@ -159,8 +159,13 @@ static void mqtt_task(void *pvParams)
 
 static void http_task(void *pvParams)
 {
+    CmdEngine cmdEngine;
     HttpServer server;
     server.init();
+    server.start();
+
+    cmdEngine.setProtocolDelegate(&server);
+    cmdEngine.init();
 
     while (true) {
         server.poll();

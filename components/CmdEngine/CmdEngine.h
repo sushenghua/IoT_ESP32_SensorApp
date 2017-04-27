@@ -20,13 +20,13 @@ public:
 
     void enableUpdate(bool enabled = true);
 
-    int execCmd(CmdKey cmdKey, uint8_t *args = NULL, size_t argsSize = 0);
+    int execCmd(CmdKey cmdKey, uint8_t *args = NULL, size_t argsSize = 0, void *userdata = NULL);
 
     void setProtocolDelegate(ProtocolDelegate *delegate);
 
     // ProtocolMessageInterpreter interface
     virtual void interpreteMqttMsg(const char* topic, size_t topicLen, const char* msg, size_t msgLen);
-    virtual void interpreteSocketMsg(const char* msg, size_t msgLen);
+    virtual void interpreteSocketMsg(const void* msg, size_t msgLen, void *userdata);
 
 protected:
 	bool                   _updateEnabled;

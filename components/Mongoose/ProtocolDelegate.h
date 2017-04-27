@@ -10,17 +10,24 @@
 #include <stdint.h>
 #include "ProtocolMessageInterpreter.h"
 
+#define PROTOCOL_MSG_FORMAT_BINARY  0
+#define PROTOCOL_MSG_FORMAT_TEXT    1
+
 class ProtocolDelegate
 {
 public:
-	ProtocolDelegate(): _msgInterpreter(NULL) {}
+    // constructor
+    ProtocolDelegate(): _msgInterpreter(NULL) {}
     // message interpreter
     void setMessageInterpreter(ProtocolMessageInterpreter *interpreter) {
         _msgInterpreter = interpreter;
     }
     // virtual functions
     virtual void setup() = 0;
-    virtual void replyMessage(const void *data, size_t length) = 0;
+    virtual void replyMessage(const void *data,
+                              size_t      length,
+                              void       *userdata = NULL,
+                              int         flag = PROTOCOL_MSG_FORMAT_TEXT) = 0;
 
 protected:
     ProtocolMessageInterpreter *_msgInterpreter;

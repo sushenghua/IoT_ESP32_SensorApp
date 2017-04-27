@@ -107,42 +107,50 @@ void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char
     if (exec) execCmd(cmdKey, data, size);
 }
 
-void CmdEngine::interpreteSocketMsg(const char* msg, size_t msgLen)
+void CmdEngine::interpreteSocketMsg(const void* msg, size_t msgLen, void *userdata)
 {
+    bool exec = false;
+    CmdKey cmdKey;
+    uint8_t *data = NULL;
+    size_t size = 0;
 
+    cmdKey = _parseStringCmd((const char *)msg, msgLen, data, size);
+    exec = true;
+
+    if (exec) execCmd(cmdKey, data, size, userdata);
 }
 
-int CmdEngine::execCmd(CmdKey cmdKey, uint8_t *args, size_t argsSize)
+int CmdEngine::execCmd(CmdKey cmdKey, uint8_t *args, size_t argsSize, void *userdata)
 {
     switch (cmdKey) {
 
         case GetSensorData: {
             size_t count;
             const uint8_t * data = SensorDataPacker::sharedInstance()->dataBlock(count);
-            _delegate->replyMessage(data, count);
+            _delegate->replyMessage(data, count, userdata);
             break;
         }
 
         case GetSensorDataString: {
             size_t count;
             const char * data = SensorDataPacker::sharedInstance()->dataString(count);
-            _delegate->replyMessage(data, count);
+            _delegate->replyMessage(data, count, userdata);
             break;
         }
 
         case GetUID:
             _delegate->replyMessage(System::instance()->macAddress(),
-                                    strlen(System::instance()->macAddress()));
+                                    strlen(System::instance()->macAddress()), userdata);
             break;
 
         case GetIdfVersion:
             _delegate->replyMessage(System::instance()->idfVersion(),
-                                    strlen(System::instance()->idfVersion()));
+                                    strlen(System::instance()->idfVersion()), userdata);
             break;
 
         case GetFirmwareVersion:
             _delegate->replyMessage(System::instance()->firmwareVersion(),
-                                    strlen(System::instance()->firmwareVersion()));
+                                    strlen(System::instance()->firmwareVersion()), userdata);
             break;
 
         case TurnOnDisplay:
