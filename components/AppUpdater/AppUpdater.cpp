@@ -263,7 +263,7 @@ void AppUpdater::update()
     APP_LOGI(TAG, "receive update command");
     if (!_beforeUpdateCheck()) return;
 
-    Wifi::waitConnected();
+    Wifi::instance()->waitConnected();
 
     _state = UPDATE_STATE_WAIT_VERSION_INFO;
 

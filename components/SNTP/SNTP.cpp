@@ -23,7 +23,7 @@ void SNTP::init(uint8_t operationMode) {
     if (!_inited) {
         APP_LOGI("[SNTP]", "init SNTP");
         sntpEventGroup = xEventGroupCreate();
-        Wifi::waitConnected(); // block wait
+        Wifi::instance()->waitConnected(); // block wait
         sntp_setoperatingmode(operationMode);
         // sntp_setservername(0, (char*)("pool.ntp.org"));
         sntp_setservername(0, (char*)("cn.pool.ntp.org"));

@@ -56,6 +56,10 @@ struct WifiConfig {
 class Wifi
 {
 public:
+    // singleton
+    static Wifi * instance();
+
+public:
     // constructor
     Wifi();
 
@@ -92,8 +96,8 @@ public:
     void stop();
     // void connect();
     // void disconnect();
-    static void waitConnected();
-    static bool connected();
+    void waitConnected();
+    bool connected();
 
     // storage load, save
     bool loadConfig();

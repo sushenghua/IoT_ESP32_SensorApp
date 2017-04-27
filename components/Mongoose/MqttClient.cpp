@@ -281,7 +281,7 @@ void MqttClient::deinit()
 bool MqttClient::_makeConnection()
 {
     if (_inited) {
-        Wifi::waitConnected(); // block wait wifi
+        Wifi::instance()->waitConnected(); // block wait wifi
         // set connect opts
         struct mg_connect_opts opts;
         memset(&opts, 0, sizeof(opts));

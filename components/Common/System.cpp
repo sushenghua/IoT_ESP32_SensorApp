@@ -17,25 +17,23 @@
 #include "Wifi.h"
 #include "tcpip_adapter.h"
 
-Wifi wifi;
-
 TaskHandle_t wifiTaskHandle;
 
 void wifi_task(void *pvParameters)
 {
     // config and start wifi
-    if (wifi.loadConfig()) {
+    if (Wifi::instance()->loadConfig()) {
       APP_LOGI("wifi", "load config succeeded");
     }
     else {
-      wifi.setDefaultConfig();
-      wifi.setStaConfig("woody@home", "58897@mljd-abcde");
-      if (wifi.saveConfig()) {
+      Wifi::instance()->setDefaultConfig();
+      Wifi::instance()->setStaConfig("woody@home", "58897@mljd-abcde");
+      if (Wifi::instance()->saveConfig()) {
         APP_LOGI("wifi", "save config succeeded");
       }
     }
-    wifi.init();
-    wifi.start(true);
+    Wifi::instance()->init();
+    Wifi::instance()->start(true);
     vTaskDelete(wifiTaskHandle);
 
     // while (true) {

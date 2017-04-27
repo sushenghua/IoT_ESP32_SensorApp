@@ -54,6 +54,15 @@ inline void stringAssign(char *target, const char *str, size_t len)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
+// ------ static shared instance
+static Wifi _wifiInstance;
+
+Wifi * Wifi::instance()
+{
+    return &_wifiInstance;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
 // ------ contructor
 Wifi::Wifi()
 : _initialized(false)
