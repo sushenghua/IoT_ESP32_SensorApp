@@ -147,7 +147,7 @@ static void msg_pool_task(void *pvParams)
 #if MG_ENABLE_SSL
 
 #include "mqtt_crt.h"
-#include "mqtt_key.h"
+// #include "mqtt_key.h"
 
 // void print_test()
 // {
