@@ -70,6 +70,9 @@ void ILI9341::_initBus()
     gpio_set_direction((gpio_num_t)PIN_NUM_RST, GPIO_MODE_OUTPUT);
     gpio_set_direction((gpio_num_t)PIN_NUM_BCKL, GPIO_MODE_OUTPUT);
 
+    // turn off led
+    gpio_set_level((gpio_num_t)PIN_NUM_BCKL, 0);
+
     // spi bus init
     SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
     bus->init(PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK);
@@ -87,14 +90,17 @@ void ILI9341::init()
 
 void ILI9341::reset()
 {
-    // turn on led
-    gpio_set_level((gpio_num_t)PIN_NUM_BCKL, 1);
+    // turn off led
+    gpio_set_level((gpio_num_t)PIN_NUM_BCKL, 0);
 
     // reset
     _fireResetSignal();
 
     // init self
     _init();
+
+    // turn on led
+    gpio_set_level((gpio_num_t)PIN_NUM_BCKL, 1);
 }
 
 void ILI9341::turnOn(bool on)

@@ -35,11 +35,6 @@ void wifi_task(void *pvParameters)
     Wifi::instance()->init();
     Wifi::instance()->start(true);
     vTaskDelete(wifiTaskHandle);
-
-    // while (true) {
-    //     vTaskDelay(2000 / portTICK_PERIOD_MS);
-    //     if (wifi.connected()) vTaskDelete(wifiTaskHandle);
-    // }
 }
 
 
@@ -49,21 +44,22 @@ void wifi_task(void *pvParameters)
 #include "ILI9341.h"
 // #include "ST7789V.h"
 #include "SensorDisplayController.h"
-ILI9341 dev;
+static ILI9341 dev;
 // ST7789V dev;
-SensorDisplayController dc(&dev);
+static SensorDisplayController dc(&dev);
 // static xSemaphoreHandle _dcUpdateSemaphore = 0;
 // #define DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS 1000
+TaskHandle_t displyTaskHandle = 0;
 
 void display_task(void *p)
 {
     dc.init();
-    // _dcUpdateSemaphore = xSemaphoreCreateMutex();
     while (true) {
         // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
             dc.update();
-        //     xSemaphoreGive(_dcUpdateSemaphore);
+            // xSemaphoreGive(_dcUpdateSemaphore);
         // }
+        // APP_LOGE("[display_task]", "alive");
         vTaskDelay(30/portTICK_RATE_MS);
     }
 }
@@ -99,9 +95,9 @@ void orientation_sensor_task(void *p)
     while (true) {
         // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
             orientationSensor.tick();
-        //     xSemaphoreGive(_dcUpdateSemaphore);
+            // xSemaphoreGive(_dcUpdateSemaphore);
         // }
-        vTaskDelay(250/portTICK_RATE_MS);
+        vTaskDelay(100/portTICK_RATE_MS);
     }
 }
 
@@ -144,6 +140,7 @@ static void mqtt_task(void *pvParams)
     while (true) {
         mqtt.poll();
         vTaskDelay(10 / portTICK_PERIOD_MS);
+        // APP_LOGE("[Task]", "task count: %d", uxTaskGetNumberOfTasks());
     }
 }
 
@@ -169,6 +166,15 @@ static void http_task(void *pvParams)
         server.poll();
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
+}
+
+
+//**********************************************
+// prepare env
+//**********************************************
+static void beforeCreateTasks()
+{
+    // _dcUpdateSemaphore = xSemaphoreCreateMutex();
 }
 
 
@@ -224,21 +230,30 @@ void System::init()
 #define PM_SENSOR_TASK_PRIORITY             80
 #define ORIENTATION_TASK_PRIORITY           81
 
+#define PRO_CORE    0
+#define APP_CORE    1
+
+#define RUN_ON_CORE APP_CORE
+
 void System::_launchTasks()
 {
-    xTaskCreate(&display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, NULL);
+    beforeCreateTasks();
+
+    xTaskCreatePinnedToCore(&display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, &displyTaskHandle, RUN_ON_CORE);
+
     xTaskCreate(&wifi_task, "wifi_connection_task", 4096, NULL, WIFI_TASK_PRIORITY, &wifiTaskHandle);
     vTaskDelay(100 / portTICK_PERIOD_MS);
+
     xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, SNTP_TASK_PRIORITY, &sntpTaskHandle);
     vTaskDelay(100 / portTICK_PERIOD_MS);
 
     if (_mode == MQTTClientMode)
-        xTaskCreate(&mqtt_task, "mqtt_task", 8192, NULL, MQTTCLIENT_TASK_PRIORITY, NULL);
+        xTaskCreatePinnedToCore(&mqtt_task, "mqtt_task", 8192, NULL, MQTTCLIENT_TASK_PRIORITY, NULL, RUN_ON_CORE);
     else if (_mode == HTTPServerMode)
-        xTaskCreate(&http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL);
+        xTaskCreatePinnedToCore(&http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
-    xTaskCreate(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, NULL);
-    xTaskCreate(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, NULL);
+    xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, NULL, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, NULL, RUN_ON_CORE);
 }
 
 #include "nvs.h"
