@@ -135,7 +135,7 @@ typedef struct {
     uint8_t databytes; //No of data in data; bit 7 = delay after set; 0xFF = end of cmds.
 } ILI9341InitCmd;
 
-static const ILI9341InitCmd ili9341InitCmd[]={
+DRAM_ATTR static const ILI9341InitCmd ili9341InitCmd[]={
     {0xEF, {0x03, 0x80, 0x02}, 3},
     {0xCF, {0x00, 0xC1, 0x30}, 3},
     {0xED, {0x64, 0x03, 0x12, 0x81}, 4},
