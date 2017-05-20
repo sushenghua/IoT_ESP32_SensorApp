@@ -61,14 +61,14 @@ void CmdEngine::enableUpdate(bool enabled)
 
 uint8_t  _cmdBuf[1024];
 
-CmdKey _parseStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_t &argsSize)
-{
-    // parse string
-    args = _cmdBuf + 2;
-    argsSize = 1;
-    args[0] = msg[1] - '0';
-    return (CmdKey)(msg[0] - '0');
-}
+// CmdKey _parseStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_t &argsSize)
+// {
+//     // parse string
+//     args = _cmdBuf + 2;
+//     argsSize = 1;
+//     args[0] = msg[1] - '0';
+//     return (CmdKey)(msg[0] - '0');
+// }
 
 CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_t &argsSize)
 {
@@ -77,6 +77,30 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
 
     APP_LOGC("[CmdEngine]", "json cmd %s", cmd->valuestring);
     CmdKey cmdKey = parseCmdKeyString(cmd->valuestring);
+    switch (cmdKey) {
+        case SetStaSsidPasswd: {
+            cJSON *ssid = cJSON_GetObjectItem(root, "ssid");
+            cJSON *pass = cJSON_GetObjectItem(root, "pass");
+            if (ssid && pass) {
+                _cmdBuf[0] = strlen(ssid->valuestring);
+                size_t passLen = strlen(pass->valuestring);
+                memcpy(_cmdBuf + 1, ssid->valuestring, _cmdBuf[0]);
+                memcpy(_cmdBuf + 1 + _cmdBuf[0], pass->valuestring, passLen);
+                args = _cmdBuf;
+                argsSize = 1 + _cmdBuf[0] + passLen;
+                APP_LOGC("[CmdEngine]", "setSta: %.*s, ssidLen: %d", argsSize-1, args+1, args[0]);
+            }
+            else {
+                args = _cmdBuf;
+                args[0] = 0;
+                argsSize = 0;
+            }
+            break;
+        }
+
+        default:
+            break;
+    }
 
     cJSON_Delete(root);
 
@@ -110,7 +134,7 @@ void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char
         // string data command topic
         if (topicLen == strlen(MqttClientDelegate::strCmdTopic()) &&
             strncmp(topic, MqttClientDelegate::strCmdTopic(), topicLen) == 0) {
-            cmdKey = _parseStringCmd(msg, msgLen, data, size);
+            cmdKey = _parseJsonStringCmd(msg, msgLen, data, size);
             exec = true;
             break;
         }

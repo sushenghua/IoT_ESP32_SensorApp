@@ -20,7 +20,7 @@ CmdKey parseCmdKeyString(const char *str)
     else if (strlen("GetSensorDataString") == len && strcmp("GetSensorDataString", str) == 0)
         return GetSensorDataString;
 
-    else if (strlen("DoNoGetSensorDataJsonString") == len && strcmp("DoNoGetSensorDataJsonString", str) == 0)
+    else if (strlen("GetSensorDataJsonString") == len && strcmp("GetSensorDataJsonString", str) == 0)
         return GetSensorDataJsonString;
 
     else if (strlen("GetSensorCapability") == len && strcmp("GetSensorCapability", str) == 0)
