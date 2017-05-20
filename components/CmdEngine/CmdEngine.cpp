@@ -16,6 +16,8 @@
 #include "MqttClientDelegate.h"
 #include "Wifi.h"
 
+#include "cJSON.h"
+
 
 #define TOPIC_API_CMD           "api/mydev/cmd"
 #define TOPIC_API_STR_CMD       "api/mydev/strcmd"
@@ -68,6 +70,19 @@ CmdKey _parseStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_t &a
     return (CmdKey)(msg[0] - '0');
 }
 
+CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_t &argsSize)
+{
+    cJSON *root = cJSON_Parse(msg);
+    cJSON *cmd = cJSON_GetObjectItem(root, "cmd");
+
+    APP_LOGC("[CmdEngine]", "json cmd %s", cmd->valuestring);
+    CmdKey cmdKey = parseCmdKeyString(cmd->valuestring);
+
+    cJSON_Delete(root);
+
+    return cmdKey;
+}
+
 void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char* msg, size_t msgLen)
 {
     bool exec = false;
@@ -115,7 +130,8 @@ void CmdEngine::interpreteSocketMsg(const void* msg, size_t msgLen, void *userda
     uint8_t *data = NULL;
     size_t size = 0;
 
-    cmdKey = _parseStringCmd((const char *)msg, msgLen, data, size);
+    // cmdKey = _parseStringCmd((const char *)msg, msgLen, data, size);
+    cmdKey = _parseJsonStringCmd((const char *)msg, msgLen, data, size);
     exec = true;
 
     if (exec) execCmd(cmdKey, data, size, userdata);
@@ -139,10 +155,23 @@ int CmdEngine::execCmd(CmdKey cmdKey, uint8_t *args, size_t argsSize, void *user
             break;
         }
 
+        case GetSensorDataJsonString: {
+            size_t count;
+            const char * data = SensorDataPacker::sharedInstance()->dataJsonString(count);
+            _delegate->replyMessage(data, count, userdata);
+            break;
+        }
+
         case GetUID:
             _delegate->replyMessage(System::instance()->macAddress(),
                                     strlen(System::instance()->macAddress()), userdata);
             break;
+
+        case GetSensorCapability: {
+            uint32_t capability = SensorDataPacker::sharedInstance()->sensorCapability();
+            _delegate->replyMessage(&capability, sizeof(capability), userdata);
+            break;
+        }
 
         case GetIdfVersion:
             _delegate->replyMessage(System::instance()->idfVersion(),

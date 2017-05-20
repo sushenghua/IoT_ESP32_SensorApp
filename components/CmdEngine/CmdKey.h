@@ -13,15 +13,19 @@ typedef enum CmdKey {
     Restart                 = 1,
     GetUID                  = 2,
     GetFirmwareVersion      = 3,
-    GetRawData              = 4,
-    GetIdfVersion           = 5,
-    GetSensorData           = 6,
-    GetSensorDataString     = 7,
-    TurnOnDisplay           = 8,
-    UpdateFirmware          = 9,
-    SetStaSsidPasswd        = 10,
-    SetSystemConfigMode     = 11
+    GetSensorCapability     = 4,
+    GetRawData              = 5,
+    GetIdfVersion           = 6,
+    GetSensorData           = 7,
+    GetSensorDataString     = 8,
+    GetSensorDataJsonString = 9,
+    TurnOnDisplay           = 10,
+    UpdateFirmware          = 11,
+    SetStaSsidPasswd        = 12,
+    SetSystemConfigMode     = 13,
 
 } CmdKey;
+
+CmdKey parseCmdKeyString(const char *str);
 
 #endif // _CMD_KEY_H_INCLUDED

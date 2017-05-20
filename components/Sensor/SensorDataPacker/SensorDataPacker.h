@@ -33,13 +33,17 @@ public:
     static SensorDataPacker * sharedInstance();
 
    	// add sensor obj ref
-    void setPmSensor(PMSensor *sensor) { _pmSensor = sensor; }
-    void setOrientationSensor(OrientationSensor *sensor) { _orientationSensor = sensor; }
+    void setPmSensor(PMSensor *sensor);
+    void setOrientationSensor(OrientationSensor *sensor);
     void setCO2Sensor();
+
+    // sensor capability
+    uint32_t sensorCapability() { return _sensorCapability; }
 
     // get data
     const uint8_t * dataBlock(size_t &size);
     const char *    dataString(size_t &size);
+    const char*     dataJsonString(size_t &size);
 
 public:
 	SensorDataPacker();
@@ -47,6 +51,7 @@ public:
 protected:
     PMSensor            *_pmSensor;
     OrientationSensor   *_orientationSensor;
+    uint32_t             _sensorCapability;
     uint8_t              _dataBlockBuf[BUF_SIZE];
 };
 

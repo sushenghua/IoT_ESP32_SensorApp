@@ -41,11 +41,11 @@ void wifi_task(void *pvParameters)
 //----------------------------------------------
 // display tasks
 //----------------------------------------------
-#include "ILI9341.h"
-// #include "ST7789V.h"
+// #include "ILI9341.h"
+#include "ST7789V.h"
 #include "SensorDisplayController.h"
-static ILI9341 dev;
-// ST7789V dev;
+// static ILI9341 dev;
+ST7789V dev;
 static SensorDisplayController dc(&dev);
 // static xSemaphoreHandle _dcUpdateSemaphore = 0;
 // #define DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS 1000
@@ -209,7 +209,7 @@ System * System::instance()
 
 System::System()
 : _state(Uninitialized)
-, _mode(MQTTClientMode)
+, _mode(HTTPServerMode)
 {}
 
 void System::init()
