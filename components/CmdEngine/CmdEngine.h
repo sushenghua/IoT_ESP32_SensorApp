@@ -14,13 +14,19 @@
 class CmdEngine : public ProtocolMessageInterpreter
 {
 public:
+    enum RetFormat {
+        Binary,
+        JSON,
+    };
+
+public:
     CmdEngine();
 
     bool init();
 
     void enableUpdate(bool enabled = true);
 
-    int execCmd(CmdKey cmdKey, uint8_t *args = NULL, size_t argsSize = 0, void *userdata = NULL);
+    int execCmd(CmdKey cmdKey, RetFormat retFmt = Binary, uint8_t *args = NULL, size_t argsSize = 0, void *userdata = NULL);
 
     void setProtocolDelegate(ProtocolDelegate *delegate);
 

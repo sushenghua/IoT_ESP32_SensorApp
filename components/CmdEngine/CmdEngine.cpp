@@ -70,13 +70,19 @@ uint8_t  _cmdBuf[1024];
 //     return (CmdKey)(msg[0] - '0');
 // }
 
-CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_t &argsSize)
+CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_t &argsSize, CmdEngine::RetFormat &retFmt)
 {
     cJSON *root = cJSON_Parse(msg);
     cJSON *cmd = cJSON_GetObjectItem(root, "cmd");
 
     APP_LOGC("[CmdEngine]", "json cmd %s", cmd->valuestring);
+
     CmdKey cmdKey = parseCmdKeyString(cmd->valuestring);
+
+    cJSON *retfmt = cJSON_GetObjectItem(root, "retfmt");
+    if (retfmt && strcmp("json", retfmt->valuestring) == 0) retFmt = CmdEngine::JSON;
+    else retFmt = CmdEngine::Binary;
+
     switch (cmdKey) {
         case SetStaSsidPasswd: {
             cJSON *ssid = cJSON_GetObjectItem(root, "ssid");
@@ -88,7 +94,7 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
                 memcpy(_cmdBuf + 1 + _cmdBuf[0], pass->valuestring, passLen);
                 args = _cmdBuf;
                 argsSize = 1 + _cmdBuf[0] + passLen;
-                APP_LOGC("[CmdEngine]", "setSta: %.*s, ssidLen: %d", argsSize-1, args+1, args[0]);
+                // APP_LOGC("[CmdEngine]", "setSta: %.*s, ssidLen: %d", argsSize-1, args+1, args[0]);
             }
             else {
                 args = _cmdBuf;
@@ -113,6 +119,7 @@ void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char
     CmdKey cmdKey;
     uint8_t *data = NULL;
     size_t size = 0;
+    RetFormat retFmt = Binary;
 
     do {
         // binary data command topic
@@ -124,6 +131,7 @@ void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char
                 cmdKey = (CmdKey)( *(uint16_t *)(data + CMD_DATA_KEY_OFFSET) );
                 data += CMD_DATA_ARG_OFFSET;
                 size = msgLen - CMD_DATA_KEY_SIZE;
+                retFmt = Binary;
                 exec = true;
             }
             else {
@@ -134,7 +142,7 @@ void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char
         // string data command topic
         if (topicLen == strlen(MqttClientDelegate::strCmdTopic()) &&
             strncmp(topic, MqttClientDelegate::strCmdTopic(), topicLen) == 0) {
-            cmdKey = _parseJsonStringCmd(msg, msgLen, data, size);
+            cmdKey = _parseJsonStringCmd(msg, msgLen, data, size, retFmt);
             exec = true;
             break;
         }
@@ -144,7 +152,7 @@ void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char
         }
     } while (false);
 
-    if (exec) execCmd(cmdKey, data, size);
+    if (exec) execCmd(cmdKey, retFmt, data, size);
 }
 
 void CmdEngine::interpreteSocketMsg(const void* msg, size_t msgLen, void *userdata)
@@ -153,15 +161,16 @@ void CmdEngine::interpreteSocketMsg(const void* msg, size_t msgLen, void *userda
     CmdKey cmdKey;
     uint8_t *data = NULL;
     size_t size = 0;
+    RetFormat retFmt = Binary;
 
     // cmdKey = _parseStringCmd((const char *)msg, msgLen, data, size);
-    cmdKey = _parseJsonStringCmd((const char *)msg, msgLen, data, size);
+    cmdKey = _parseJsonStringCmd((const char *)msg, msgLen, data, size, retFmt);
     exec = true;
 
-    if (exec) execCmd(cmdKey, data, size, userdata);
+    if (exec) execCmd(cmdKey, retFmt, data, size, userdata);
 }
 
-int CmdEngine::execCmd(CmdKey cmdKey, uint8_t *args, size_t argsSize, void *userdata)
+int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t argsSize, void *userdata)
 {
     switch (cmdKey) {
 
