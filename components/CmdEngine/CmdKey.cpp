@@ -12,6 +12,7 @@ static const char * const CmdKeyStr[] = {
     "DoNothing",
     "GetSensorData",
     "GetSensorCapability",
+    "GetDeviceInfo",
     "GetUID",
     "GetFirmwareVersion",
     "GetIdfVersion",

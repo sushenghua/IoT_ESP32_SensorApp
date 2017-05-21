@@ -12,14 +12,15 @@ typedef enum CmdKey {
     DoNothing               = 0,
     GetSensorData           ,//= 1,
     GetSensorCapability     ,//= 2,
-    GetUID                  ,//= 3,
-    GetFirmwareVersion      ,//= 4,
-    GetIdfVersion           ,//= 5,
-    TurnOnDisplay           ,//= 6,
-    UpdateFirmware          ,//= 7,
-    SetStaSsidPasswd        ,//= 8,
-    SetSystemConfigMode     ,//= 9,
-    Restart                 ,//= 10,
+    GetDeviceInfo           ,//= 3,
+    GetUID                  ,//= 4,
+    GetFirmwareVersion      ,//= 5,
+    GetIdfVersion           ,//= 6,
+    TurnOnDisplay           ,//= 7,
+    UpdateFirmware          ,//= 8,
+    SetStaSsidPasswd        ,//= 9,
+    SetSystemConfigMode     ,//= 10,
+    Restart                 ,//= 11,
     CmdKeyMaxValue
 
 } CmdKey;

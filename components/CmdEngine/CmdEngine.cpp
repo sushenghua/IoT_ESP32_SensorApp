@@ -236,6 +236,18 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
             break;
         }
 
+        case GetDeviceInfo:
+            if (retFmt == JSON) {
+                sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\"}, \"cmd\":\"%s\"}",
+                        System::instance()->macAddress(),
+                        SensorDataPacker::sharedInstance()->sensorCapability(),
+                        System::instance()->idfVersion(),
+                        System::instance()->firmwareVersion(),
+                        cmdKeyToStr(cmdKey));
+                _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
+            }
+            break;
+
         case GetUID:
             if (retFmt == JSON) {
                 replyJsonResult(_delegate, System::instance()->macAddress(), cmdKey, userdata);
