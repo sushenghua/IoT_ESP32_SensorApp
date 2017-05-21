@@ -16,10 +16,12 @@ static const char * const CmdKeyStr[] = {
     "GetUID",
     "GetFirmwareVersion",
     "GetIdfVersion",
-    "TurnOnDisplay",
-    "UpdateFirmware",
+    "GetHostname",
+    "SetHostname",
     "SetStaSsidPasswd",
     "SetSystemConfigMode",
+    "TurnOnDisplay",
+    "UpdateFirmware",
     "Restart"
 };
 

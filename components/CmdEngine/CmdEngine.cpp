@@ -77,6 +77,16 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
     CmdKey cmdKeyRet = DoNothing;
 
     switch (cmdKey) {
+        case SetHostname: {
+            cJSON *hostname = cJSON_GetObjectItem(root, "hostname");
+            if (hostname) {
+                args = _cmdBuf;
+                argsSize = strlen(hostname->valuestring);
+                memcpy(args, hostname->valuestring, argsSize);
+                cmdKeyRet = cmdKey;
+            }
+            break;
+        }
         case SetStaSsidPasswd: {
             cJSON *ssid = cJSON_GetObjectItem(root, "ssid");
             cJSON *pass = cJSON_GetObjectItem(root, "pass");
@@ -238,11 +248,12 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
 
         case GetDeviceInfo:
             if (retFmt == JSON) {
-                sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\"}, \"cmd\":\"%s\"}",
+                sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\",\"hostname\":\"%s\"}, \"cmd\":\"%s\"}",
                         System::instance()->macAddress(),
                         SensorDataPacker::sharedInstance()->sensorCapability(),
                         System::instance()->idfVersion(),
                         System::instance()->firmwareVersion(),
+                        Wifi::instance()->getHostName(),
                         cmdKeyToStr(cmdKey));
                 _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
             }
@@ -288,6 +299,22 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
                 _delegate->replyMessage(System::instance()->firmwareVersion(),
                                         strlen(System::instance()->firmwareVersion()), userdata);
             }
+            break;
+
+        case GetHostname: {
+            const char *hostname = Wifi::instance()->getHostName();
+            if (retFmt == JSON) {
+                replyJsonResult(_delegate, hostname, cmdKey, userdata);
+            }
+            else {
+                _delegate->replyMessage(hostname, strlen(hostname), userdata);
+            }
+            break;
+        }
+
+        case SetHostname:
+            sprintf(_strBuf, "%.*s", argsSize, (const char*)args);
+            Wifi::instance()->setHostName(_strBuf);
             break;
 
         case TurnOnDisplay:

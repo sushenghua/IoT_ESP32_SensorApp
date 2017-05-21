@@ -90,6 +90,7 @@ protected:
 
 public:
     bool setHostName(const char* hostname);
+    const char * getHostName();
     void setAutoReconnect(bool autoreconnect = true) { _autoreconnect = autoreconnect; }
 
     // init, deinit

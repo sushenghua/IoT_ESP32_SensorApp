@@ -16,11 +16,13 @@ typedef enum CmdKey {
     GetUID                  ,//= 4,
     GetFirmwareVersion      ,//= 5,
     GetIdfVersion           ,//= 6,
-    TurnOnDisplay           ,//= 7,
-    UpdateFirmware          ,//= 8,
+    GetHostname             ,//= 7,
+    SetHostname             ,//= 8,
     SetStaSsidPasswd        ,//= 9,
     SetSystemConfigMode     ,//= 10,
-    Restart                 ,//= 11,
+    TurnOnDisplay           ,//= 11,
+    UpdateFirmware          ,//= 12,
+    Restart                 ,//= 13,
     CmdKeyMaxValue
 
 } CmdKey;

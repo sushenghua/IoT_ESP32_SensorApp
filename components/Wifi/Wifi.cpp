@@ -50,7 +50,8 @@ inline size_t stringLen(const char *str)
 
 inline void stringAssign(char *target, const char *str, size_t len)
 {
-    strncpy((char *)target, (const char*)str, len);
+    target[0] = '\0';
+    strncat((char *)target, (const char*)str, len);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -206,6 +207,13 @@ bool Wifi::setHostName(const char* hostname)
     }
 
     return true;
+}
+
+const char * Wifi::getHostName()
+{
+    const char *hostname = NULL;
+    ESP_ERROR_CHECK( tcpip_adapter_get_hostname(TCPIP_ADAPTER_IF_STA, &hostname) );
+    return hostname;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
