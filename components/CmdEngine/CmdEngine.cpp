@@ -315,6 +315,7 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
         case SetHostname:
             sprintf(_strBuf, "%.*s", argsSize, (const char*)args);
             Wifi::instance()->setHostName(_strBuf);
+            Wifi::instance()->saveConfig();
             break;
 
         case TurnOnDisplay:
