@@ -42,7 +42,6 @@ public:
 
     // get data
     const uint8_t * dataBlock(size_t &size);
-    const char *    dataString(size_t &size);
     const char*     dataJsonString(size_t &size);
 
 public:

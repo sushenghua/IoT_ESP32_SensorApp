@@ -10,22 +10,21 @@
 typedef enum CmdKey {
 
     DoNothing               = 0,
-    Restart                 = 1,
-    GetUID                  = 2,
-    GetFirmwareVersion      = 3,
-    GetSensorCapability     = 4,
-    GetRawData              = 5,
-    GetIdfVersion           = 6,
-    GetSensorData           = 7,
-    GetSensorDataString     = 8,
-    GetSensorDataJsonString = 9,
-    TurnOnDisplay           = 10,
-    UpdateFirmware          = 11,
-    SetStaSsidPasswd        = 12,
-    SetSystemConfigMode     = 13,
+    GetSensorData           ,//= 1,
+    GetSensorCapability     ,//= 2,
+    GetUID                  ,//= 3,
+    GetFirmwareVersion      ,//= 4,
+    GetIdfVersion           ,//= 5,
+    TurnOnDisplay           ,//= 6,
+    UpdateFirmware          ,//= 7,
+    SetStaSsidPasswd        ,//= 8,
+    SetSystemConfigMode     ,//= 9,
+    Restart                 ,//= 10,
+    CmdKeyMaxValue
 
 } CmdKey;
 
-CmdKey parseCmdKeyString(const char *str);
+CmdKey strToCmdKey(const char *str);
+const char* cmdKeyToStr(CmdKey cmdKey);
 
 #endif // _CMD_KEY_H_INCLUDED

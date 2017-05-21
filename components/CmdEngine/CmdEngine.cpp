@@ -61,15 +61,6 @@ void CmdEngine::enableUpdate(bool enabled)
 
 uint8_t  _cmdBuf[1024];
 
-// CmdKey _parseStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_t &argsSize)
-// {
-//     // parse string
-//     args = _cmdBuf + 2;
-//     argsSize = 1;
-//     args[0] = msg[1] - '0';
-//     return (CmdKey)(msg[0] - '0');
-// }
-
 CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_t &argsSize, CmdEngine::RetFormat &retFmt)
 {
     cJSON *root = cJSON_Parse(msg);
@@ -77,7 +68,7 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
 
     APP_LOGC("[CmdEngine]", "json cmd %s", cmd->valuestring);
 
-    CmdKey cmdKey = parseCmdKeyString(cmd->valuestring);
+    CmdKey cmdKey = strToCmdKey(cmd->valuestring);
 
     cJSON *retfmt = cJSON_GetObjectItem(root, "retfmt");
     if (retfmt && strcmp("json", retfmt->valuestring) == 0) retFmt = CmdEngine::JSON;
@@ -111,6 +102,12 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
     cJSON_Delete(root);
 
     return cmdKey;
+}
+
+void appendCmdKeyToJsonString(CmdKey cmdKey, char *jsonStr, size_t &count)
+{
+    sprintf(jsonStr + count - 1, ",\"cmd\":\"%s\"}", cmdKeyToStr(cmdKey));
+    count += strlen(jsonStr + count);
 }
 
 void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char* msg, size_t msgLen)
@@ -163,57 +160,74 @@ void CmdEngine::interpreteSocketMsg(const void* msg, size_t msgLen, void *userda
     size_t size = 0;
     RetFormat retFmt = Binary;
 
-    // cmdKey = _parseStringCmd((const char *)msg, msgLen, data, size);
     cmdKey = _parseJsonStringCmd((const char *)msg, msgLen, data, size, retFmt);
     exec = true;
 
     if (exec) execCmd(cmdKey, retFmt, data, size, userdata);
 }
 
+char _strBuf[1024];
+
 int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t argsSize, void *userdata)
 {
     switch (cmdKey) {
 
         case GetSensorData: {
-            size_t count;
-            const uint8_t * data = SensorDataPacker::sharedInstance()->dataBlock(count);
-            _delegate->replyMessage(data, count, userdata);
-            break;
-        }
-
-        case GetSensorDataString: {
-            size_t count;
-            const char * data = SensorDataPacker::sharedInstance()->dataString(count);
-            _delegate->replyMessage(data, count, userdata);
-            break;
-        }
-
-        case GetSensorDataJsonString: {
-            size_t count;
-            const char * data = SensorDataPacker::sharedInstance()->dataJsonString(count);
+            size_t count = 0;
+            const void * data = NULL;
+            if (retFmt == Binary)
+                data = SensorDataPacker::sharedInstance()->dataBlock(count);
+            else if (retFmt == JSON) {
+                data = SensorDataPacker::sharedInstance()->dataJsonString(count);
+                appendCmdKeyToJsonString(cmdKey, (char*)data, count);
+            }
             _delegate->replyMessage(data, count, userdata);
             break;
         }
 
         case GetUID:
-            _delegate->replyMessage(System::instance()->macAddress(),
-                                    strlen(System::instance()->macAddress()), userdata);
+            if (retFmt == JSON) {
+                sprintf(_strBuf, "{\"ret\":\"%s\", \"cmd\":\"%s\"}", System::instance()->macAddress(), cmdKeyToStr(cmdKey));
+                _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
+            }
+            else {
+                _delegate->replyMessage(System::instance()->macAddress(),
+                                        strlen(System::instance()->macAddress()), userdata);
+            }
             break;
 
         case GetSensorCapability: {
             uint32_t capability = SensorDataPacker::sharedInstance()->sensorCapability();
-            _delegate->replyMessage(&capability, sizeof(capability), userdata);
+            if (retFmt == JSON) {
+                sprintf(_strBuf, "{\"ret\":\"%u\", \"cmd\":\"%s\"}", capability, cmdKeyToStr(cmdKey));
+                _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
+            }
+            else {
+                _delegate->replyMessage(&capability, sizeof(capability), userdata);
+            }
             break;
         }
 
         case GetIdfVersion:
-            _delegate->replyMessage(System::instance()->idfVersion(),
-                                    strlen(System::instance()->idfVersion()), userdata);
+            if (retFmt == JSON) {
+                sprintf(_strBuf, "{\"ret\":\"%s\", \"cmd\":\"%s\"}", System::instance()->idfVersion(), cmdKeyToStr(cmdKey));
+                _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
+            }
+            else {
+                _delegate->replyMessage(System::instance()->idfVersion(),
+                                        strlen(System::instance()->idfVersion()), userdata);
+            }
             break;
 
         case GetFirmwareVersion:
-            _delegate->replyMessage(System::instance()->firmwareVersion(),
-                                    strlen(System::instance()->firmwareVersion()), userdata);
+            if (retFmt == JSON) {
+                sprintf(_strBuf, "{\"ret\":\"%s\", \"cmd\":\"%s\"}", System::instance()->firmwareVersion(), cmdKeyToStr(cmdKey));
+                _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
+            }
+            else {
+                _delegate->replyMessage(System::instance()->firmwareVersion(),
+                                        strlen(System::instance()->firmwareVersion()), userdata);
+            }
             break;
 
         case TurnOnDisplay:
