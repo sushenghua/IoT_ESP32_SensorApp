@@ -140,6 +140,7 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
         }
 
         default:
+            cmdKeyRet = cmdKey;
             break;
     }
 
