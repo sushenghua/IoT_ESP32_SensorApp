@@ -74,23 +74,67 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
     if (retfmt && strcmp("json", retfmt->valuestring) == 0) retFmt = CmdEngine::JSON;
     else retFmt = CmdEngine::Binary;
 
+    CmdKey cmdKeyRet = DoNothing;
+
     switch (cmdKey) {
         case SetStaSsidPasswd: {
             cJSON *ssid = cJSON_GetObjectItem(root, "ssid");
             cJSON *pass = cJSON_GetObjectItem(root, "pass");
             if (ssid && pass) {
-                _cmdBuf[0] = strlen(ssid->valuestring);
-                size_t passLen = strlen(pass->valuestring);
-                memcpy(_cmdBuf + 1, ssid->valuestring, _cmdBuf[0]);
-                memcpy(_cmdBuf + 1 + _cmdBuf[0], pass->valuestring, passLen);
                 args = _cmdBuf;
-                argsSize = 1 + _cmdBuf[0] + passLen;
+                args[0] = strlen(ssid->valuestring);
+                size_t passLen = strlen(pass->valuestring);
+                memcpy(args + 1, ssid->valuestring, args[0]);
+                memcpy(args + 1 + args[0], pass->valuestring, passLen);
+                argsSize = 1 + args[0] + passLen;
+                cmdKeyRet = cmdKey;
                 // APP_LOGC("[CmdEngine]", "setSta: %.*s, ssidLen: %d", argsSize-1, args+1, args[0]);
             }
-            else {
+            break;
+        }
+
+        case SetSystemConfigMode: {
+            cJSON *mode = cJSON_GetObjectItem(root, "mode");
+            if (mode) {
                 args = _cmdBuf;
-                args[0] = 0;
-                argsSize = 0;
+                if (strlen(mode->valuestring) == strlen("HTTPServerMode") &&
+                    strcmp(mode->valuestring, "HTTPServerMode") == 0) {
+                    args[0] = System::HTTPServerMode;
+                    argsSize = 1;
+                    cmdKeyRet = cmdKey;
+                }
+                else if (strlen(mode->valuestring) == strlen("MQTTClientMode") &&
+                         strcmp(mode->valuestring, "MQTTClientMode") == 0) {
+                    args[0] = System::MQTTClientMode;
+                    argsSize = 1;
+                    cmdKeyRet = cmdKey;
+                }
+                else if (strlen(mode->valuestring) == strlen("MQTTClientAndHTTPServerMode") &&
+                         strcmp(mode->valuestring, "MQTTClientAndHTTPServerMode") == 0) {
+                    args[0] = System::MQTTClientAndHTTPServerMode;
+                    argsSize = 1;
+                    cmdKeyRet = cmdKey;
+                }
+            }
+            break;
+        }
+
+        case TurnOnDisplay: {
+            cJSON *on = cJSON_GetObjectItem(root, "on");
+            if (on) {
+                args = _cmdBuf;
+                if (strlen(on->valuestring) == strlen("on") &&
+                    strcmp(on->valuestring, "on") == 0) {
+                    args[0] = 1;
+                    argsSize = 1;
+                    cmdKeyRet = cmdKey;
+                }
+                else if (strlen(on->valuestring) == strlen("off") &&
+                         strcmp(on->valuestring, "off") == 0) {
+                    args[0] = 0;
+                    argsSize = 1;
+                    cmdKeyRet = cmdKey;
+                }
             }
             break;
         }
@@ -101,7 +145,7 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
 
     cJSON_Delete(root);
 
-    return cmdKey;
+    return cmdKeyRet;
 }
 
 void appendCmdKeyToJsonString(CmdKey cmdKey, char *jsonStr, size_t &count)
@@ -168,6 +212,12 @@ void CmdEngine::interpreteSocketMsg(const void* msg, size_t msgLen, void *userda
 
 char _strBuf[1024];
 
+void replyJsonResult(ProtocolDelegate *delegate, const char *str, CmdKey cmdKey, void *userdata)
+{
+    sprintf(_strBuf, "{\"ret\":\"%s\", \"cmd\":\"%s\"}", str, cmdKeyToStr(cmdKey));
+    delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
+}
+
 int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t argsSize, void *userdata)
 {
     switch (cmdKey) {
@@ -187,8 +237,7 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
 
         case GetUID:
             if (retFmt == JSON) {
-                sprintf(_strBuf, "{\"ret\":\"%s\", \"cmd\":\"%s\"}", System::instance()->macAddress(), cmdKeyToStr(cmdKey));
-                _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
+                replyJsonResult(_delegate, System::instance()->macAddress(), cmdKey, userdata);
             }
             else {
                 _delegate->replyMessage(System::instance()->macAddress(),
@@ -210,8 +259,7 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
 
         case GetIdfVersion:
             if (retFmt == JSON) {
-                sprintf(_strBuf, "{\"ret\":\"%s\", \"cmd\":\"%s\"}", System::instance()->idfVersion(), cmdKeyToStr(cmdKey));
-                _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
+                replyJsonResult(_delegate, System::instance()->idfVersion(), cmdKey, userdata);
             }
             else {
                 _delegate->replyMessage(System::instance()->idfVersion(),
@@ -221,8 +269,7 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
 
         case GetFirmwareVersion:
             if (retFmt == JSON) {
-                sprintf(_strBuf, "{\"ret\":\"%s\", \"cmd\":\"%s\"}", System::instance()->firmwareVersion(), cmdKeyToStr(cmdKey));
-                _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
+                replyJsonResult(_delegate, System::instance()->firmwareVersion(), cmdKey, userdata);
             }
             else {
                 _delegate->replyMessage(System::instance()->firmwareVersion(),
