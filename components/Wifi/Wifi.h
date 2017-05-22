@@ -70,9 +70,10 @@ public:
     // config
     void setDefaultConfig();
     void setWifiMode(wifi_mode_t mode);
-    bool setStaConfig(const char *ssid, const char *passwd);
+    bool setStaConfig(const char *ssid, const char *passwd, bool forceOverride = false);
     bool setApConfig(const char      *ssid,
                      const char      *passwd,
+                     bool forceOverride = false,
                      wifi_auth_mode_t authmode = WIFI_AUTH_WPA_WPA2_PSK,
                      uint8_t          maxConnection = WIFI_DEFAULT_AP_MAX_CONNECTION,
                      uint8_t          ssidHidden = 0); // default 0: not hidden

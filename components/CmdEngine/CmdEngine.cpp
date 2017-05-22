@@ -366,8 +366,8 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
             char pass[64] = {0};
             strncat(ssid, (const char*)(args+1), ssidLen);
             strncat(pass, (const char*)(args+1+ssidLen), argsSize-1-ssidLen);
-            if (cmdKey == SetStaSsidPasswd) Wifi::instance()->setStaConfig(ssid, pass);
-            else if (cmdKey == SetApSsidPasswd) Wifi::instance()->setApConfig(ssid, pass);
+            if (cmdKey == SetStaSsidPasswd) Wifi::instance()->setStaConfig(ssid, pass, true);
+            else if (cmdKey == SetApSsidPasswd) Wifi::instance()->setApConfig(ssid, pass, true);
             Wifi::instance()->saveConfig();
             break;
         }

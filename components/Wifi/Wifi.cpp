@@ -99,9 +99,9 @@ void Wifi::setWifiMode(wifi_mode_t mode)
         _config.mode = mode;
 }
 
-bool Wifi::setStaConfig(const char *ssid, const char *passwd)
+bool Wifi::setStaConfig(const char *ssid, const char *passwd, bool forceOverride)
 {
-    if (_initialized) return false;
+    if (!forceOverride && _initialized) return false;
 
     size_t ssidLen = stringLen(ssid);
     size_t ssidMaxLen = sizeof(_config.apConfig.sta.ssid);
@@ -119,11 +119,12 @@ bool Wifi::setStaConfig(const char *ssid, const char *passwd)
 
 bool Wifi::setApConfig(const char      *ssid,
                        const char      *passwd,
+                       bool             forceOverride,
                        wifi_auth_mode_t authmode,
                        uint8_t          maxConnection,
                        uint8_t          ssidHidden)
 {
-    if (_initialized) return false;
+    if (!forceOverride && _initialized) return false;
 
     size_t ssidLen = stringLen(ssid);
     size_t ssidMaxLen = sizeof(_config.apConfig.ap.ssid);
