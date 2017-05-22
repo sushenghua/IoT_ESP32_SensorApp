@@ -77,6 +77,7 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
     CmdKey cmdKeyRet = DoNothing;
 
     switch (cmdKey) {
+
         case SetHostname: {
             cJSON *hostname = cJSON_GetObjectItem(root, "hostname");
             if (hostname) {
@@ -87,7 +88,9 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
             }
             break;
         }
-        case SetStaSsidPasswd: {
+
+        case SetStaSsidPasswd:
+        case SetApSsidPasswd: {
             cJSON *ssid = cJSON_GetObjectItem(root, "ssid");
             cJSON *pass = cJSON_GetObjectItem(root, "pass");
             if (ssid && pass) {
@@ -331,13 +334,40 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
             System::instance()->restart();
             break;
 
-        case SetStaSsidPasswd: {
+        case GetStaSsidPasswd:
+        case GetApSsidPasswd: {
+            const char *ssid = NULL;
+            const char *pass = NULL;
+            if (cmdKey == GetStaSsidPasswd) {
+                ssid = Wifi::instance()->staSsid();
+                pass = Wifi::instance()->staPassword();
+            }
+            else if (cmdKey == GetApSsidPasswd) {
+                ssid = Wifi::instance()->apSsid();
+                pass = Wifi::instance()->apPassword();
+            }
+            if (retFmt == JSON) {
+                sprintf(_strBuf, "{\"ret\":{\"ssid\":\"%s\",\"passwd\":\"%s\"}, \"cmd\":\"%s\"}",
+                        ssid, pass, cmdKeyToStr(cmdKey));
+                _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
+            }
+            else {
+                _strBuf[0] = strlen(ssid);
+                sprintf(_strBuf + 1, "%s%s", ssid, pass);
+                _delegate->replyMessage(_strBuf, 1 + strlen(_strBuf + 1), userdata);
+            }
+            break;
+        }
+
+        case SetStaSsidPasswd:
+        case SetApSsidPasswd: {
             uint8_t ssidLen = args[0];
             char ssid[32] = {0};
             char pass[64] = {0};
             strncat(ssid, (const char*)(args+1), ssidLen);
             strncat(pass, (const char*)(args+1+ssidLen), argsSize-1-ssidLen);
-            Wifi::instance()->setStaConfig(ssid, pass);
+            if (cmdKey == SetStaSsidPasswd) Wifi::instance()->setStaConfig(ssid, pass);
+            else if (cmdKey == SetApSsidPasswd) Wifi::instance()->setApConfig(ssid, pass);
             Wifi::instance()->saveConfig();
             break;
         }

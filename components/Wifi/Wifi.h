@@ -93,6 +93,11 @@ public:
     const char * getHostName();
     void setAutoReconnect(bool autoreconnect = true) { _autoreconnect = autoreconnect; }
 
+    const char * staSsid();
+    const char * staPassword();
+    const char * apSsid();
+    const char * apPassword();
+
     // init, deinit
     void init();
     void deinit();

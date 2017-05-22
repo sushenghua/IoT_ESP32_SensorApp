@@ -216,6 +216,26 @@ const char * Wifi::getHostName()
     return hostname;
 }
 
+const char * Wifi::staSsid()
+{
+    return (const char *)_config.staConfig.sta.ssid;
+}
+
+const char * Wifi::staPassword()
+{
+    return (const char *)_config.staConfig.sta.password;
+}
+
+const char * Wifi::apSsid()
+{
+    return (const char *)_config.apConfig.ap.ssid;
+}
+
+const char * Wifi::apPassword()
+{
+    return (const char *)_config.apConfig.ap.password;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////
 // ------ wifi init and event handler
 /* FreeRTOS event group to signal when we are connected & ready to make a request */

@@ -18,11 +18,14 @@ typedef enum CmdKey {
     GetIdfVersion           ,//= 6,
     GetHostname             ,//= 7,
     SetHostname             ,//= 8,
-    SetStaSsidPasswd        ,//= 9,
-    SetSystemConfigMode     ,//= 10,
-    TurnOnDisplay           ,//= 11,
-    UpdateFirmware          ,//= 12,
-    Restart                 ,//= 13,
+    GetStaSsidPasswd        ,//= 9
+    SetStaSsidPasswd        ,//= 10,
+    GetApSsidPasswd         ,//= 11,
+    SetApSsidPasswd         ,//= 12,
+    SetSystemConfigMode     ,//= 13,
+    TurnOnDisplay           ,//= 14,
+    UpdateFirmware          ,//= 15,
+    Restart                 ,//= 16,
     CmdKeyMaxValue
 
 } CmdKey;
