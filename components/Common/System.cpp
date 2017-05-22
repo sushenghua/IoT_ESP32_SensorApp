@@ -192,7 +192,7 @@ static void _initMacADDR()
 {
     uint8_t macAddr[6];
     char *target = MAC_ADDR;
-    esp_efuse_read_mac(macAddr);
+    esp_efuse_mac_get_default(macAddr);
     for (int i = 0; i < 6; ++i) {
         sprintf(target, "%02x", macAddr[i]);
         target += 2;
