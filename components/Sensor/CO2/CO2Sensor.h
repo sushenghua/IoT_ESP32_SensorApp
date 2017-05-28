@@ -38,15 +38,15 @@ public:
 
 protected:
     // value cache from sensor
-	CO2Data         _co2Data;
+    CO2Data         _co2Data;
 
-	// parser and buf
-	PTFrameParser   _parser;
-	uint8_t         _rxBuf[CO2_RX_BUF_CAPACITY];
-	uint16_t        _rxCount;
+    // parser and buf
+    PTFrameParser   _parser;
+    uint8_t         _rxBuf[CO2_RX_BUF_CAPACITY];
+    uint16_t        _rxCount;
 
-	// display delagate
-	SensorDisplayController  *_dc;
+    // display delagate
+    SensorDisplayController  *_dc;
 };
 
 #endif // _CO2SENSOR_H

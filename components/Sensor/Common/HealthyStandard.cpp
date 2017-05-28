@@ -12,7 +12,7 @@
 
 uint16_t HS::RGB888toRGB565(uint8_t r, uint8_t g, uint8_t b)
 {
-	return (r << 11) | (g <<5) | b;
+    return (r << 11) | (g <<5) | b;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -22,56 +22,56 @@ uint16_t HS::RGB888toRGB565(uint8_t r, uint8_t g, uint8_t b)
 
 // table of level index
 static uint16_t PMINDEX[] = {
-		0,          // HEALTH_LEVEL_GOOD_I_LOW,
-		50,         // HEALTH_LEVEL_GOOD_I_HIGH,
-		51,         // HEALTH_LEVEL_MODERATE_I_LOW,
-		100,        // HEALTH_LEVEL_MODERATE_I_HIGH,
-		101,        // HEALTH_LEVEL_UNHEALTHYFORSEN_I_LOW,
-		150,        // HEALTH_LEVEL_UNHEALTHYFORSEN_I_HIGH,
-		151,        // HEALTH_LEVEL_UNHEALTHY_I_LOW,
-		200,        // HEALTH_LEVEL_UNHEALTHY_I_HIGH,
-		201,        // HEALTH_LEVEL_VERY_UNHEALTHY_I_LOW,
-		300,        // HEALTH_LEVEL_VERY_UNHEALTHY_I_HIGH,
-		301,        // HEALTH_LEVEL_HAZARDOUS_I_LOW,
-		500,        // HEALTH_LEVEL_HAZARDOUS_I_HIGH
-		301,        // same as previous level, sync with breakpoints table
-		500         // same as previous level, sync with breakpoints table
+        0,          // HEALTH_LEVEL_GOOD_I_LOW,
+        50,         // HEALTH_LEVEL_GOOD_I_HIGH,
+        51,         // HEALTH_LEVEL_MODERATE_I_LOW,
+        100,        // HEALTH_LEVEL_MODERATE_I_HIGH,
+        101,        // HEALTH_LEVEL_UNHEALTHYFORSEN_I_LOW,
+        150,        // HEALTH_LEVEL_UNHEALTHYFORSEN_I_HIGH,
+        151,        // HEALTH_LEVEL_UNHEALTHY_I_LOW,
+        200,        // HEALTH_LEVEL_UNHEALTHY_I_HIGH,
+        201,        // HEALTH_LEVEL_VERY_UNHEALTHY_I_LOW,
+        300,        // HEALTH_LEVEL_VERY_UNHEALTHY_I_HIGH,
+        301,        // HEALTH_LEVEL_HAZARDOUS_I_LOW,
+        500,        // HEALTH_LEVEL_HAZARDOUS_I_HIGH
+        301,        // same as previous level, sync with breakpoints table
+        500         // same as previous level, sync with breakpoints table
 };
 
 // table of breakpoints pm2.5
 float HS::PM25_TABLE[] = {
-		0,          // HEALTH_LEVEL_PM25_GOOD_C_LOW,
-		12.0f,      // HEALTH_LEVEL_PM25_GOOD_C_HIGH,
-		12.1f,      // HEALTH_LEVEL_PM25_MODERATE_C_LOW,
-		35.4f,      // HEALTH_LEVEL_PM25_MODERATE_C_HIGH,
-		35.5f,      // HEALTH_LEVEL_PM25_UNHEALTHYFORSEN_C_LOW,
-		55.4f,      // HEALTH_LEVEL_PM25_UNHEALTHYFORSEN_C_HIGH,
-		55.5f,      // HEALTH_LEVEL_PM25_UNHEALTHY_C_LOW,
-		150.4f,     // HEALTH_LEVEL_PM25_UNHEALTHY_C_HIGH,
-		150.5f,     // HEALTH_LEVEL_PM25_VERY_UNHEALTHY_C_LOW,
-		250.4f,     // HEALTH_LEVEL_PM25_VERY_UNHEALTHY_C_HIGH,
-		250.5f,     // HEALTH_LEVEL_PM25_HAZARDOUS1_C_LOW,
-		350.4f,     // HEALTH_LEVEL_PM25_HAZARDOUS1_C_HIGH,
-		350.5f,     // HEALTH_LEVEL_PM25_HAZARDOUS2_C_LOW,
-		500.4f      // HEALTH_LEVEL_PM25_HAZARDOUS2_C_HIGH
+        0,          // HEALTH_LEVEL_PM25_GOOD_C_LOW,
+        12.0f,      // HEALTH_LEVEL_PM25_GOOD_C_HIGH,
+        12.1f,      // HEALTH_LEVEL_PM25_MODERATE_C_LOW,
+        35.4f,      // HEALTH_LEVEL_PM25_MODERATE_C_HIGH,
+        35.5f,      // HEALTH_LEVEL_PM25_UNHEALTHYFORSEN_C_LOW,
+        55.4f,      // HEALTH_LEVEL_PM25_UNHEALTHYFORSEN_C_HIGH,
+        55.5f,      // HEALTH_LEVEL_PM25_UNHEALTHY_C_LOW,
+        150.4f,     // HEALTH_LEVEL_PM25_UNHEALTHY_C_HIGH,
+        150.5f,     // HEALTH_LEVEL_PM25_VERY_UNHEALTHY_C_LOW,
+        250.4f,     // HEALTH_LEVEL_PM25_VERY_UNHEALTHY_C_HIGH,
+        250.5f,     // HEALTH_LEVEL_PM25_HAZARDOUS1_C_LOW,
+        350.4f,     // HEALTH_LEVEL_PM25_HAZARDOUS1_C_HIGH,
+        350.5f,     // HEALTH_LEVEL_PM25_HAZARDOUS2_C_LOW,
+        500.4f      // HEALTH_LEVEL_PM25_HAZARDOUS2_C_HIGH
 };
 
 // table of breakpoints pm10
 float HS::PM10_TABLE[] = {
-		0,          // HEALTH_LEVEL_PM10_GOOD_C_LOW,
-		54.0f,      // HEALTH_LEVEL_PM10_GOOD_C_HIGH,
-		55.0f,      // HEALTH_LEVEL_PM10_MODERATE_C_LOW,
-		154.0f,     // HEALTH_LEVEL_PM10_MODERATE_C_HIGH,
-		155.0f,     // HEALTH_LEVEL_PM10_UNHEALTHYFORSEN_C_LOW,
-		254.0f,     // HEALTH_LEVEL_PM10_UNHEALTHYFORSEN_C_HIGH,
-		255.0f,     // HEALTH_LEVEL_PM10_UNHEALTHY_C_LOW,
-		354.0f,     // HEALTH_LEVEL_PM10_UNHEALTHY_C_HIGH,
-		355.0f,     // HEALTH_LEVEL_PM10_VERY_UNHEALTHY_C_LOW,
-		424.0f,     // HEALTH_LEVEL_PM10_VERY_UNHEALTHY_C_HIGH,
-		425.0f,     // HEALTH_LEVEL_PM10_HAZARDOUS1_C_LOW,
-		504.0f,     // HEALTH_LEVEL_PM10_HAZARDOUS1_C_HIGH,
-		505.0f,     // HEALTH_LEVEL_PM10_HAZARDOUS2_C_LOW,
-		604.0f      // HEALTH_LEVEL_PM10_HAZARDOUS2_C_HIGH
+        0,          // HEALTH_LEVEL_PM10_GOOD_C_LOW,
+        54.0f,      // HEALTH_LEVEL_PM10_GOOD_C_HIGH,
+        55.0f,      // HEALTH_LEVEL_PM10_MODERATE_C_LOW,
+        154.0f,     // HEALTH_LEVEL_PM10_MODERATE_C_HIGH,
+        155.0f,     // HEALTH_LEVEL_PM10_UNHEALTHYFORSEN_C_LOW,
+        254.0f,     // HEALTH_LEVEL_PM10_UNHEALTHYFORSEN_C_HIGH,
+        255.0f,     // HEALTH_LEVEL_PM10_UNHEALTHY_C_LOW,
+        354.0f,     // HEALTH_LEVEL_PM10_UNHEALTHY_C_HIGH,
+        355.0f,     // HEALTH_LEVEL_PM10_VERY_UNHEALTHY_C_LOW,
+        424.0f,     // HEALTH_LEVEL_PM10_VERY_UNHEALTHY_C_HIGH,
+        425.0f,     // HEALTH_LEVEL_PM10_HAZARDOUS1_C_LOW,
+        504.0f,     // HEALTH_LEVEL_PM10_HAZARDOUS1_C_HIGH,
+        505.0f,     // HEALTH_LEVEL_PM10_HAZARDOUS2_C_LOW,
+        604.0f      // HEALTH_LEVEL_PM10_HAZARDOUS2_C_HIGH
 };
 
 // table of level color
@@ -87,26 +87,26 @@ static uint16_t AIRLEVELCOLOR[] = {
 
 uint16_t HS::colorForAirLevel(uint8_t level)
 {
-	return AIRLEVELCOLOR[level];
+    return AIRLEVELCOLOR[level];
 }
 
 void HS::calculateAQI(const float *table, float concertration, uint16_t &indexValue, uint8_t &level)
 {
-	int i = 0;
-	for (; i <= PM_MAX_LEVEL; ++i) {
-		if (concertration <= table[i * 2 + 1]) {
-			break;
-		}
-	}
-	if ( i <= PM_MAX_LEVEL) {
+    int i = 0;
+    for (; i <= PM_MAX_LEVEL; ++i) {
+        if (concertration <= table[i * 2 + 1]) {
+            break;
+        }
+    }
+    if ( i <= PM_MAX_LEVEL) {
     indexValue = ((PMINDEX[i*2+1] - PMINDEX[i*2]) / (table[i*2+1] - table[i*2])) * (concertration - table[i*2])
                   + PMINDEX[i*2];
-		level = i;
-	}
-	else {
-		indexValue = 500;
-		level = PM_MAX_LEVEL;
-	}
+        level = i;
+    }
+    else {
+        indexValue = 500;
+        level = PM_MAX_LEVEL;
+    }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -134,7 +134,7 @@ static uint16_t HCHOLEVELCOLOR[] = {
 
 uint16_t HS::colorForHchoLevel(uint8_t level)
 {
-	return HCHOLEVELCOLOR[level];
+    return HCHOLEVELCOLOR[level];
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -155,8 +155,8 @@ float HS::TEMP_TABLE[] = {
 
 // table of level color
 static uint16_t TEMPLEVELCOLOR[] = {
-		0x07FF,     // deep cold
-		0x04DF,     // icy cold
+        0x07FF,     // deep cold
+        0x04DF,     // icy cold
         0x01BF,     // cold
         0x07E0,     // comfortable
         0xFBE0,     // hot
@@ -166,7 +166,7 @@ static uint16_t TEMPLEVELCOLOR[] = {
 
 uint16_t HS::colorForTempLevel(uint8_t level)
 {
-	return TEMPLEVELCOLOR[level];
+    return TEMPLEVELCOLOR[level];
 }
 
 // humidity level
@@ -178,14 +178,14 @@ float HS::HUMID_TABLE[] = {
 
 // table of level color
 static uint16_t HUMIDLEVELCOLOR[] = {
-		0xFBE0,     // dry
-		0x07E0,     // comfortable
+        0xFBE0,     // dry
+        0x07E0,     // comfortable
         0x981F      // humid
 };
 
 uint16_t HS::colorForHumidLevel(uint8_t level)
 {
-	return HUMIDLEVELCOLOR[level];
+    return HUMIDLEVELCOLOR[level];
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -199,7 +199,7 @@ float HS::CO2_TABLE[] = {
         1000.0f,    // fresh
         2000.0f,    // stagnant, sleepy
         5000.0f,    // uncomfortable, heart-beat accelerated
-	                // dagerous, coma, event dead
+                    // dagerous, coma, event dead
 };
 
 // table of level color
@@ -213,16 +213,16 @@ static uint16_t CO2LEVELCOLOR[] = {
 
 uint16_t HS::colorForCO2Level(uint8_t level)
 {
-	return CO2LEVELCOLOR[level];
+    return CO2LEVELCOLOR[level];
 }
 
 uint8_t HS::calculateSampleLevel(const float *table, float sampleValue, uint8_t maxLevel)
 {
-	uint8_t i = 0;
-	for (; i < maxLevel; ++i) {
-		if (sampleValue < table[i]) {
-			break;
-		}
-	}
-	return i;
+    uint8_t i = 0;
+    for (; i < maxLevel; ++i) {
+        if (sampleValue < table[i]) {
+            break;
+        }
+    }
+    return i;
 }

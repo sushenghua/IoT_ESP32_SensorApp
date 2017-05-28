@@ -48,42 +48,42 @@ static uint8_t PM_CMD_BUF[PM_CMD_PROTOCOL_LEN]
 
 void _appendPmCmdChecksum()
 {
-	uint16_t checksum = 0;
-	for (int i = 0; i < PM_CMD_LEN; ++i)
+    uint16_t checksum = 0;
+    for (int i = 0; i < PM_CMD_LEN; ++i)
     checksum += PM_CMD_BUF[i];
-	PM_CMD_BUF[PM_CMD_CHECKSUM_H_POS] = (checksum >> 8) & 0xFF;
-	PM_CMD_BUF[PM_CMD_CHECKSUM_L_POS] = checksum & 0xFF;
+    PM_CMD_BUF[PM_CMD_CHECKSUM_H_POS] = (checksum >> 8) & 0xFF;
+    PM_CMD_BUF[PM_CMD_CHECKSUM_L_POS] = checksum & 0xFF;
 }
-	 
+
 void _preparePmCmd(uint8_t cmd)
 {
-	switch (cmd) {
-		case PM_CMD_PASSIVE_READ:
-			PM_CMD_BUF[PM_CMD_KEY_POS] = _PM_CMD_PASSIVE_READ;
-			PM_CMD_BUF[PM_CMD_DATA_L_POS] = 0;
-			break;
+    switch (cmd) {
+        case PM_CMD_PASSIVE_READ:
+            PM_CMD_BUF[PM_CMD_KEY_POS] = _PM_CMD_PASSIVE_READ;
+            PM_CMD_BUF[PM_CMD_DATA_L_POS] = 0;
+            break;
 
-		case PM_CMD_RX_DATA_MODE_ACTIVE:
-			PM_CMD_BUF[PM_CMD_KEY_POS] = _PM_CMD_RX_DATA_MODE;
-			PM_CMD_BUF[PM_CMD_DATA_L_POS] = _PM_RX_DATA_MODE_ACTIVE;
-			break;
+        case PM_CMD_RX_DATA_MODE_ACTIVE:
+            PM_CMD_BUF[PM_CMD_KEY_POS] = _PM_CMD_RX_DATA_MODE;
+            PM_CMD_BUF[PM_CMD_DATA_L_POS] = _PM_RX_DATA_MODE_ACTIVE;
+            break;
 
-		case PM_CMD_RX_DATA_MODE_PASSIVE:
-			PM_CMD_BUF[PM_CMD_KEY_POS] = _PM_CMD_RX_DATA_MODE;
-			PM_CMD_BUF[PM_CMD_DATA_L_POS] = _PM_RX_DATA_MODE_PASSIVE;
-			break;
+        case PM_CMD_RX_DATA_MODE_PASSIVE:
+            PM_CMD_BUF[PM_CMD_KEY_POS] = _PM_CMD_RX_DATA_MODE;
+            PM_CMD_BUF[PM_CMD_DATA_L_POS] = _PM_RX_DATA_MODE_PASSIVE;
+            break;
 
-		case PM_CMD_RUN_MODE_STANDBY:
-			PM_CMD_BUF[PM_CMD_KEY_POS] = _PM_CMD_RUN_MODE;
-			PM_CMD_BUF[PM_CMD_DATA_L_POS] = _PM_CMD_RUN_MODE_STANDBY;
-			break;
+        case PM_CMD_RUN_MODE_STANDBY:
+            PM_CMD_BUF[PM_CMD_KEY_POS] = _PM_CMD_RUN_MODE;
+            PM_CMD_BUF[PM_CMD_DATA_L_POS] = _PM_CMD_RUN_MODE_STANDBY;
+            break;
 
-		case PM_CMD_RUN_MODE_NORMAL:
-			PM_CMD_BUF[PM_CMD_KEY_POS] = _PM_CMD_RUN_MODE;
-			PM_CMD_BUF[PM_CMD_DATA_L_POS] = _PM_CMD_RUN_MODE_NORMAL;
-			break;
-	}
-	_appendPmCmdChecksum();
+        case PM_CMD_RUN_MODE_NORMAL:
+            PM_CMD_BUF[PM_CMD_KEY_POS] = _PM_CMD_RUN_MODE;
+            PM_CMD_BUF[PM_CMD_DATA_L_POS] = _PM_CMD_RUN_MODE_NORMAL;
+            break;
+    }
+    _appendPmCmdChecksum();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -105,33 +105,33 @@ PMSensor::PMSensor()
 
 void PMSensor::init()
 {
-	// set baudrate to 9600 which required by sensor
-	setParams(9600);
+    // set baudrate to 9600 which required by sensor
+    setParams(9600);
 
-	// initialize gpio
+    // initialize gpio
     gpio_set_direction((gpio_num_t)PM_SENSOR_SET_PIN, GPIO_MODE_OUTPUT);
     gpio_set_direction((gpio_num_t)PM_SENSOR_RST_PIN, GPIO_MODE_OUTPUT);
     gpio_set_pull_mode((gpio_num_t)PM_SENSOR_SET_PIN, GPIO_PULLUP_ONLY);
     gpio_set_pull_mode((gpio_num_t)PM_SENSOR_RST_PIN, GPIO_PULLUP_ONLY);
 
-	Uart::init(PM_SENSOR_MCU_TX_PIN, PM_SENSOR_MCU_RX_PIN);
+    Uart::init(PM_SENSOR_MCU_TX_PIN, PM_SENSOR_MCU_RX_PIN);
 }
 
 void PMSensor::enableActiveDataTx(bool enabled)
 {
-	if (enabled) {
-		// turn on sensor's active data tx
-		_preparePmCmd(PM_CMD_RX_DATA_MODE_ACTIVE);
-		tx(PM_CMD_BUF, PM_CMD_PROTOCOL_LEN);
-	}
-	else {
-		// turn off sensor's active data tx
-		_preparePmCmd(PM_CMD_RX_DATA_MODE_PASSIVE);
-		tx(PM_CMD_BUF, PM_CMD_PROTOCOL_LEN);
+    if (enabled) {
+        // turn on sensor's active data tx
+        _preparePmCmd(PM_CMD_RX_DATA_MODE_ACTIVE);
+        tx(PM_CMD_BUF, PM_CMD_PROTOCOL_LEN);
+    }
+    else {
+        // turn off sensor's active data tx
+        _preparePmCmd(PM_CMD_RX_DATA_MODE_PASSIVE);
+        tx(PM_CMD_BUF, PM_CMD_PROTOCOL_LEN);
 
-		// prepare tx buf for cmd passive read
-		_preparePmCmd(PM_CMD_PASSIVE_READ);
-	}
+        // prepare tx buf for cmd passive read
+        _preparePmCmd(PM_CMD_PASSIVE_READ);
+    }
 }
 
 // delay definition
@@ -163,13 +163,13 @@ void PMSensor::clearCache()
 
 void PMSensor::sampleData(TickType_t waitTicks)
 {
-	int rxLen = rx(_rxBuf, _protocolLen, waitTicks);
+    int rxLen = rx(_rxBuf, _protocolLen, waitTicks);
 #ifdef DEBUG_APP
-	ESP_LOGI("[PMSensor]", "sampleData rx len %d", rxLen);
+    ESP_LOGI("[PMSensor]", "sampleData rx len %d", rxLen);
 #endif
-	if (rxLen == _protocolLen) {
-		onRxComplete();
-	}
+    if (rxLen == _protocolLen) {
+        onRxComplete();
+    }
 }
 
 void PMSensor::onTxComplete()
@@ -178,33 +178,33 @@ void PMSensor::onTxComplete()
 
 void PMSensor::onRxComplete()
 {
-	for (int i = 0; i < _protocolLen; ++i) {
-		_parser.parse(_rxBuf[i]);
-		if (_parser.frameState() == FRAME_READY) {
-			//printBuf(_rxBuf, _protocolLen);
-			//HAL_GPIO_TogglePin(RedLed_GPIO_Port, RedLed_Pin);
+    for (int i = 0; i < _protocolLen; ++i) {
+        _parser.parse(_rxBuf[i]);
+        if (_parser.frameState() == FRAME_READY) {
+            //printBuf(_rxBuf, _protocolLen);
+            //HAL_GPIO_TogglePin(RedLed_GPIO_Port, RedLed_Pin);
 #if SENSOR_TYPE >= PMS5003
-			_pmData.pm1d0 = _parser.valueAt(PM_1_D_0_POS);
-			_pmData.pm2d5 = _parser.valueAt(PM_2_D_5_POS);
-			_pmData.pm10 = _parser.valueAt(PM_10_POS);
-			_pmData.calculateAQIandLevel();
-			if (_dc) _dc->setPmData(_pmData);
+            _pmData.pm1d0 = _parser.valueAt(PM_1_D_0_POS);
+            _pmData.pm2d5 = _parser.valueAt(PM_2_D_5_POS);
+            _pmData.pm10 = _parser.valueAt(PM_10_POS);
+            _pmData.calculateAQIandLevel();
+            if (_dc) _dc->setPmData(_pmData);
 #endif
 #if SENSOR_TYPE >= PMS5003S
-			_hchoData.hcho = _parser.valueAt(HCHO_POS) / 1000.0f;
+            _hchoData.hcho = _parser.valueAt(HCHO_POS) / 1000.0f;
 #ifdef DEBUG_APP
-			ESP_LOGI("[PMSensor]", "--->pm1.0: %2.2f  pm2.5: %2.2f  pm10: %2.2f  hcho: %2.2f\n",
-			       _pmData.pm1d0, _pmData.pm2d5, _pmData.pm10, _hchoData.hcho);
+            ESP_LOGI("[PMSensor]", "--->pm1.0: %2.2f  pm2.5: %2.2f  pm10: %2.2f  hcho: %2.2f\n",
+                     _pmData.pm1d0, _pmData.pm2d5, _pmData.pm10, _hchoData.hcho);
 #endif
-			_hchoData.calculateLevel();
-			if (_dc) _dc->setHchoData(_hchoData, false);
+            _hchoData.calculateLevel();
+            if (_dc) _dc->setHchoData(_hchoData, false);
 #endif
 #if SENSOR_TYPE >= PMS5003ST
-			_tempHumidData.temp = _parser.valueAt(TEMPERATURE_POS) / 10.0f;
-			_tempHumidData.humid = _parser.valueAt(HUMIDITY_POS) / 10.0f;
-			_tempHumidData.calculateLevel();
-			if (_dc) _dc->setTempHumidData(_tempHumidData, false);
+            _tempHumidData.temp = _parser.valueAt(TEMPERATURE_POS) / 10.0f;
+            _tempHumidData.humid = _parser.valueAt(HUMIDITY_POS) / 10.0f;
+            _tempHumidData.calculateLevel();
+            if (_dc) _dc->setTempHumidData(_tempHumidData, false);
 #endif
-		}
-	}
+        }
+    }
 }

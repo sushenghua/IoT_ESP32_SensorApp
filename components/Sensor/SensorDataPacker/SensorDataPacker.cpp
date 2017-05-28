@@ -17,7 +17,7 @@ static SensorDataPacker _sharedSensorDataPacker;
 
 SensorDataPacker * SensorDataPacker::sharedInstance()
 {
-	return &_sharedSensorDataPacker;
+    return &_sharedSensorDataPacker;
 }
 
 SensorDataPacker::SensorDataPacker()
@@ -84,17 +84,23 @@ const char* SensorDataPacker::dataJsonString(size_t &size)
         sprintf(_dataStringBuf + packCount, "{\"ret\":{");
         packCount += strlen(_dataStringBuf + packCount);
         #if SENSOR_TYPE >= PMS5003
-            PMData& pmData = _pmSensor->pmData();
+            PMData& pm = _pmSensor->pmData();
             sprintf(_dataStringBuf + packCount,
-                    "\"pm1.0\":%.1f,\"pm2.5\":%.1f,\"pm2.5us\":%d,\"pm10\":%.1f,\"pm10us\":%d",
-                     pmData.pm1d0, pmData.pm2d5, pmData.aqiPm2d5US, pmData.pm10, pmData.aqiPm10US);
+                    "\"pm1.0\":%.1f,\"pm2.5\":%.1f,\"pm2.5us\":%d,\"pm2.5lvl\":%d,\"pm10\":%.1f,\"pm10us\":%d,\"pm10lvl\":%d",
+                    pm.pm1d0, pm.pm2d5, pm.aqiPm2d5US, pm.levelPm2d5US, pm.pm10, pm.aqiPm10US, pm.levelPm10US);
             packCount += strlen(_dataStringBuf + packCount);
         #endif
         #if SENSOR_TYPE >= PMS5003S
-            sprintf(_dataStringBuf + packCount, ",\"hcho\":%.2f", _pmSensor->hchoData().hcho);
+            HchoData hcho = _pmSensor->hchoData();
+            sprintf(_dataStringBuf + packCount, ",\"hcho\":%.2f,\"hcholvl\":%d", hcho.hcho, hcho.level);
             packCount += strlen(_dataStringBuf + packCount);
         #endif
         #if SENSOR_TYPE >= PMS5003ST
+            TempHumidData th = _pmSensor->tempHumidData();
+            sprintf(_dataStringBuf + packCount,
+                    ",\"temp\":%.1f,\"templvl\":%d,\"humid\":%.1f,\"humidlvl\":%d",
+                    th.temp, th.levelTemp, th.humid, th.levelHumid);
+            packCount += strlen(_dataStringBuf + packCount);
         #endif
         sprintf(_dataStringBuf + packCount, "}}");
         packCount += strlen(_dataStringBuf + packCount);

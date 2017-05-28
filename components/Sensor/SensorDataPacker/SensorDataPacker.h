@@ -12,27 +12,27 @@
 #include "OrientationSensor.h"
 
 #if SENSOR_TYPE >= PMS5003
-	#define BUF_SIZE_1  sizeof(PMData)
-	#define BUF_SIZE    BUF_SIZE_1
+    #define BUF_SIZE_1  sizeof(PMData)
+    #define BUF_SIZE    BUF_SIZE_1
 #endif
 #if SENSOR_TYPE >= PMS5003S
-	#define BUF_SIZE_2 (BUF_SIZE_1 + sizeof(HchoData))
-	#undef  BUF_SIZE
-	#define BUF_SIZE    BUF_SIZE_2
+    #define BUF_SIZE_2 (BUF_SIZE_1 + sizeof(HchoData))
+    #undef  BUF_SIZE
+    #define BUF_SIZE    BUF_SIZE_2
 #endif
 #if SENSOR_TYPE >= PMS5003ST
-	#define BUF_SIZE_3 (BUF_SIZE_2 + sizeof(TempHumidData))
-	#undef  BUF_SIZE
-	#define BUF_SIZE    BUF_SIZE_3
+    #define BUF_SIZE_3 (BUF_SIZE_2 + sizeof(TempHumidData))
+    #undef  BUF_SIZE
+    #define BUF_SIZE    BUF_SIZE_3
 #endif
 
 class SensorDataPacker
 {
 public:
-	// shared instance
+    // shared instance
     static SensorDataPacker * sharedInstance();
 
-   	// add sensor obj ref
+    // add sensor obj ref
     void setPmSensor(PMSensor *sensor);
     void setOrientationSensor(OrientationSensor *sensor);
     void setCO2Sensor();
@@ -45,7 +45,7 @@ public:
     const char*     dataJsonString(size_t &size);
 
 public:
-	SensorDataPacker();
+    SensorDataPacker();
 
 protected:
     PMSensor            *_pmSensor;
