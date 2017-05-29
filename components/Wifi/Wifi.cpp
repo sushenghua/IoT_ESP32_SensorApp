@@ -122,19 +122,6 @@ bool Wifi::setStaConfig(const char *ssid, const char *passwd, bool forceOverride
 {
     if (!forceOverride && _initialized) return false;
 
-    // size_t ssidLen = stringLen(ssid);
-    // size_t ssidMaxLen = sizeof(_config.apConfig.sta.ssid);
-    // size_t passwdLen = stringLen(passwd);
-    // size_t passwdMaxLen = sizeof(_config.apConfig.sta.password);
-    
-    // if (ssidLen > ssidMaxLen || passwdLen > passwdMaxLen)
-    //     return false;
-
-    // stringAssign((char*)_config.staConfig.sta.ssid, ssid, ssidLen);
-    // stringAssign((char*)_config.staConfig.sta.password, passwd, passwdLen);
-    
-    // return true;
-
     setAltApConnectionSsidPassword(ssid, passwd, 0);
     if (_config.altApCount == 0) _config.altApCount = 1;
 
@@ -152,17 +139,6 @@ bool Wifi::setApConfig(const char      *ssid,
                        uint8_t          ssidHidden)
 {
     if (!forceOverride && _initialized) return false;
-
-    // size_t ssidLen = stringLen(ssid);
-    // size_t ssidMaxLen = sizeof(_config.apConfig.ap.ssid);
-    // size_t passwdLen = stringLen(passwd);
-    // size_t passwdMaxLen = sizeof(_config.apConfig.ap.password);
-
-    // if (ssidLen > ssidMaxLen || passwdLen > passwdMaxLen)
-    //     return false;
-
-    // stringAssign((char*)_config.apConfig.ap.ssid, ssid, ssidLen);
-    // stringAssign((char*)_config.apConfig.ap.password, passwd, passwdLen);
 
     if ( _setConfSsidPass(_config.apConfig.ap.ssid, ssid,
                           sizeof(_config.apConfig.ap.ssid),
