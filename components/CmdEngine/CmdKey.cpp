@@ -9,23 +9,26 @@
 #include <string.h>
 
 static const char * const CmdKeyStr[] = {
-    "DoNothing",
-    "GetSensorData",
-    "GetSensorCapability",
-    "GetDeviceInfo",
-    "GetUID",
-    "GetFirmwareVersion",
-    "GetIdfVersion",
-    "GetHostname",
-    "SetHostname",
-    "GetStaSsidPasswd",
-    "SetStaSsidPasswd",
-    "GetApSsidPasswd",
-    "SetApSsidPasswd",
-    "SetSystemConfigMode",
-    "TurnOnDisplay",
-    "UpdateFirmware",
-    "Restart"
+    "DoNothing",                // 0
+    "GetSensorData",            // 1
+    "GetSensorCapability",      // 2
+    "GetDeviceInfo",            // 3
+    "GetUID",                   // 4
+    "GetFirmwareVersion",       // 5
+    "GetIdfVersion",            // 6
+    "GetHostname",              // 7
+    "SetHostname",              // 8
+    "GetStaSsidPass",           // 9
+    "SetStaSsidPass",           // 10
+    "GetApSsidPass",            // 11
+    "SetApSsidPass",            // 12
+    "GetAltApSsidPassList",     // 13
+    "AppendAltApSsidPass",      // 14
+    "ClearAltApSsidPassList",   // 15
+    "SetSystemConfigMode",      // 16
+    "TurnOnDisplay",            // 17
+    "UpdateFirmware",           // 18
+    "Restart"                   // 19
 };
 
 CmdKey strToCmdKey(const char *str)

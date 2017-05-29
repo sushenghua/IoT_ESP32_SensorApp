@@ -8,7 +8,7 @@
 #define _WIFI_H
 
 #include "esp_wifi_types.h"
-
+#include "esp_event.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Wifi config
@@ -39,8 +39,14 @@ struct WifiEapConfig {
 
 // ------ host info
 #define HOST_NAME_MAX_LEN              32
+#define ALTERNATIVE_AP_LIST_SIZE       5
 
 // ------ wifi config
+struct SsidPasswd {
+    uint8_t ssid[32];
+    uint8_t password[64];
+};
+
 struct WifiConfig {
     wifi_mode_t              mode;
     wifi_config_t            apConfig;
@@ -48,6 +54,9 @@ struct WifiConfig {
 #ifdef ENABLE_EAP
     WifiEapConfig            eapConfig;
 #endif
+    uint8_t                  altApsHead;                       // head of circular list
+    uint8_t                  altApCount;                       // alternative AP count
+    SsidPasswd               altAps[ALTERNATIVE_AP_LIST_SIZE]; // alternative AP circular list
     char                     hostName[HOST_NAME_MAX_LEN+1];
 };
 
@@ -77,6 +86,13 @@ public:
                      wifi_auth_mode_t authmode = WIFI_AUTH_WPA_WPA2_PSK,
                      uint8_t          maxConnection = WIFI_DEFAULT_AP_MAX_CONNECTION,
                      uint8_t          ssidHidden = 0); // default 0: not hidden
+
+    // alternative AP connection ssid and password
+    bool setAltApConnectionSsidPassword(const char *ssid, const char *passwd, uint8_t index);
+    bool appendAltApConnectionSsidPassword(const char *ssid, const char *passwd);
+    void loadNextAltSsidPassword();
+    void clearAltApConnectionSsidPassword();
+    void getAltApConnectionSsidPassword(SsidPasswd *&list, uint8_t &head, uint8_t &count);
 
 #ifdef ENABLE_EAP
 public:
@@ -121,7 +137,7 @@ public:
     void onStaStart();
     void onStaStop();
     void onStaConnected();
-    void onStaDisconnected();
+    void onStaDisconnected(system_event_info_t &info);
     void onStaGotIp();
 
 protected:
@@ -130,6 +146,8 @@ protected:
     bool                     _started;
     bool                     _connected;
     bool                     _autoreconnect;
+    uint8_t                  _nextAltApIndex;
+    uint16_t                 _connectionFailCount;
     // config
     WifiConfig               _config;
 };

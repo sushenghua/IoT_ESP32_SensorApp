@@ -70,6 +70,8 @@ Wifi::Wifi()
 , _started(false)
 , _connected(false)
 , _autoreconnect(true)
+, _nextAltApIndex(0)
+, _connectionFailCount(0)
 {
     // set default config value
     _config.mode = WIFI_MODE_STA;
@@ -77,6 +79,8 @@ Wifi::Wifi()
     _config.eapConfig.enabled = false;
     _config.eapConfig.eapMode = EAP_PEAP;
 #endif
+    _config.altApsHead = 0;
+    _config.altApCount = 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -91,6 +95,8 @@ void Wifi::setDefaultConfig()
     enableEap(false);
     setEapConfig("eapid", "eapusername", "eapuserpassword");
 #endif
+    _config.altApsHead = 0;
+    _config.altApCount = 0;
 }
 
 void Wifi::setWifiMode(wifi_mode_t mode)
@@ -99,22 +105,43 @@ void Wifi::setWifiMode(wifi_mode_t mode)
         _config.mode = mode;
 }
 
+bool _setConfSsidPass(uint8_t *ssidT, const char *ssidS, size_t ssidMaxLen,
+                      uint8_t *passT, const char *passS, size_t passMaxLen)
+{
+    size_t ssidLen = stringLen(ssidS);
+    size_t passLen = stringLen(passS);
+
+    if (ssidLen > ssidMaxLen || passLen > passMaxLen) return false;
+
+    stringAssign((char*)ssidT, ssidS, ssidLen);
+    stringAssign((char*)passT, passS, passLen);
+    return true;
+}
+
 bool Wifi::setStaConfig(const char *ssid, const char *passwd, bool forceOverride)
 {
     if (!forceOverride && _initialized) return false;
 
-    size_t ssidLen = stringLen(ssid);
-    size_t ssidMaxLen = sizeof(_config.apConfig.sta.ssid);
-    size_t passwdLen = stringLen(passwd);
-    size_t passwdMaxLen = sizeof(_config.apConfig.sta.password);
+    // size_t ssidLen = stringLen(ssid);
+    // size_t ssidMaxLen = sizeof(_config.apConfig.sta.ssid);
+    // size_t passwdLen = stringLen(passwd);
+    // size_t passwdMaxLen = sizeof(_config.apConfig.sta.password);
     
-    if (ssidLen > ssidMaxLen || passwdLen > passwdMaxLen)
-        return false;
+    // if (ssidLen > ssidMaxLen || passwdLen > passwdMaxLen)
+    //     return false;
 
-    stringAssign((char*)_config.staConfig.sta.ssid, ssid, ssidLen);
-    stringAssign((char*)_config.staConfig.sta.password, passwd, passwdLen);
+    // stringAssign((char*)_config.staConfig.sta.ssid, ssid, ssidLen);
+    // stringAssign((char*)_config.staConfig.sta.password, passwd, passwdLen);
     
-    return true;
+    // return true;
+
+    setAltApConnectionSsidPassword(ssid, passwd, 0);
+    if (_config.altApCount == 0) _config.altApCount = 1;
+
+    return _setConfSsidPass(_config.staConfig.sta.ssid, ssid,
+                            sizeof(_config.staConfig.sta.ssid),
+                            _config.staConfig.sta.password, passwd,
+                            sizeof(_config.staConfig.sta.password));
 }
 
 bool Wifi::setApConfig(const char      *ssid,
@@ -126,23 +153,95 @@ bool Wifi::setApConfig(const char      *ssid,
 {
     if (!forceOverride && _initialized) return false;
 
-    size_t ssidLen = stringLen(ssid);
-    size_t ssidMaxLen = sizeof(_config.apConfig.ap.ssid);
-    size_t passwdLen = stringLen(passwd);
-    size_t passwdMaxLen = sizeof(_config.apConfig.ap.password);
+    // size_t ssidLen = stringLen(ssid);
+    // size_t ssidMaxLen = sizeof(_config.apConfig.ap.ssid);
+    // size_t passwdLen = stringLen(passwd);
+    // size_t passwdMaxLen = sizeof(_config.apConfig.ap.password);
 
-    if (ssidLen > ssidMaxLen || passwdLen > passwdMaxLen)
-        return false;
+    // if (ssidLen > ssidMaxLen || passwdLen > passwdMaxLen)
+    //     return false;
 
-    stringAssign((char*)_config.apConfig.ap.ssid, ssid, ssidLen);
-    stringAssign((char*)_config.apConfig.ap.password, passwd, passwdLen);
+    // stringAssign((char*)_config.apConfig.ap.ssid, ssid, ssidLen);
+    // stringAssign((char*)_config.apConfig.ap.password, passwd, passwdLen);
 
-    _config.apConfig.ap.ssid_len = ssidLen;
-    _config.apConfig.ap.authmode = authmode;
-    _config.apConfig.ap.max_connection = maxConnection;
-    _config.apConfig.ap.ssid_hidden = ssidHidden;
+    if ( _setConfSsidPass(_config.apConfig.ap.ssid, ssid,
+                          sizeof(_config.apConfig.ap.ssid),
+                          _config.apConfig.ap.password, passwd,
+                          sizeof(_config.apConfig.ap.password)) ) {
 
-    return true;
+        _config.apConfig.ap.ssid_len = stringLen(ssid);
+        _config.apConfig.ap.authmode = authmode;
+        _config.apConfig.ap.max_connection = maxConnection;
+        _config.apConfig.ap.ssid_hidden = ssidHidden;
+        return true;
+    }
+
+    return false;
+}
+
+bool Wifi::setAltApConnectionSsidPassword(const char *ssid, const char *passwd, uint8_t index)
+{
+    if (index >= ALTERNATIVE_AP_LIST_SIZE) return false;
+
+    index += _config.altApsHead;
+    index = index % ALTERNATIVE_AP_LIST_SIZE;
+
+    return _setConfSsidPass(_config.altAps[index].ssid, ssid,
+                            sizeof(_config.staConfig.sta.ssid),
+                            _config.altAps[index].password, passwd,
+                            sizeof(_config.staConfig.sta.password));
+}
+
+bool Wifi::appendAltApConnectionSsidPassword(const char *ssid, const char *passwd)
+{
+    uint8_t index = (_config.altApsHead + _config.altApCount) % ALTERNATIVE_AP_LIST_SIZE;
+
+    if ( _setConfSsidPass(_config.altAps[index].ssid, ssid,
+                          sizeof(_config.staConfig.sta.ssid),
+                          _config.altAps[index].password, passwd,
+                          sizeof(_config.staConfig.sta.password)) ) {
+
+        if (_config.altApCount < ALTERNATIVE_AP_LIST_SIZE)
+            ++_config.altApCount;
+        else // move head to point to the circular next
+            _config.altApsHead = (_config.altApsHead + 1) % ALTERNATIVE_AP_LIST_SIZE;
+
+        return true;
+    }
+
+    return false;
+}
+
+void Wifi::loadNextAltSsidPassword()
+{
+    if (_config.altApCount > 0) {
+        if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) {
+            APP_LOGC("[Wifi]", "load alt ssid: %s, pass: %s",
+                     (const char*)_config.altAps[_nextAltApIndex].ssid,
+                     (const char*)_config.altAps[_nextAltApIndex].password);
+            _setConfSsidPass(_config.staConfig.sta.ssid,
+                             (const char*)_config.altAps[_nextAltApIndex].ssid,
+                             sizeof(_config.staConfig.sta.ssid),
+                             _config.staConfig.sta.password,
+                             (const char*)_config.altAps[_nextAltApIndex].password,
+                             sizeof(_config.staConfig.sta.password));
+
+            ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &_config.staConfig) );
+            _nextAltApIndex = (_nextAltApIndex + 1) % _config.altApCount;
+        }
+    }
+}
+
+void Wifi::clearAltApConnectionSsidPassword()
+{
+    _config.altApCount = 1; // mark only head valid
+}
+
+void Wifi::getAltApConnectionSsidPassword(SsidPasswd *&list, uint8_t &head, uint8_t &count)
+{
+    list = _config.altAps;
+    head = _config.altApsHead;
+    count = _config.altApCount;
 }
 
 #ifdef ENABLE_EAP
@@ -260,7 +359,7 @@ static esp_err_t wifi_app_event_handler(void *ctx, system_event_t *event)
             break;
 
         case SYSTEM_EVENT_STA_DISCONNECTED:
-            Wifi::instance()->onStaDisconnected();
+            Wifi::instance()->onStaDisconnected(event->event_info);
             break;
 
         default:
@@ -285,6 +384,7 @@ void Wifi::onStaGotIp()
 {
     APP_LOGI("[Wifi]", "connected, got ip");
     xEventGroupSetBits(wifiEventGroup, CONNECTED_BIT);
+    _connectionFailCount = 0;
     _connected = true;
 }
 
@@ -296,11 +396,26 @@ void Wifi::onStaConnected()
 {
 }
 
-void Wifi::onStaDisconnected()
+#define TRY_OTHER_AP_AFTER_FAIL_COUNT  3
+
+void Wifi::onStaDisconnected(system_event_info_t &info)
 {
-    APP_LOGI("[Wifi]", "disconnected");
+    APP_LOGI("[Wifi]", "disconnected, code: %d", info.disconnected.reason);
     xEventGroupClearBits(wifiEventGroup, CONNECTED_BIT);
     _connected = false;
+    switch(info.disconnected.reason) {
+        case WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT:
+        case WIFI_REASON_AUTH_FAIL:
+        case WIFI_REASON_NO_AP_FOUND:
+            ++_connectionFailCount;
+            break;
+        default:
+            break;
+    }
+    if (_connectionFailCount >= TRY_OTHER_AP_AFTER_FAIL_COUNT) {
+        loadNextAltSsidPassword();
+        _connectionFailCount = 0;
+    }
     if (!System::instance()->restarting() && _autoreconnect) {
         ESP_ERROR_CHECK( esp_wifi_connect() );
     }
@@ -460,6 +575,7 @@ bool Wifi::loadConfig()
                 APP_LOGE("[Wifi]", "loadConfig read \"wifi-config-content\" failed %d", err);
                 break;
             }
+            _nextAltApIndex = _config.altApsHead;
             succeeded = true;
         }
     } while(false);

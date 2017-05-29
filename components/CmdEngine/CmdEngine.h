@@ -29,6 +29,8 @@ public:
     int execCmd(CmdKey cmdKey, RetFormat retFmt = Binary, uint8_t *args = NULL, size_t argsSize = 0, void *userdata = NULL);
 
     void setProtocolDelegate(ProtocolDelegate *delegate);
+    // void setMqttDelegate(ProtocolDelegate *delegate);
+    // void setWebsocketDelegate(ProtocolDelegate *delegate);
 
     // ProtocolMessageInterpreter interface
     virtual void interpreteMqttMsg(const char* topic, size_t topicLen, const char* msg, size_t msgLen);
@@ -37,6 +39,8 @@ public:
 protected:
 	bool                   _updateEnabled;
     ProtocolDelegate      *_delegate;
+    // ProtocolDelegate      *_mqttDelegate;
+    // ProtocolDelegate      *_wsDelegate;
 };
 
 #endif // _CMD_ENGINE_H

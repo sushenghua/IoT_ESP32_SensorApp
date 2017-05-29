@@ -18,18 +18,12 @@
 
 #include "cJSON.h"
 
-
-#define TOPIC_API_CMD           "api/mydev/cmd"
-#define TOPIC_API_STR_CMD       "api/mydev/strcmd"
-
-#define CMD_RET_MSG_TOPIC       "api/mydev/cmdret"
-#define PUB_MSG_QOS             1
-
-
 AppUpdater _appUpdater;
 
 CmdEngine::CmdEngine()
 : _delegate(NULL)
+// , _mqttDelegate(NULL)
+// , _wsDelegate(NULL)
 {}
 
 void CmdEngine::setProtocolDelegate(ProtocolDelegate *delegate)
@@ -37,6 +31,18 @@ void CmdEngine::setProtocolDelegate(ProtocolDelegate *delegate)
     _delegate = delegate;
     _delegate->setMessageInterpreter(this);
 }
+
+// void CmdEngine::setMqttDelegate(ProtocolDelegate *delegate)
+// {
+//     _mqttDelegate = delegate;
+//     _mqttDelegate->setMessageInterpreter(this);
+// }
+
+// void CmdEngine::setWebsocketDelegate(ProtocolDelegate *delegate)
+// {
+//     _wsDelegate = delegate;
+//     _wsDelegate->setMessageInterpreter(this);
+// }
 
 bool CmdEngine::init()
 {
@@ -89,8 +95,9 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
             break;
         }
 
-        case SetStaSsidPasswd:
-        case SetApSsidPasswd: {
+        case SetStaSsidPass:
+        case SetApSsidPass:
+        case AppendAltApSsidPass: {
             cJSON *ssid = cJSON_GetObjectItem(root, "ssid");
             cJSON *pass = cJSON_GetObjectItem(root, "pass");
             if (ssid && pass) {
@@ -334,20 +341,20 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
             System::instance()->restart();
             break;
 
-        case GetStaSsidPasswd:
-        case GetApSsidPasswd: {
+        case GetStaSsidPass:
+        case GetApSsidPass: {
             const char *ssid = NULL;
             const char *pass = NULL;
-            if (cmdKey == GetStaSsidPasswd) {
+            if (cmdKey == GetStaSsidPass) {
                 ssid = Wifi::instance()->staSsid();
                 pass = Wifi::instance()->staPassword();
             }
-            else if (cmdKey == GetApSsidPasswd) {
+            else if (cmdKey == GetApSsidPass) {
                 ssid = Wifi::instance()->apSsid();
                 pass = Wifi::instance()->apPassword();
             }
             if (retFmt == JSON) {
-                sprintf(_strBuf, "{\"ret\":{\"ssid\":\"%s\",\"passwd\":\"%s\"}, \"cmd\":\"%s\"}",
+                sprintf(_strBuf, "{\"ret\":{\"ssid\":\"%s\",\"pass\":\"%s\"}, \"cmd\":\"%s\"}",
                         ssid, pass, cmdKeyToStr(cmdKey));
                 _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
             }
@@ -359,18 +366,50 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
             break;
         }
 
-        case SetStaSsidPasswd:
-        case SetApSsidPasswd: {
+        case GetAltApSsidPassList: {
+            SsidPasswd *list = NULL;
+            uint8_t head, count;
+            Wifi::instance()->getAltApConnectionSsidPassword(list, head, count);
+            if (retFmt == JSON) {
+                size_t offset = 0;
+                sprintf(_strBuf + offset, "{\"cmd\":\"%s\",\"ret\":[", cmdKeyToStr(cmdKey));
+                offset += strlen(_strBuf + offset);
+                uint8_t index = 0;
+                for (uint8_t i = 0; i < count; ++i) {
+                    index = (head + i) % count;
+                    sprintf(_strBuf + offset, "{\"ssid\":\"%s\",\"pass\":\"%s\"}%s",
+                            list[index].ssid, list[index].password, (i<count-1)?",":"");
+                    offset += strlen(_strBuf + offset);
+                }
+                sprintf(_strBuf + offset, "]}");
+                offset += strlen(_strBuf + offset);
+                _delegate->replyMessage(_strBuf, offset, userdata);
+            }
+            break;
+        }
+
+        case SetStaSsidPass:
+        case SetApSsidPass:
+        case AppendAltApSsidPass: {
             uint8_t ssidLen = args[0];
             char ssid[32] = {0};
             char pass[64] = {0};
             strncat(ssid, (const char*)(args+1), ssidLen);
             strncat(pass, (const char*)(args+1+ssidLen), argsSize-1-ssidLen);
-            if (cmdKey == SetStaSsidPasswd) Wifi::instance()->setStaConfig(ssid, pass, true);
-            else if (cmdKey == SetApSsidPasswd) Wifi::instance()->setApConfig(ssid, pass, true);
+            if (cmdKey == SetStaSsidPass)
+                Wifi::instance()->setStaConfig(ssid, pass, true);
+            else if (cmdKey == SetApSsidPass)
+                Wifi::instance()->setApConfig(ssid, pass, true);
+            else if (cmdKey == AppendAltApSsidPass)
+                Wifi::instance()->appendAltApConnectionSsidPassword(ssid, pass);
             Wifi::instance()->saveConfig();
             break;
         }
+
+        case ClearAltApSsidPassList:
+            Wifi::instance()->clearAltApConnectionSsidPassword();
+            Wifi::instance()->saveConfig();
+            break;
 
         case SetSystemConfigMode:
             System::instance()->setConfigMode((System::ConfigMode)args[0]);

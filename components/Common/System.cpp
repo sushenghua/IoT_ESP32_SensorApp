@@ -28,6 +28,7 @@ void wifi_task(void *pvParameters)
     else {
       Wifi::instance()->setDefaultConfig();
       Wifi::instance()->setStaConfig("woody@home", "58897@mljd-abcde");
+      Wifi::instance()->appendAltApConnectionSsidPassword("iPhone6S", "abcd1234");
       if (Wifi::instance()->saveConfig()) {
         APP_LOGI("[Wifi]", "save config succeeded");
       }
@@ -209,7 +210,7 @@ System * System::instance()
 
 System::System()
 : _state(Uninitialized)
-, _mode(HTTPServerMode)
+, _mode(MQTTClientMode)
 {}
 
 void System::init()
@@ -247,9 +248,9 @@ void System::_launchTasks()
     xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, SNTP_TASK_PRIORITY, &sntpTaskHandle);
     vTaskDelay(100 / portTICK_PERIOD_MS);
 
-    if (_mode == MQTTClientMode)
+    if (_mode == MQTTClientMode || _mode == MQTTClientAndHTTPServerMode)
         xTaskCreatePinnedToCore(&mqtt_task, "mqtt_task", 8192, NULL, MQTTCLIENT_TASK_PRIORITY, NULL, RUN_ON_CORE);
-    else if (_mode == HTTPServerMode)
+    if (_mode == HTTPServerMode || _mode == MQTTClientAndHTTPServerMode)
         xTaskCreatePinnedToCore(&http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
     xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, NULL, RUN_ON_CORE);
