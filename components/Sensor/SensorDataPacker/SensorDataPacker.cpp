@@ -86,8 +86,10 @@ const char* SensorDataPacker::dataJsonString(size_t &size)
         #if SENSOR_TYPE >= PMS5003
             PMData& pm = _pmSensor->pmData();
             sprintf(_dataStringBuf + packCount,
-                    "\"pm1.0\":%.1f,\"pm2.5\":%.1f,\"pm2.5us\":%d,\"pm2.5lvl\":%d,\"pm10\":%.1f,\"pm10us\":%d,\"pm10lvl\":%d",
-                    pm.pm1d0, pm.pm2d5, pm.aqiPm2d5US, pm.levelPm2d5US, pm.pm10, pm.aqiPm10US, pm.levelPm10US);
+                    "\"pm1.0\":%.1f,\"pm2.5\":%.1f,\"pm10\":%.1f,\"pm2.5us\":%d,\"pm2.5uslvl\":%d,"\
+                    "\"pm2.5cn\":%d,\"pm2.5cnlvl\":%d,\"pm10us\":%d,\"pm10uslvl\":%d",
+                    pm.pm1d0, pm.pm2d5, pm.pm10, pm.aqiPm2d5US, pm.levelPm2d5US,
+                    pm.aqiPm2d5CN, pm.levelPm2d5CN, pm.aqiPm10US, pm.levelPm10US);
             packCount += strlen(_dataStringBuf + packCount);
         #endif
         #if SENSOR_TYPE >= PMS5003S

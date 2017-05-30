@@ -45,8 +45,9 @@ struct PMData {
 
     // calculate aqi and level
     void calculateAQIandLevel() {
-        HS::calculateAQI(HS::PM25_TABLE, pm2d5, aqiPm2d5US, levelPm2d5US);
-        HS::calculateAQI(HS::PM10_TABLE, pm10, aqiPm10US, levelPm10US);
+        HS::calculateAQI(HS::PM25US_TABLE, pm2d5, aqiPm2d5US, levelPm2d5US);
+        HS::calculateAQI(HS::PM10US_TABLE, pm10,  aqiPm10US,  levelPm10US);
+        HS::calculateAQI(HS::PM25CN_TABLE, pm2d5, aqiPm2d5CN, levelPm2d5CN);
     }
 };
 

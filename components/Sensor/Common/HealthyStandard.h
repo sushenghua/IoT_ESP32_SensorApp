@@ -25,8 +25,9 @@ static uint16_t RGB888toRGB565(uint8_t r, uint8_t g, uint8_t b);
 
 #define PM_MAX_LEVEL  6
 
-static float PM25_TABLE[];
-static float PM10_TABLE[];
+static float PM25US_TABLE[];
+static float PM10US_TABLE[];
+static float PM25CN_TABLE[];
 
 static uint16_t colorForAirLevel(uint8_t level);
 

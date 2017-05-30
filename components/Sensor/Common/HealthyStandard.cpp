@@ -18,6 +18,7 @@ uint16_t HS::RGB888toRGB565(uint8_t r, uint8_t g, uint8_t b)
 /////////////////////////////////////////////////////////////////////////////////////////
 // PM standard
 // ref: https://en.wikipedia.org/wiki/Air_quality_index
+//      http://www.pm25.com/news/96.html
 /////////////////////////////////////////////////////////////////////////////////////////
 
 // table of level index
@@ -38,8 +39,8 @@ static uint16_t PMINDEX[] = {
         500         // same as previous level, sync with breakpoints table
 };
 
-// table of breakpoints pm2.5
-float HS::PM25_TABLE[] = {
+// table of breakpoints pm2.5, US standard
+float HS::PM25US_TABLE[] = {
         0,          // HEALTH_LEVEL_PM25_GOOD_C_LOW,
         12.0f,      // HEALTH_LEVEL_PM25_GOOD_C_HIGH,
         12.1f,      // HEALTH_LEVEL_PM25_MODERATE_C_LOW,
@@ -56,8 +57,8 @@ float HS::PM25_TABLE[] = {
         500.4f      // HEALTH_LEVEL_PM25_HAZARDOUS2_C_HIGH
 };
 
-// table of breakpoints pm10
-float HS::PM10_TABLE[] = {
+// table of breakpoints pm10, US standard
+float HS::PM10US_TABLE[] = {
         0,          // HEALTH_LEVEL_PM10_GOOD_C_LOW,
         54.0f,      // HEALTH_LEVEL_PM10_GOOD_C_HIGH,
         55.0f,      // HEALTH_LEVEL_PM10_MODERATE_C_LOW,
@@ -72,6 +73,24 @@ float HS::PM10_TABLE[] = {
         504.0f,     // HEALTH_LEVEL_PM10_HAZARDOUS1_C_HIGH,
         505.0f,     // HEALTH_LEVEL_PM10_HAZARDOUS2_C_LOW,
         604.0f      // HEALTH_LEVEL_PM10_HAZARDOUS2_C_HIGH
+};
+
+// table of breakpoints pm2.5, China standard
+float HS::PM25CN_TABLE[] = {
+        0,          // HEALTH_LEVEL_PM25_GOOD_C_LOW,
+        35.0f,      // HEALTH_LEVEL_PM25_GOOD_C_HIGH,
+        35.1f,      // HEALTH_LEVEL_PM25_MODERATE_C_LOW,
+        75.4f,      // HEALTH_LEVEL_PM25_MODERATE_C_HIGH,
+        75.5f,      // HEALTH_LEVEL_PM25_UNHEALTHYFORSEN_C_LOW,
+        115.4f,     // HEALTH_LEVEL_PM25_UNHEALTHYFORSEN_C_HIGH,
+        115.5f,     // HEALTH_LEVEL_PM25_UNHEALTHY_C_LOW,
+        150.4f,     // HEALTH_LEVEL_PM25_UNHEALTHY_C_HIGH,
+        150.5f,     // HEALTH_LEVEL_PM25_VERY_UNHEALTHY_C_LOW,
+        250.4f,     // HEALTH_LEVEL_PM25_VERY_UNHEALTHY_C_HIGH,
+        250.5f,     // HEALTH_LEVEL_PM25_HAZARDOUS1_C_LOW,
+        350.4f,     // HEALTH_LEVEL_PM25_HAZARDOUS1_C_HIGH,
+        350.5f,     // HEALTH_LEVEL_PM25_HAZARDOUS2_C_LOW,
+        500.4f      // HEALTH_LEVEL_PM25_HAZARDOUS2_C_HIGH
 };
 
 // table of level color
