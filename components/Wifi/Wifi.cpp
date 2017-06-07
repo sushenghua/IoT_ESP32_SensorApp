@@ -97,6 +97,7 @@ void Wifi::setDefaultConfig()
 #endif
     _config.altApsHead = 0;
     _config.altApCount = 0;
+    _nextAltApIndex = 0;
 }
 
 void Wifi::setWifiMode(wifi_mode_t mode)
@@ -122,8 +123,7 @@ bool Wifi::setStaConfig(const char *ssid, const char *passwd, bool forceOverride
 {
     if (!forceOverride && _initialized) return false;
 
-    setAltApConnectionSsidPassword(ssid, passwd, 0);
-    if (_config.altApCount == 0) _config.altApCount = 1;
+    appendAltApConnectionSsidPassword(ssid, passwd);
 
     return _setConfSsidPass(_config.staConfig.sta.ssid, ssid,
                             sizeof(_config.staConfig.sta.ssid),
@@ -170,17 +170,19 @@ bool Wifi::setAltApConnectionSsidPassword(const char *ssid, const char *passwd, 
 
 bool Wifi::appendAltApConnectionSsidPassword(const char *ssid, const char *passwd)
 {
-    uint8_t index = (_config.altApsHead + _config.altApCount) % ALTERNATIVE_AP_LIST_SIZE;
+    // circular move ahead
+    uint8_t index = (ALTERNATIVE_AP_LIST_SIZE + _config.altApsHead - 1) % ALTERNATIVE_AP_LIST_SIZE;
 
     if ( _setConfSsidPass(_config.altAps[index].ssid, ssid,
                           sizeof(_config.staConfig.sta.ssid),
                           _config.altAps[index].password, passwd,
                           sizeof(_config.staConfig.sta.password)) ) {
 
+        _config.altApsHead = index;
+        _nextAltApIndex = index; // update RAM next Alt index
+
         if (_config.altApCount < ALTERNATIVE_AP_LIST_SIZE)
             ++_config.altApCount;
-        else // move head to point to the circular next
-            _config.altApsHead = (_config.altApsHead + 1) % ALTERNATIVE_AP_LIST_SIZE;
 
         return true;
     }
