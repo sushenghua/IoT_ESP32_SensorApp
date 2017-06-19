@@ -167,8 +167,8 @@ float HS::TEMP_TABLE[] = {
          5.0f,      // icy cold
         18.0f,      // cold
         23.0f,      // comfortable
-        30.0f,      // hot
-        40.0f       // very hot
+        32.0f,      // hot
+        38.0f       // very hot
                     // burn hot
 };
 
@@ -190,7 +190,7 @@ uint16_t HS::colorForTempLevel(uint8_t level)
 
 // humidity level
 float HS::HUMID_TABLE[] = {
-        39.0f,      // dry
+        40.0f,      // dry
         70.0f       // comfortable
                     // humid
 };
