@@ -232,26 +232,26 @@ void ST7789V::setRotation(uint8_t m)
     if (_rotation == m) return;
     _rotation = m;
     switch (_rotation) {
-            case DISPLAY_ROTATION_CW_0:
-                    m = (MADCTL_RGB);
-                    _width  = ST7789V_TFTWIDTH;
-                    _height = ST7789V_TFTHEIGHT;
-                    break;
-            case DISPLAY_ROTATION_CW_90:
-                    m = (MADCTL_MV | MADCTL_MX | MADCTL_RGB);
-                    _width  = ST7789V_TFTHEIGHT;
-                    _height = ST7789V_TFTWIDTH;
-                    break;
-            case DISPLAY_ROTATION_CW_180:
-                    m = (MADCTL_MX | MADCTL_MY | MADCTL_RGB);
-                    _width  = ST7789V_TFTWIDTH;
-                    _height = ST7789V_TFTHEIGHT;
-                    break;
-            case DISPLAY_ROTATION_CW_270:
-                    m = (MADCTL_MV | MADCTL_MY | MADCTL_RGB);
-                    _width  = ST7789V_TFTHEIGHT;
-                    _height = ST7789V_TFTWIDTH;
-                    break;
+        case DISPLAY_ROTATION_CW_0:
+            m = (MADCTL_RGB);
+            _width  = ST7789V_TFTWIDTH;
+            _height = ST7789V_TFTHEIGHT;
+            break;
+        case DISPLAY_ROTATION_CW_90:
+            m = (MADCTL_MV | MADCTL_MX | MADCTL_RGB);
+            _width  = ST7789V_TFTHEIGHT;
+            _height = ST7789V_TFTWIDTH;
+            break;
+        case DISPLAY_ROTATION_CW_180:
+            m = (MADCTL_MX | MADCTL_MY | MADCTL_RGB);
+            _width  = ST7789V_TFTWIDTH;
+            _height = ST7789V_TFTHEIGHT;
+            break;
+        case DISPLAY_ROTATION_CW_270:
+            m = (MADCTL_MV | MADCTL_MY | MADCTL_RGB);
+            _width  = ST7789V_TFTHEIGHT;
+            _height = ST7789V_TFTWIDTH;
+            break;
     }
     writeCommand(ST7789V_MADCTL);
     _spiChannel.tx(m);

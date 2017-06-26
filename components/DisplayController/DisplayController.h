@@ -25,6 +25,13 @@ public:
     void turnOn(bool on) { _dev->turnOn(on); }
 
 protected:
+	void displayStatusBar();
+
+protected:
+	bool        _showWifi;
+	bool        _showTime;
+	bool        _showBattery;
+	uint16_t    _contentOffsetY;
     DisplayGFX *_dev;
 };
 

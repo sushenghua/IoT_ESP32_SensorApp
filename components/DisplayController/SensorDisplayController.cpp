@@ -109,6 +109,10 @@ void SensorDisplayController::setCO2Data(CO2Data &co2Data, bool update)
     if (update) _contentNeedUpdate = true;
 }
 
+
+
+// void SensorDisplayController
+
 void SensorDisplayController::update()
 {
     // update rotation
@@ -117,13 +121,15 @@ void SensorDisplayController::update()
         _devUpdateRotationInProgress = true;  // lock
         _dev->fillScreen(RGB565_BLACK);
         _dev->setRotation(_rotation);
+        this->displayStatusBar();
         _rotationNeedUpdate = false;
         _devUpdateRotationInProgress = false; // unlock
     }
     // update content
     if (_contentNeedUpdate) {
+
         // APP_LOGE("[SensorDC]", "content update");
-        _dev->setCursor(0, 0);
+        _dev->setCursor(0, _contentOffsetY);
 
         _dev->setTextColor(RGB565_CYAN, RGB565_BLACK);
         _dev->write("PM1.0: "); _dev->write(_pm1d0, 1); _dev->writeln();
