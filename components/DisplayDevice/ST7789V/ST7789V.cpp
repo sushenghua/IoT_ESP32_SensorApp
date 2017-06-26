@@ -127,10 +127,11 @@ typedef struct {
 } ST7789VInitCmd;
 
 DRAM_ATTR static const ST7789VInitCmd st7789vInitCmd[]={
+    // --- exit sleep
     {0x11, {0}, 0x80},
     // --- display and color format
     {0x36, {0x00}, 1},                         // mem data access control
-    {0x3A, {0x05}, 1},                         // interface pixel format, MCU-18bit 06
+    {0x3A, {0x05}, 1},                         // (RGB-5-6-5-bit input), 65K-Colors, 3Ah=”05h”
     {0x2A, {0x00, 0x00, 0x00, 0xEF}, 4},
     {0x2B, {0x00, 0x00, 0x00, 0xEF}, 4},
     // --- frame rate setting
@@ -147,10 +148,15 @@ DRAM_ATTR static const ST7789VInitCmd st7789vInitCmd[]={
     // --- gamma setting
     {0xE0, {0xD0, 0x06, 0x01, 0x0E, 0x0E, 0x08, 0x32, 0x44, 0x40, 0x08, 0x10, 0x0F, 0x15, 0x19}, 14},
     {0xE1, {0xD0, 0x06, 0x01, 0x0F, 0x0E, 0x09, 0x2F, 0x54, 0x44, 0x0F, 0x1D, 0x1A, 0x16, 0x19}, 14},
-    // {0x21, {0},    0},
-    // {0x35, {0x00}, 1},
-    // {0x44, {0x00, 0x00}, 2},
-    // {0xE7, {0x10}, 1},
+    // --- display effect
+    // {0x21, {0},    0},                      // invert display
+    // {0x35, {0x00}, 1},                         // tearing effect on
+    // {0x44, {0x00, 0x00}, 2},                   // set tear scan line
+    // {0xE7, {0x10}, 1},                      // SPI2EN (E7h): SPI2 Enable                    
+    // --- partial display for 240 x 240
+    {0x30, {0x00, 0x00, 0x00, 0xEF}, 4},
+    {0x12, {0x00}, 0},
+    // --- display on
     {0x29, {0}, 0x80},
     // {0x2C, {0}, 0x00},
     {0, {0}, 0xFF}
@@ -226,22 +232,22 @@ void ST7789V::setRotation(uint8_t m)
     _rotation = m;
     switch (_rotation) {
             case DISPLAY_ROTATION_CW_0:
-                    m = (MADCTL_MX | MADCTL_BGR);
+                    m = (MADCTL_BGR);
                     _width  = ST7789V_TFTWIDTH;
                     _height = ST7789V_TFTHEIGHT;
                     break;
             case DISPLAY_ROTATION_CW_90:
-                    m = (MADCTL_MV | MADCTL_BGR);
+                    m = (MADCTL_MV | MADCTL_MX | MADCTL_BGR);
                     _width  = ST7789V_TFTHEIGHT;
                     _height = ST7789V_TFTWIDTH;
                     break;
             case DISPLAY_ROTATION_CW_180:
-                    m = (MADCTL_MY | MADCTL_BGR);
+                    m = (MADCTL_MX | MADCTL_MY | MADCTL_BGR);
                     _width  = ST7789V_TFTWIDTH;
                     _height = ST7789V_TFTHEIGHT;
                     break;
             case DISPLAY_ROTATION_CW_270:
-                    m = (MADCTL_MX | MADCTL_MY | MADCTL_MV | MADCTL_BGR);
+                    m = (MADCTL_MV | MADCTL_MY | MADCTL_BGR);
                     _width  = ST7789V_TFTHEIGHT;
                     _height = ST7789V_TFTWIDTH;
                     break;
@@ -263,6 +269,14 @@ void ST7789V::scrollTo(uint16_t y)
 
 void ST7789V::setViewPort(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
 {
+    switch (_rotation) {
+        case DISPLAY_ROTATION_CW_270:
+            x += 80;
+            break;
+        case DISPLAY_ROTATION_CW_180:
+            y += 80;
+            break;
+    }
     uint32_t xa = ((uint32_t)x << 16) | (x+w-1);
     uint32_t ya = ((uint32_t)y << 16) | (y+h-1);
     writeCommand(ST7789V_CASET); // Column addr set
@@ -278,7 +292,7 @@ void ST7789V::writePixel(uint16_t color)
 }
 
 #define SPI_MAX_PIXELS_AT_ONCE  128
-static uint16_t _ili9431ColorTxBuf[SPI_MAX_PIXELS_AT_ONCE];
+static uint16_t _ss7789ColorTxBuf[SPI_MAX_PIXELS_AT_ONCE];
 
 void ST7789V::writePixels(uint16_t *colors, uint32_t len)
 {
@@ -290,10 +304,10 @@ void ST7789V::writePixels(uint16_t *colors, uint32_t len)
         txLen = (len > bufLen) ? bufLen : len;
         // cover 16-bit color to bytes array
         for (uint32_t i = 0;  i < txLen; ++i) {
-            _ili9431ColorTxBuf[i] = (colors[colorIndex] << 8) | (colors[colorIndex] >> 8);
+            _ss7789ColorTxBuf[i] = (colors[colorIndex] << 8) | (colors[colorIndex] >> 8);
             ++colorIndex;
         }
-        _spiChannel.tx((uint8_t*)_ili9431ColorTxBuf , txLen * 2);
+        _spiChannel.tx((uint8_t*)_ss7789ColorTxBuf , txLen * 2);
         len -= txLen;
     }
 }
@@ -304,11 +318,11 @@ void ST7789V::writeColor(uint16_t color, uint32_t len)
     uint32_t tlen = 0;
 
     for (uint16_t t = 0;  t < blen; ++t)
-        _ili9431ColorTxBuf[t] = (color << 8) | (color >> 8);
+        _ss7789ColorTxBuf[t] = (color << 8) | (color >> 8);
 
     while(len) {
         tlen = (len > blen)? blen : len;
-        _spiChannel.tx((uint8_t*)_ili9431ColorTxBuf, tlen * 2);
+        _spiChannel.tx((uint8_t*)_ss7789ColorTxBuf, tlen * 2);
         len -= tlen;
     }
 }
