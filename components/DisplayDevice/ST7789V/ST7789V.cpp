@@ -130,8 +130,8 @@ DRAM_ATTR static const ST7789VInitCmd st7789vInitCmd[]={
     // --- exit sleep
     {0x11, {0}, 0x80},
     // --- display and color format
-    {0x36, {0x00}, 1},                         // mem data access control
-    {0x3A, {0x05}, 1},                         // (RGB-5-6-5-bit input), 65K-Colors, 3Ah=”05h”
+    {0x36, {0x00}, 1},                         // mem data access control, RGB mode
+    {0x3A, {0x05}, 1},                         // RGB-5-6-5-bit, 65K-Colors, 3Ah=”05h”
     {0x2A, {0x00, 0x00, 0x00, 0xEF}, 4},
     {0x2B, {0x00, 0x00, 0x00, 0xEF}, 4},
     // --- frame rate setting
@@ -149,16 +149,17 @@ DRAM_ATTR static const ST7789VInitCmd st7789vInitCmd[]={
     {0xE0, {0xD0, 0x06, 0x01, 0x0E, 0x0E, 0x08, 0x32, 0x44, 0x40, 0x08, 0x10, 0x0F, 0x15, 0x19}, 14},
     {0xE1, {0xD0, 0x06, 0x01, 0x0F, 0x0E, 0x09, 0x2F, 0x54, 0x44, 0x0F, 0x1D, 0x1A, 0x16, 0x19}, 14},
     // --- display effect
-    // {0x21, {0},    0},                      // invert display
+    // {0x21, {0},    0},                         // invert display
     // {0x35, {0x00}, 1},                         // tearing effect on
     // {0x44, {0x00, 0x00}, 2},                   // set tear scan line
-    // {0xE7, {0x10}, 1},                      // SPI2EN (E7h): SPI2 Enable                    
+    // {0xE7, {0x10}, 1},                         // SPI2EN (E7h): SPI2 Enable
     // --- partial display for 240 x 240
     {0x30, {0x00, 0x00, 0x00, 0xEF}, 4},
     {0x12, {0x00}, 0},
     // --- display on
     {0x29, {0}, 0x80},
     // {0x2C, {0}, 0x00},
+    // --- end
     {0, {0}, 0xFF}
 };
 
