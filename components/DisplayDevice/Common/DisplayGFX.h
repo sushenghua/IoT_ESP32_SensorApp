@@ -63,6 +63,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #define RGB565_GREENYELLOW   0xAFE5      /* 173, 255,  47 */
 #define RGB565_PINK          0xF81F
 
+#define RGB565_WEAKWHITE     0xCE79
+
 // rotation definitions
 #define DISPLAY_ROTATION_CW_0    0
 #define DISPLAY_ROTATION_CW_90   1
