@@ -11,16 +11,16 @@
 #include "PMSensor.h"
 #include "OrientationSensor.h"
 
-#if SENSOR_TYPE >= PMS5003
+#if PM_SENSOR_TYPE >= PMS5003
     #define BUF_SIZE_1  sizeof(PMData)
     #define BUF_SIZE    BUF_SIZE_1
 #endif
-#if SENSOR_TYPE >= PMS5003S
+#if PM_SENSOR_TYPE >= PMS5003S
     #define BUF_SIZE_2 (BUF_SIZE_1 + sizeof(HchoData))
     #undef  BUF_SIZE
     #define BUF_SIZE    BUF_SIZE_2
 #endif
-#if SENSOR_TYPE >= PMS5003ST
+#if PM_SENSOR_TYPE >= PMS5003ST
     #define BUF_SIZE_3 (BUF_SIZE_2 + sizeof(TempHumidData))
     #undef  BUF_SIZE
     #define BUF_SIZE    BUF_SIZE_3

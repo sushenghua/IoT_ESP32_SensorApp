@@ -146,8 +146,8 @@ public:
   void getTextBounds(char *string, int16_t x, int16_t y, int16_t *x1, int16_t *y1, uint16_t *w, uint16_t *h);
   //void getTextBounds(const __FlashStringHelper *s, int16_t x, int16_t y, int16_t *x1, int16_t *y1, uint16_t *w, uint16_t *h);
 
-//  int16_t height(void) const;
-//  int16_t width(void) const;
+ int16_t height(void) const { return _height; }
+ int16_t width(void) const { return _width; }
 //  uint8_t rotation(void) const;
 
   // get current cursor position (get rotation safe maximum values, using: width() for x, height() for y)

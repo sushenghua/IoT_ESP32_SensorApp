@@ -29,13 +29,13 @@ void SensorDataPacker::setPmSensor(PMSensor *sensor)
 {
     _pmSensor = sensor;
     if (_pmSensor) {
-        #if SENSOR_TYPE >= PMS5003
+        #if PM_SENSOR_TYPE >= PMS5003
             _sensorCapability |= PM_CAPABILITY_MASK;
         #endif
-        #if SENSOR_TYPE >= PMS5003S
+        #if PM_SENSOR_TYPE >= PMS5003S
             _sensorCapability |= HCHO_CAPABILITY_MASK;
         #endif
-        #if SENSOR_TYPE >= PMS5003ST
+        #if PM_SENSOR_TYPE >= PMS5003ST
             _sensorCapability |= TEMP_HUMID_CAPABILITY_MASK;
         #endif
         
@@ -54,17 +54,17 @@ const uint8_t* SensorDataPacker::dataBlock(size_t &size)
     size_t sz;
 
     if (_pmSensor) {
-        #if SENSOR_TYPE >= PMS5003
+        #if PM_SENSOR_TYPE >= PMS5003
             sz = sizeof(_pmSensor->pmData());
             memcpy(_dataBlockBuf + packCount, &(_pmSensor->pmData()), sz);
             packCount += sz;
         #endif
-        #if SENSOR_TYPE >= PMS5003S
+        #if PM_SENSOR_TYPE >= PMS5003S
             sz = sizeof(_pmSensor->hchoData());
             memcpy(_dataBlockBuf + packCount, &(_pmSensor->hchoData()), sz);
             packCount += sz;
         #endif
-        #if SENSOR_TYPE >= PMS5003ST
+        #if PM_SENSOR_TYPE >= PMS5003ST
             sz = sizeof(_pmSensor->tempHumidData());
             memcpy(_dataBlockBuf + packCount, &(_pmSensor->tempHumidData()), sz);
             packCount += sz;
@@ -83,7 +83,7 @@ const char* SensorDataPacker::dataJsonString(size_t &size)
     if (_pmSensor) {
         sprintf(_dataStringBuf + packCount, "{\"ret\":{");
         packCount += strlen(_dataStringBuf + packCount);
-        #if SENSOR_TYPE >= PMS5003
+        #if PM_SENSOR_TYPE >= PMS5003
             PMData& pm = _pmSensor->pmData();
             sprintf(_dataStringBuf + packCount,
                     "\"pm1.0\":%.1f,\"pm2.5\":%.1f,\"pm10\":%.1f,\"pm2.5us\":%d,\"pm2.5uslvl\":%d,"\
@@ -92,12 +92,12 @@ const char* SensorDataPacker::dataJsonString(size_t &size)
                     pm.aqiPm2d5CN, pm.levelPm2d5CN, pm.aqiPm10US, pm.levelPm10US);
             packCount += strlen(_dataStringBuf + packCount);
         #endif
-        #if SENSOR_TYPE >= PMS5003S
+        #if PM_SENSOR_TYPE >= PMS5003S
             HchoData hcho = _pmSensor->hchoData();
             sprintf(_dataStringBuf + packCount, ",\"hcho\":%.2f,\"hcholvl\":%d", hcho.hcho, hcho.level);
             packCount += strlen(_dataStringBuf + packCount);
         #endif
-        #if SENSOR_TYPE >= PMS5003ST
+        #if PM_SENSOR_TYPE >= PMS5003ST
             TempHumidData th = _pmSensor->tempHumidData();
             sprintf(_dataStringBuf + packCount,
                     ",\"temp\":%.1f,\"templvl\":%d,\"humid\":%.1f,\"humidlvl\":%d",

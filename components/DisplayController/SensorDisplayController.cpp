@@ -5,6 +5,7 @@
  */
 
 #include "SensorDisplayController.h"
+#include "SensorConfig.h"
 #include "HealthyStandard.h"
 #include "AppLog.h"
 
@@ -13,6 +14,8 @@ SensorDisplayController::SensorDisplayController(DisplayGFX *dev)
 , _contentNeedUpdate(true)
 , _rotationNeedUpdate(false)
 , _devUpdateRotationInProgress(false)
+, _mainItemCount(0)
+, _subItemCount(0)
 {}
 
 void SensorDisplayController::init()
@@ -25,6 +28,7 @@ void SensorDisplayController::init()
 
   _rotation = _dev->rotation();
   _lastRotation = _rotation;
+  _initDisplayItems();
 }
 
 void SensorDisplayController::tick()
@@ -128,61 +132,141 @@ void SensorDisplayController::_renderScreenBg()
   }
 }
 
-static const char *t[] = {"PM", "HCHO", "CO2", };
+#define ITEM_TITLE_OFFSET_X     4
+#define ITEM_TITLE_OFFSET_Y     9
 
-#define ITEM_HEIGHT          50
+#define ITEM_TITLE_CHAR_W       80
+#define ITEM_TITLE_CHAR_H       20
 
-#define ITEM_TITLE_OFFSET_X  4
-#define ITEM_TITLE_OFFSET_Y  9
+#define ITEM_RECT_RADIUS        10
+#define ITEM_RECT_OFFSET_X      100
+#define ITEM_RECT_HEIGHT        40
+#define ITEM_RECT_WIDTH         140
 
-#define ITEM_TITLE_CHAR_W    80
-#define ITEM_TITLE_CHAR_H    20
+#define ITEM_VALUE_OFFSET_X     10
+#define ITEM_VALUE_OFFSET_Y     9
 
-#define ITEM_RECT_RADIUS     10
-#define ITEM_RECT_OFFSET_X   100
-#define ITEM_RECT_HEIGHT     40
-#define ITEM_RECT_WIDTH      140
-
-#define ITEM_VALUE_OFFSET_X  10
-#define ITEM_VALUE_OFFSET_Y  9
-
-#define ITEM_LEVEL_OFFSET_X  86
-#define ITEM_LEVEL_OFFSET_Y  8
-#define ITEM_LEVEL_CHAR_W    24
-#define ITEM_LEVEL_CHAR_H    24
+#define ITEM_LEVEL_OFFSET_X     86
+#define ITEM_LEVEL_OFFSET_Y     8
+#define ITEM_LEVEL_CHAR_W       48
+#define ITEM_LEVEL_CHAR_H       24
 
 
+#define SUBITEM_TITLE_OFFSET_X  4
+#define SUBITEM_TITLE_OFFSET_Y  6
 
-void SensorDisplayController::_renderMainScreenItem(uint8_t refIndex, uint8_t posIndex, const char *value, uint8_t lvl, uint16_t color)
+#define SUBITEM_TITLE_CHAR_W    40
+#define SUBITEM_TITLE_CHAR_H    20
+
+#define SUBITEM_RECT_RADIUS     5
+#define SUBITEM_RECT_OFFSET_X   51
+#define SUBITEM_RECT_HEIGHT     30
+#define SUBITEM_RECT_WIDTH      70
+
+#define SUBITEM_VALUE_OFFSET_X  0
+#define SUBITEM_VALUE_OFFSET_Y  9
+
+#define SUBITEM_VALUE_UNIT_OFFSET_X 53
+
+uint16_t itemOffsetY = 0;
+uint16_t subItemOffsetY = 0;
+uint16_t rowDivHeight = 0;
+uint16_t subItemRowDivWidth = 0;
+
+void SensorDisplayController::_initDisplayItems()
 {
+    itemOffsetY = 0;
+    subItemOffsetY = 0;
+    rowDivHeight = 0;
+    subItemRowDivWidth = 0;
+    _mainItemCount = 0;
+    _subItemCount = 0;
+
+#if PM_SENSOR_TYPE >= PMS5003
+    _displayMainItems[_mainItemCount++] = PM;
+#endif
+#if PM_SENSOR_TYPE >= PMS5003S
+    _displayMainItems[_mainItemCount++] = HCHO;
+#endif
+#if PM_SENSOR_TYPE >= PMS5003ST
+    _displaySubItems[_subItemCount++] = TEMP;
+    _displaySubItems[_subItemCount++] = HUMID;
+#endif
+#ifdef CO2_SENSOR
+    _displayMainItems[_mainItemCount++] = CO2;
+#endif
+
+  float rowCount = _subItemCount > 0 ? _mainItemCount + 1 : _mainItemCount;
+  rowDivHeight = (uint16_t) ( (_dev->height() - _contentOffsetY) / rowCount );
+
+  itemOffsetY = (rowDivHeight - ITEM_RECT_HEIGHT) / 2;
+  if (itemOffsetY > rowDivHeight) itemOffsetY = 0;
+
+  subItemOffsetY = (rowDivHeight - SUBITEM_RECT_HEIGHT) / 2;
+  if (subItemOffsetY > rowDivHeight) subItemOffsetY = 0;
+
+  subItemRowDivWidth = _dev->width() / 2;
+}
+
+void SensorDisplayController::_renderMainScreenMainItem(uint8_t refIndex, uint8_t posIndex,
+                                                        const char *value, uint8_t lvl, uint16_t color)
+{
+  uint16_t baseOffsetY = _contentOffsetY + rowDivHeight * posIndex + itemOffsetY;
+
   // title
-  // _dev->setCursor(ITEM_NAME_OFFSET_X, _contentOffsetY + ITEM_HEIGHT * i + ITEM_NAME_OFFSET_Y);
-  // _dev->write(t[i]);
-  _dev->drawBitmap(ITEM_TITLE_OFFSET_X, _contentOffsetY + ITEM_HEIGHT * posIndex + ITEM_TITLE_OFFSET_Y,
-                   TITLE[refIndex], ITEM_TITLE_CHAR_W, ITEM_TITLE_CHAR_H, color);
+  _dev->drawBitmap(ITEM_TITLE_OFFSET_X, baseOffsetY + ITEM_TITLE_OFFSET_Y,
+                   TITLE[refIndex], ITEM_TITLE_CHAR_W, ITEM_TITLE_CHAR_H, RGB565_WEAKWHITE);
   // round corner reactange
-  _dev->drawRoundRect(ITEM_RECT_OFFSET_X, _contentOffsetY + ITEM_HEIGHT * posIndex,
+  _dev->drawRoundRect(ITEM_RECT_OFFSET_X, baseOffsetY,
                       ITEM_RECT_WIDTH, ITEM_RECT_HEIGHT, ITEM_RECT_RADIUS, color);
   // value
-  _dev->setCursor(ITEM_RECT_OFFSET_X + ITEM_VALUE_OFFSET_X, _contentOffsetY + ITEM_HEIGHT * posIndex + ITEM_VALUE_OFFSET_Y);
+  _dev->setCursor(ITEM_RECT_OFFSET_X + ITEM_VALUE_OFFSET_X, baseOffsetY + ITEM_VALUE_OFFSET_Y);
   _dev->setTextColor(color, RGB565_BLACK);
   _dev->write(value);
 
   // level chars
-  _dev->drawBitmap(ITEM_RECT_OFFSET_X + ITEM_LEVEL_OFFSET_X, _contentOffsetY + ITEM_HEIGHT * posIndex + ITEM_LEVEL_OFFSET_Y,
+  _dev->drawBitmap(ITEM_RECT_OFFSET_X + ITEM_LEVEL_OFFSET_X, baseOffsetY + ITEM_LEVEL_OFFSET_Y,
                    LEVEL[lvl], ITEM_LEVEL_CHAR_W, ITEM_LEVEL_CHAR_H, color);
+}
+
+const char* unitStr[] = {"", "ug/m3", "ppm", "C", "%"};
+
+void SensorDisplayController::_renderMainScreenSubItem(uint8_t refIndex, uint8_t posIndex,
+                                                       const char *value, uint8_t lvl, uint16_t color)
+{
+  uint16_t baseOffsetY = _contentOffsetY + rowDivHeight * (_mainItemCount +  posIndex / 2) + subItemOffsetY;
+  uint16_t baseOffsetX = subItemRowDivWidth * (posIndex % 2);
+
+  // title
+  _dev->drawBitmap(baseOffsetX + SUBITEM_TITLE_OFFSET_X, baseOffsetY + SUBITEM_TITLE_OFFSET_Y,
+                   TITLE[refIndex], SUBITEM_TITLE_CHAR_W, SUBITEM_TITLE_CHAR_H, RGB565_WEAKWHITE);
+  // // round corner reactange
+  // _dev->drawRoundRect(baseOffsetX + SUBITEM_RECT_OFFSET_X, baseOffsetY,
+  //                     SUBITEM_RECT_WIDTH, SUBITEM_RECT_HEIGHT, SUBITEM_RECT_RADIUS, color);
+  // value
+  _dev->setCursor(baseOffsetX + SUBITEM_RECT_OFFSET_X + SUBITEM_VALUE_OFFSET_X, baseOffsetY + ITEM_VALUE_OFFSET_Y);
+  _dev->setTextColor(color, RGB565_BLACK);
+  _dev->write(value);
+
+  // value unit
+  _dev->setCursor(baseOffsetX + SUBITEM_RECT_OFFSET_X + SUBITEM_VALUE_UNIT_OFFSET_X,
+                  baseOffsetY + SUBITEM_VALUE_OFFSET_Y);
+  _dev->write(unitStr[refIndex]);
 }
 
 void SensorDisplayController::_renderMainScreen()
 {
   bool _needRenderBg = true;
   if (_needRenderBg) {
-    _dev->setTextColor(RGB565_WEAKWHITE, RGB565_BLACK);
+    // _dev->setTextColor(RGB565_WEAKWHITE, RGB565_BLACK);
     _dev->setTextSize(3);
-    for (int i = 0; i < 3; ++i) {
-      _renderMainScreenItem(i, i, "8888", 0, _pm2d5Color);
+    for (int i = 0; i < _mainItemCount; ++i) {
+      _renderMainScreenMainItem(_displayMainItems[i], i, "0.38", 0, _pm2d5Color);
     }
-
+    _dev->setTextSize(2);
+    for (int i = 0; i < _subItemCount; ++i) {
+      _renderMainScreenSubItem(_displaySubItems[i], i, "38.5", 0, _pm2d5Color);
+    }
   }
 }
 
@@ -232,6 +316,7 @@ void SensorDisplayController::update()
     _devUpdateRotationInProgress = true;  // lock
     _dev->fillScreen(RGB565_BLACK);
     _dev->setRotation(_rotation);
+    _initDisplayItems();
     this->updateStatusBar(true);
     _renderScreenBg();
     _rotationNeedUpdate = false;

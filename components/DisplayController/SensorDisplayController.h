@@ -12,6 +12,7 @@
 #include "HchoData.h"
 #include "TempHumidData.h"
 #include "CO2Data.h"
+#include "SensorConfig.h"
 
 class SensorDisplayController : public DisplayController
 {
@@ -35,10 +36,14 @@ public:
   virtual void update();
 
 public:
+  void _initDisplayItems();
   void _renderScreenBg();
   void _renderMainScreen();
   void _renderCW90Screen();
-  void _renderMainScreenItem(uint8_t refIndex, uint8_t posIndex, const char *value, uint8_t lvl, uint16_t color);
+  void _renderMainScreenMainItem(uint8_t refIndex, uint8_t posIndex,
+                                 const char *value, uint8_t lvl, uint16_t color);
+  void _renderMainScreenSubItem(uint8_t refIndex, uint8_t posIndex,
+                                const char *value, uint8_t lvl, uint16_t color);
 
 protected:
   // content update flag
@@ -73,6 +78,10 @@ protected:
   float      _temp;
   float      _humid;
   
+  uint16_t       _mainItemCount;
+  uint16_t       _subItemCount;
+  SensorDataType _displayMainItems[5];
+  SensorDataType _displaySubItems[5];
 public:
   void  setMpu6050(float r, float p, float y);
   // mpu6050

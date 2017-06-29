@@ -150,13 +150,13 @@ void PMSensor::reset()
 
 void PMSensor::clearCache()
 {
-#if SENSOR_TYPE >= PMS5003
+#if PM_SENSOR_TYPE >= PMS5003
     _pmData.clear();
 #endif
-#if SENSOR_TYPE >= PMS5003S
+#if PM_SENSOR_TYPE >= PMS5003S
     _hchoData.clear();
 #endif
-#if SENSOR_TYPE >= PMS5003ST
+#if PM_SENSOR_TYPE >= PMS5003ST
     _tempHumidData.clear();
 #endif
 }
@@ -183,14 +183,14 @@ void PMSensor::onRxComplete()
         if (_parser.frameState() == FRAME_READY) {
             //printBuf(_rxBuf, _protocolLen);
             //HAL_GPIO_TogglePin(RedLed_GPIO_Port, RedLed_Pin);
-#if SENSOR_TYPE >= PMS5003
+#if PM_SENSOR_TYPE >= PMS5003
             _pmData.pm1d0 = _parser.valueAt(PM_1_D_0_POS);
             _pmData.pm2d5 = _parser.valueAt(PM_2_D_5_POS);
             _pmData.pm10 = _parser.valueAt(PM_10_POS);
             _pmData.calculateAQIandLevel();
             if (_dc) _dc->setPmData(_pmData);
 #endif
-#if SENSOR_TYPE >= PMS5003S
+#if PM_SENSOR_TYPE >= PMS5003S
             _hchoData.hcho = _parser.valueAt(HCHO_POS) / 1000.0f;
 #ifdef DEBUG_APP
             ESP_LOGI("[PMSensor]", "--->pm1.0: %2.2f  pm2.5: %2.2f  pm10: %2.2f  hcho: %2.2f\n",
@@ -199,7 +199,7 @@ void PMSensor::onRxComplete()
             _hchoData.calculateLevel();
             if (_dc) _dc->setHchoData(_hchoData, false);
 #endif
-#if SENSOR_TYPE >= PMS5003ST
+#if PM_SENSOR_TYPE >= PMS5003ST
             _tempHumidData.temp = _parser.valueAt(TEMPERATURE_POS) / 10.0f;
             _tempHumidData.humid = _parser.valueAt(HUMIDITY_POS) / 10.0f;
             _tempHumidData.calculateLevel();
