@@ -43,7 +43,7 @@ DisplayController::DisplayController(DisplayGFX *dev)
 , _timeNeedUpdate(true)
 , _batterNeedUpdate(true)
 , _contentOffsetY(DEFAULT_STATUS_BAR_HEIGHT + 15)
-, _batteryLevel(0)
+, _batteryLevel(80)
 , _dev(dev)
 {
   _activeDisplayController = this;
@@ -60,7 +60,8 @@ void DisplayController::updateStatusBar(bool foreUpdateAll)
 {
   // wifi connection icon
   if (foreUpdateAll || _wifiIconNeedUpdate) {
-    _dev->drawBitmap(2, 2, _wifiConnected ? wifiIcon : nowifiIcon, 24, 24, RGB565_WEAKWHITE);
+    _dev->drawBitmap(2, 2, _wifiConnected ? wifiIcon : nowifiIcon, 24, 24, 
+                     _wifiConnected ? RGB565_WEAKWHITE : RGB565_ORANGE, RGB565_BLACK);
     _wifiIconNeedUpdate = false;
   }
 
@@ -70,20 +71,20 @@ void DisplayController::updateStatusBar(bool foreUpdateAll)
     _dev->setTextSize(2);
     _dev->setTextColor(RGB565_WEAKWHITE, RGB565_BLACK);
     SNTP::setTimezone("CST-8CDT-9,M4.2.0/2,M9.2.0/3");
-    strftime(strftime_buf, sizeof(strftime_buf), "%H:%M", &SNTP::timeInfo(SNTP::timeNow()));
+    strftime(strftime_buf, sizeof(strftime_buf), "%H:%M", &SNTP::timeInfo(SNTP::timeNow()-3600)); // -3600 otherwise 1 hour ahead
     _dev->write(strftime_buf);
     _timeNeedUpdate = false;
   }
 
   // battery
   if (foreUpdateAll || _batterNeedUpdate) {
-  	_dev->drawBitmap(190, 7, batShellIcon, 40, 16, RGB565_WEAKWHITE);
-  	_batteryLevel = 19;
-  	uint16_t w = (uint16_t)(28 * _batteryLevel / 100.0f);
-  	uint16_t color = RGB565_GREEN;
-  	if (_batteryLevel < 20) color = RGB565_RED;
-  	else if (_batteryLevel < 50) color = RGB565_YELLOW;
-  	_dev->fillRect(195, 10, w, 10, color);
-  	_batterNeedUpdate = false;
+    _dev->drawBitmap(190, 7, batShellIcon, 40, 16, RGB565_WEAKWHITE);
+    uint16_t w = (uint16_t)(28 * _batteryLevel / 100.0f);
+    uint16_t color = RGB565_GREEN;
+    if (_batteryLevel < 20) color = RGB565_RED;
+    else if (_batteryLevel < 50) color = RGB565_YELLOW;
+    _dev->fillRect(195, 10, w, 10, color);
+    _dev->fillRect(195 + w, 10, 28 - w, 10, RGB565_BLACK);
+    _batterNeedUpdate = false;
   }
 }

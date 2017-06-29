@@ -67,6 +67,20 @@ void display_task(void *p)
 
 
 //----------------------------------------------
+// status check tasks
+//----------------------------------------------
+void status_check_task(void *p)
+{
+    while (true) {
+        dc.setWifiConnected(Wifi::instance()->connected());
+        dc.setTimeUpdate(true);
+        dc.setBatteryLevel(30);
+        vTaskDelay(500/portTICK_RATE_MS);
+    }
+}
+
+
+//----------------------------------------------
 // sensor tasks
 //----------------------------------------------
 #include "PMSensor.h"
@@ -230,6 +244,7 @@ void System::init()
 #define HTTPSERVER_TASK_PRIORITY            30
 #define PM_SENSOR_TASK_PRIORITY             80
 #define ORIENTATION_TASK_PRIORITY           81
+#define STATUS_CHECK_TASK_PRIORITY          82
 
 #define PRO_CORE    0
 #define APP_CORE    1
@@ -255,6 +270,7 @@ void System::_launchTasks()
 
     xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, NULL, RUN_ON_CORE);
     xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, NULL, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(status_check_task, "status_check_task", 4096, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
 }
 
 #include "nvs.h"

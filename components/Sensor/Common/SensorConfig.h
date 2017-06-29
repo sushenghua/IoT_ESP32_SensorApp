@@ -17,6 +17,7 @@ enum SensorDataType
 };
 
 #ifndef PM_SENSOR_TYPE
+#define PMS5003T                0
 #define PMS5003                 1
 #define PMS5003S                2
 #define PMS5003ST               3

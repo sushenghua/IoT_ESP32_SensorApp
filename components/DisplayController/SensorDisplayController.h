@@ -36,6 +36,7 @@ public:
   virtual void update();
 
 public:
+  void _targetData(SensorDataType t);
   void _initDisplayItems();
   void _renderScreenBg();
   void _renderMainScreen();
@@ -56,10 +57,13 @@ protected:
   uint8_t    _lastRotation;
 
   // co2 display
+  uint8_t    _co2Level;
   uint16_t   _co2Color;
   float      _co2;
 
   // pm display
+  uint8_t    _pm2d5Level;
+  uint8_t    _pm10Level;
   uint16_t   _pm2d5Color;
   uint16_t   _pm10Color;
   uint16_t   _aqiPm2d5US;
@@ -69,10 +73,13 @@ protected:
   float      _pm10;
 
   // formaldehyde display
+  uint8_t    _hchoLevel;
   uint16_t   _hchoColor;
   float      _hcho;
 
   // temperature and humidity diplay
+  uint8_t    _tempLevel;
+  uint8_t    _humidLevel;
   uint16_t   _tempColor;
   uint16_t   _humidColor;
   float      _temp;

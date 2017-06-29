@@ -70,6 +70,8 @@ void SensorDisplayController::setPmData(PMData &pmData, bool update)
   _pm10 = pmData.pm10;
   _aqiPm2d5US = pmData.aqiPm2d5US;
   _aqiPm10US = pmData.aqiPm10US;
+  _pm2d5Level = pmData.levelPm2d5US;
+  _pm10Level = pmData.levelPm10US;
 
   // color update
   _pm2d5Color = HS::colorForAirLevel(pmData.levelPm2d5US);
@@ -82,6 +84,7 @@ void SensorDisplayController::setHchoData(HchoData &hchoData, bool update)
 {
   // value update
   _hcho = hchoData.hcho;
+  _hchoLevel = hchoData.level;
 
   // color update
   _hchoColor = HS::colorForHchoLevel(hchoData.level);
@@ -94,6 +97,8 @@ void SensorDisplayController::setTempHumidData(TempHumidData &tempHumidData, boo
   // value update
   _temp = tempHumidData.temp;
   _humid = tempHumidData.humid;
+  _tempLevel = tempHumidData.levelTemp;
+  _humidLevel = tempHumidData.levelHumid;
 
   // color update
   _tempColor = HS::colorForTempLevel(tempHumidData.levelTemp);
@@ -106,6 +111,7 @@ void SensorDisplayController::setCO2Data(CO2Data &co2Data, bool update)
 {
   // value update
   _co2 = co2Data.co2;
+  _co2Level = co2Data.level;
 
   // color update
   _co2Color = HS::colorForCO2Level(co2Data.level);
@@ -188,7 +194,7 @@ void SensorDisplayController::_initDisplayItems()
 #if PM_SENSOR_TYPE >= PMS5003S
     _displayMainItems[_mainItemCount++] = HCHO;
 #endif
-#if PM_SENSOR_TYPE >= PMS5003ST
+#if PM_SENSOR_TYPE >= PMS5003ST || PM_SENSOR_TYPE == PMS5003T
     _displaySubItems[_subItemCount++] = TEMP;
     _displaySubItems[_subItemCount++] = HUMID;
 #endif
@@ -226,7 +232,7 @@ void SensorDisplayController::_renderMainScreenMainItem(uint8_t refIndex, uint8_
 
   // level chars
   _dev->drawBitmap(ITEM_RECT_OFFSET_X + ITEM_LEVEL_OFFSET_X, baseOffsetY + ITEM_LEVEL_OFFSET_Y,
-                   LEVEL[lvl], ITEM_LEVEL_CHAR_W, ITEM_LEVEL_CHAR_H, color);
+                   LEVEL[lvl], ITEM_LEVEL_CHAR_W, ITEM_LEVEL_CHAR_H, color, RGB565_BLACK);
 }
 
 const char* unitStr[] = {"", "ug/m3", "ppm", "C", "%"};
@@ -254,18 +260,68 @@ void SensorDisplayController::_renderMainScreenSubItem(uint8_t refIndex, uint8_t
   _dev->write(unitStr[refIndex]);
 }
 
+char _valueStr[10];
+uint16_t _color;
+uint8_t  _level;
+
+const char * padSpace(uint16_t value)
+{
+  if (value < 10) return "  ";
+  else if (value < 100) return " ";
+  else return "";
+}
+
+void SensorDisplayController::_targetData(SensorDataType t)
+{
+  switch(t) {
+    case PM:
+      if (_aqiPm2d5US > _aqiPm10US) {
+        sprintf(_valueStr, "%d%s", _aqiPm2d5US, padSpace(_aqiPm2d5US));
+        _color = _pm2d5Color;
+        _level = _pm2d5Level;
+      } else {
+        sprintf(_valueStr, "%d%s", _aqiPm10US, padSpace(_aqiPm10US));
+        _color = _pm10Color;
+        _level = _pm10Level;
+      }
+      _level = _level == 6 ? 5 : _level;
+      break;
+    case HCHO:
+      sprintf(_valueStr, "%.2f", _hcho);
+      _color = _hchoColor;
+      _level = _hchoLevel;
+      break;
+    case CO2:
+      sprintf(_valueStr, "%d%s", (int)_co2, (int)_co2 < 1000 ? " " : "");
+      _color = _co2Color;
+      _level = _co2Level;
+      break;
+    case TEMP:
+      sprintf(_valueStr, "%.1f", _temp);
+      _color = _tempColor;
+      _level = _tempLevel;
+      break;
+    case HUMID:
+      sprintf(_valueStr, "%d", (int)_humid);
+      _color = _humidColor;
+      _level = _hchoLevel;
+      break;
+  }
+}
+
 void SensorDisplayController::_renderMainScreen()
 {
   bool _needRenderBg = true;
   if (_needRenderBg) {
-    // _dev->setTextColor(RGB565_WEAKWHITE, RGB565_BLACK);
     _dev->setTextSize(3);
     for (int i = 0; i < _mainItemCount; ++i) {
-      _renderMainScreenMainItem(_displayMainItems[i], i, "0.38", 0, _pm2d5Color);
+      _targetData(_displayMainItems[i]);
+      _renderMainScreenMainItem(_displayMainItems[i], i, _valueStr, _level, _color);
     }
     _dev->setTextSize(2);
     for (int i = 0; i < _subItemCount; ++i) {
-      _renderMainScreenSubItem(_displaySubItems[i], i, "38.5", 0, _pm2d5Color);
+      _targetData(_displayMainItems[i]);
+      _renderMainScreenSubItem(_displaySubItems[i], i, _valueStr, _level, _color);
     }
   }
 }
