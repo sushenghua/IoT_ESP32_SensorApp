@@ -20,7 +20,7 @@ public:
   SensorDisplayController(DisplayGFX *dev);
 
 public:
-  void forceContentUpdate() { _contentNeedUpdate = true; }
+  void forceContentUpdate() { _dynamicContentNeedUpdate = true; }
 
   uint8_t rotation() { return _rotation; }
   void setRotation(uint8_t rotation);
@@ -38,17 +38,19 @@ public:
 public:
   void _targetData(SensorDataType t);
   void _initDisplayItems();
-  void _renderScreenBg();
+  void _layoutScreen();
   void _renderMainScreen();
-  void _renderCW90Screen();
   void _renderMainScreenMainItem(uint8_t refIndex, uint8_t posIndex,
                                  const char *value, uint8_t lvl, uint16_t color);
   void _renderMainScreenSubItem(uint8_t refIndex, uint8_t posIndex,
                                 const char *value, uint8_t lvl, uint16_t color);
+  void _renderDetailScreen();
+  void _renderDetailScreenItem(SensorDataType type);
 
 protected:
   // content update flag
-  bool       _contentNeedUpdate;
+  bool       _staticContentNeedUpdate;
+  bool       _dynamicContentNeedUpdate;
 
   // rotation
   bool       _rotationNeedUpdate;
