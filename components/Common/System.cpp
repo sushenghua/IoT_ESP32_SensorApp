@@ -69,12 +69,37 @@ void display_task(void *p)
 //----------------------------------------------
 // status check tasks
 //----------------------------------------------
+#include "Adc.h"
+#define SAMPLE_ACTIVE_COUNT     2 // 10 seconds
+Adc _voltageReader;
+uint8_t _sampleActiveCounter = SAMPLE_ACTIVE_COUNT;
+#define CALCULATE_AVERAGE_COUNT 10
+uint8_t _sampleCount = 0;
+float   _sampleValue = 0;
 void status_check_task(void *p)
 {
+    _voltageReader.init(ADC1_CHANNEL_4);
+
     while (true) {
         dc.setWifiConnected(Wifi::instance()->connected());
         dc.setTimeUpdate(true);
-        dc.setBatteryLevel(30);
+        // battery voltage read
+        // if (_sampleActiveCounter == SAMPLE_ACTIVE_COUNT) {
+        //     int tmp = _voltageReader.readVoltage();
+        //     _sampleValue += tmp;
+        //     APP_LOGC("[ADC test]", "sample(%d): %d", _sampleCount, tmp);
+
+        //     ++_sampleCount;
+        //     if (_sampleCount == CALCULATE_AVERAGE_COUNT) {
+        //         _sampleValue /= _sampleCount;
+        //         APP_LOGC("[ADC test]", "--> average sample: %.0f", _sampleValue);
+        //         _sampleValue = 0;
+        //         _sampleCount = 0;
+        //     }
+        //     _sampleActiveCounter = 0;
+        // } else {
+        //     ++_sampleActiveCounter;
+        // }
         vTaskDelay(500/portTICK_RATE_MS);
     }
 }

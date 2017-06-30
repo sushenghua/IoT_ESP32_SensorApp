@@ -57,7 +57,7 @@ void I2c::setPins(int pinSck, int pinSda)
 void I2c::init(size_t rxBufLen, size_t txBufLen)
 {
     if (!_inited) {
-    	APP_LOGI("[I2c]", "init i2c with port %d", _port);
+        APP_LOGI("[I2c]", "init i2c with port %d", _port);
         i2c_param_config(_port, &_config);
         i2c_driver_install(_port, _config.mode,
                            rxBufLen, txBufLen, 0);
@@ -68,7 +68,7 @@ void I2c::init(size_t rxBufLen, size_t txBufLen)
 void I2c::deinit()
 {
     if (_inited) {
-    	ESP_LOGI("[I2c]", "deinit i2c with port %d", _port);
+        ESP_LOGI("[I2c]", "deinit i2c with port %d", _port);
         i2c_driver_delete(_port);
         _inited = false;
     }
