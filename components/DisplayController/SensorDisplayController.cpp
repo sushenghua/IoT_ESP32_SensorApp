@@ -172,7 +172,8 @@ void SensorDisplayController::_initDisplayItems()
   _displaySubItems[_subItemCount++] = TEMP;
   _displaySubItems[_subItemCount++] = HUMID;
 #endif
-#ifdef CO2_SENSOR
+
+#if CO2_SENSOR_TYPE != NOT_DEFINED
   _displayMainItems[_mainItemCount++] = CO2;
 #endif
 }

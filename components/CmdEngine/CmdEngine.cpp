@@ -258,11 +258,12 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
 
         case GetDeviceInfo:
             if (retFmt == JSON) {
-                sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\",\"hostname\":\"%s\"}, \"cmd\":\"%s\"}",
+                sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\",\"model\":\"%s\",\"hostname\":\"%s\"}, \"cmd\":\"%s\"}",
                         System::instance()->macAddress(),
                         SensorDataPacker::sharedInstance()->sensorCapability(),
                         System::instance()->idfVersion(),
                         System::instance()->firmwareVersion(),
+                        System::instance()->model(),
                         Wifi::instance()->getHostName(),
                         cmdKeyToStr(cmdKey));
                 _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);

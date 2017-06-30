@@ -18,6 +18,8 @@ enum SensorDataType
 
 // const char *SensorDataTypeStr = { "PM", "HCHO", "CO2", "TEMP", "HUMID" };
 
+#define NOT_DEFINED            -1
+
 #ifndef PM_SENSOR_TYPE
 #define PMS5003T                0
 #define PMS5003                 1
@@ -26,6 +28,9 @@ enum SensorDataType
 #define PM_SENSOR_TYPE          PMS5003S
 #endif
 
-// #define CO2_SENSOR
+#ifndef CO2_SENSOR_TYPE
+#define DS_CO2_20               0
+#define CO2_SENSOR_TYPE         NOT_DEFINED
+#endif
 
 #endif // _SENSOR_CONFIG_H

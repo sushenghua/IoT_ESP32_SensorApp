@@ -35,6 +35,7 @@ public:
     const char* macAddress();
     const char* idfVersion();
     const char* firmwareVersion();
+    const char* model();
 
     void setConfigMode(ConfigMode mode);
     void restart();

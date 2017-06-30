@@ -200,6 +200,7 @@ static void beforeCreateTasks()
 #include "NvsFlash.h"
 #include "esp_system.h"
 #include <string.h>
+#include "SensorConfig.h"
 
 static char MAC_ADDR[13] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF };
 
@@ -387,21 +388,42 @@ const char* System::macAddress()
 
 const char* System::idfVersion()
 {
-	return esp_get_idf_version();
+    return esp_get_idf_version();
 }
 
 const char* System::firmwareVersion()
 {
-	return "1.0";
+    return "1.0";
+}
+
+static char MODEL[20];
+
+const char* System::model()
+{
+#if PM_SENSOR_TYPE == PMS5003
+  sprintf(MODEL, "pms5003");
+#elif PM_SENSOR_TYPE == PMS5003T
+  sprintf(MODEL, "pms5003t");
+#elif PM_SENSOR_TYPE == PMS5003S
+  sprintf(MODEL, "pms500s");
+#elif PM_SENSOR_TYPE >= PMS5003ST
+  sprintf(MODEL, "pms5003st");
+#endif
+
+#if CO2_SENSOR_TYPE == DS_CO2_20
+  sprintf(MODEL+strlen(MODEL), "dsco220");
+#endif
+
+  return MODEL;
 }
 
 void System::restart()
 {
-	_state = Restarting;
-	esp_restart();
+    _state = Restarting;
+    esp_restart();
 }
 
 bool System::restarting()
 {
-	return _state == Restarting;
+    return _state == Restarting;
 }
