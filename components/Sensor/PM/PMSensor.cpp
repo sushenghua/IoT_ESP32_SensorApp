@@ -10,8 +10,8 @@
 #include "Debug.h"
 
 // ------ pm sensor pins
-#define PM_SENSOR_MCU_RX_PIN          16//UART_DEFAULT_PIN
-#define PM_SENSOR_MCU_TX_PIN          17//UART_DEFAULT_PIN
+#define PM_SENSOR_MCU_RX_PIN          16 // UART_DEFAULT_PIN
+#define PM_SENSOR_MCU_TX_PIN          17 // UART_DEFAULT_PIN
 #define PM_SENSOR_SET_PIN             4
 #define PM_SENSOR_RST_PIN             2
 
@@ -50,7 +50,7 @@ void _appendPmCmdChecksum()
 {
     uint16_t checksum = 0;
     for (int i = 0; i < PM_CMD_LEN; ++i)
-    checksum += PM_CMD_BUF[i];
+        checksum += PM_CMD_BUF[i];
     PM_CMD_BUF[PM_CMD_CHECKSUM_H_POS] = (checksum >> 8) & 0xFF;
     PM_CMD_BUF[PM_CMD_CHECKSUM_L_POS] = checksum & 0xFF;
 }
