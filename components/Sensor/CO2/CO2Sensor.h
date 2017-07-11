@@ -10,15 +10,20 @@
 #include "PTFrameParser.h"
 #include "CO2Data.h"
 #include "SensorDisplayController.h"
+#include "Uart.h"
+#include "CO2Data.h"
 
 #define CO2_RX_PROTOCOL_LENGTH  12
 #define CO2_RX_BUF_CAPACITY     CO2_RX_PROTOCOL_LENGTH
 
-class CO2Sensor
+class CO2Sensor : public Uart
 {
 public:
     // constructor
     CO2Sensor();
+
+    void init();
+    void reset();
     void clearCache();
     void setDisplayDelegate(SensorDisplayController *dc) { _dc = dc; }
 
@@ -28,22 +33,21 @@ public:
     // communication
     void startSampling();
 
-    // virtual from Sampler
-    virtual void sampleData();
+    // communication
+    void sampleData(TickType_t waitTicks = UART_MAX_RX_WAIT_TICKS);
 
-    // virtual callback from Uart
-    virtual void onTxComplete();
-    virtual void onRxComplete();
-    virtual void onError(uint32_t err);
+    // tx, rx completed
+    void onTxComplete();
+    void onRxComplete();
 
 protected:
     // value cache from sensor
     CO2Data         _co2Data;
 
     // parser and buf
+    const uint16_t  _protocolLen;
     PTFrameParser   _parser;
     uint8_t         _rxBuf[CO2_RX_BUF_CAPACITY];
-    uint16_t        _rxCount;
 
     // display delagate
     SensorDisplayController  *_dc;

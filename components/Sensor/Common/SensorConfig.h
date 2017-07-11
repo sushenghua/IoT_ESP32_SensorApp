@@ -30,7 +30,7 @@ enum SensorDataType
 
 #ifndef CO2_SENSOR_TYPE
 #define DS_CO2_20               0
-#define CO2_SENSOR_TYPE         NOT_DEFINED
+#define CO2_SENSOR_TYPE         DS_CO2_20
 #endif
 
 #endif // _SENSOR_CONFIG_H

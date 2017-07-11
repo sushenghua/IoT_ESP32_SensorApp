@@ -5,16 +5,19 @@
  */
 
 #include "CO2Sensor.h"
-// #include "../Timer/SampleTimer.h"
+#include "HealthyStandard.h"
+#include "driver/gpio.h"
+#include "AppLog.h"
 
-// // ------ co2 sample timer
-// extern TIM_HandleTypeDef htim2;
-// SampleTimer _co2SampleTimer(&htim2);
+// ------ co2 sensor pins
+#define CO2_SENSOR_MCU_RX_PIN          12 // UART_DEFAULT_PIN
+#define CO2_SENSOR_MCU_TX_PIN          14 // UART_DEFAULT_PIN
+#define CO2_SENSOR_RST_PIN             13
 
 // ------ co2 sensor
-#define CO2_VALUE_POS                 0
-#define CO2_ACQUIRE_CMD_PROTOCOL_LEN  7
-#define CO2_ACQUIRE_CMD_LEN           5
+#define CO2_VALUE_POS                  0
+#define CO2_ACQUIRE_CMD_PROTOCOL_LEN   7
+#define CO2_ACQUIRE_CMD_LEN            5
 
 static uint8_t CO2_ACQUIRE_CMD[CO2_ACQUIRE_CMD_PROTOCOL_LEN]
                = { 0x42, 0x4d, 0xe3, 0, 0, 0, 0 }; 
@@ -23,7 +26,7 @@ void _prepareCO2Cmd()
 {
     uint16_t checksum = 0;
     for (int i = 0; i < CO2_ACQUIRE_CMD_LEN; ++i)
-    checksum += CO2_ACQUIRE_CMD[i];
+        checksum += CO2_ACQUIRE_CMD[i];
     CO2_ACQUIRE_CMD[CO2_ACQUIRE_CMD_LEN] = (checksum >> 8) & 0xFF;
     CO2_ACQUIRE_CMD[CO2_ACQUIRE_CMD_LEN + 1] = checksum & 0xFF;
 }
@@ -32,11 +35,11 @@ void _prepareCO2Cmd()
 // Sensor class
 /////////////////////////////////////////////////////////////////////////////////////////
 CO2Sensor::CO2Sensor()
-: _rxCount(CO2_RX_PROTOCOL_LENGTH)
+: Uart(UART_NUM_1)
+, _protocolLen(CO2_RX_PROTOCOL_LENGTH)
 {
     _prepareCO2Cmd();
     clearCache();
-    //Uart::registerCallback(this);
 }
 
 void CO2Sensor::clearCache()
@@ -44,27 +47,63 @@ void CO2Sensor::clearCache()
     _co2Data.clear();
 }
 
-void CO2Sensor::startSampling()
+void CO2Sensor::init()
 {
-    // _co2SampleTimer.setSampler(this);
-    // _co2SampleTimer.start();
+    // set baudrate to 9600 which required by sensor
+    setParams(9600);
+
+    // initialize gpio
+    gpio_set_direction((gpio_num_t)CO2_SENSOR_RST_PIN, GPIO_MODE_OUTPUT);
+    gpio_set_pull_mode((gpio_num_t)CO2_SENSOR_RST_PIN, GPIO_PULLUP_ONLY);
+
+    Uart::init(CO2_SENSOR_MCU_TX_PIN, CO2_SENSOR_MCU_RX_PIN);
 }
 
-void CO2Sensor::sampleData()
+// delay definition
+#define CO2_SENSOR_RST_DELAY     10
+#ifndef delay
+#define delay(x)                 vTaskDelay((x)/portTICK_RATE_MS)
+#endif
+
+void CO2Sensor::reset()
 {
-    //txDMA(CO2_ACQUIRE_CMD, CO2_ACQUIRE_CMD_PROTOCOL_LEN);
-    //printf("->require data call %s\n", f ? "success" : "failed");
+    gpio_set_level((gpio_num_t)CO2_SENSOR_RST_PIN, 0);
+    delay(CO2_SENSOR_RST_DELAY);
+    gpio_set_level((gpio_num_t)CO2_SENSOR_RST_PIN, 1);
+    delay(CO2_SENSOR_RST_DELAY);
+}
+
+#define CO2_SENSOR_WAIT_RESPONSE_DELAY 20
+
+void CO2Sensor::sampleData(TickType_t waitTicks)
+{
+    // send cmd
+    int ret = tx(CO2_ACQUIRE_CMD, CO2_ACQUIRE_CMD_PROTOCOL_LEN);
+    if (ret != CO2_ACQUIRE_CMD_PROTOCOL_LEN) {
+        APP_LOGE("[CO2Sensor]", "err: tx cmd ret: %d", ret);
+        return;
+    }
+
+    // give some delay
+    delay(CO2_SENSOR_WAIT_RESPONSE_DELAY);
+
+    // rx data
+    int rxLen = rx(_rxBuf, _protocolLen, waitTicks);
+#ifdef DEBUG_APP
+    APP_LOGI("[CO2Sensor]", "sampleData rx len %d", rxLen);
+#endif
+    if (rxLen == _protocolLen) {
+        onRxComplete();
+    }
 }
 
 void CO2Sensor::onTxComplete()
 {
-    //rxDMA(_rxBuf, _rxCount);
-    //printf("->accept data call %s\n", f ? "success" : "failed");
 }
 
 void CO2Sensor::onRxComplete()
 {
-    for (int i = 0; i < _rxCount; ++i) {
+    for (int i = 0; i < _protocolLen; ++i) {
         _parser.parse(_rxBuf[i]);
         if (_parser.frameState() == FRAME_READY) {
             _co2Data.co2 = _parser.valueAt(CO2_VALUE_POS);
@@ -73,9 +112,4 @@ void CO2Sensor::onRxComplete()
         }
     }
     //requireData(); // called in timer
-}
-
-void CO2Sensor::onError(uint32_t err)
-{
-    //printf("--->co2 sensor uart err code: %d\n", err);
 }

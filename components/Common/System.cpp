@@ -109,6 +109,7 @@ void status_check_task(void *p)
 // sensor tasks
 //----------------------------------------------
 #include "PMSensor.h"
+#include "CO2Sensor.h"
 #include "OrientationSensor.h"
 #include "SensorDataPacker.h"
 
@@ -123,6 +124,20 @@ void pm_sensor_task(void *p)
             pmSensor.sampleData();
             // xSemaphoreGive(_dcUpdateSemaphore);
         // }
+        vTaskDelay(500/portTICK_RATE_MS);
+    }
+}
+
+void co2_sensor_task(void *p)
+{
+    CO2Sensor co2Sensor;
+    co2Sensor.init();
+    co2Sensor.setDisplayDelegate(&dc);
+    // SensorDataPacker::sharedInstance()->setPmSensor(&co2Sensor);
+
+    vTaskDelay(3000/portTICK_RATE_MS); // delay 3 seconds
+    while (true) {
+        co2Sensor.sampleData();
         vTaskDelay(500/portTICK_RATE_MS);
     }
 }
@@ -269,6 +284,7 @@ void System::init()
 #define MQTTCLIENT_TASK_PRIORITY            30
 #define HTTPSERVER_TASK_PRIORITY            30
 #define PM_SENSOR_TASK_PRIORITY             80
+#define CO2_SENSOR_TASK_PRIORITY            80
 #define ORIENTATION_TASK_PRIORITY           81
 #define STATUS_CHECK_TASK_PRIORITY          82
 
@@ -295,6 +311,7 @@ void System::_launchTasks()
         xTaskCreatePinnedToCore(&http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
     xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, NULL, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 2048, NULL, CO2_SENSOR_TASK_PRIORITY, NULL, RUN_ON_CORE);
     xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, NULL, RUN_ON_CORE);
     xTaskCreatePinnedToCore(status_check_task, "status_check_task", 4096, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
 }
