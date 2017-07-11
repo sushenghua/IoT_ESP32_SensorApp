@@ -330,7 +330,7 @@ void SensorDisplayController::_targetData(SensorDataType t)
       _level = _tempLevel;
       break;
     case HUMID:
-      sprintf(_valueStr, "%d", (int)_humid);
+      sprintf(_valueStr, "%.1f", _humid);
       _color = _humidColor;
       _level = _hchoLevel;
       break;
@@ -346,7 +346,7 @@ void SensorDisplayController::_renderMainScreen()
   }
   _dev->setTextSize(2);
   for (int i = 0; i < _subItemCount; ++i) {
-    _targetData(_displayMainItems[i]);
+    _targetData(_displaySubItems[i]);
     _renderMainScreenSubItem(_displaySubItems[i], i, _valueStr, _level, _color);
   }
   _staticContentNeedUpdate = false;
@@ -378,7 +378,7 @@ void SensorDisplayController::_renderDetailScreenItem(SensorDataType type)
       _dev->setTextSize(1); _dev->write("3");
       _dev->setTextSize(2); _dev->write("):");
       _dev->setCursor(0, _contentOffsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 3));
-      _dev->write("PM2.5 index:");
+      _dev->write("PM10 index:");
       break;
 
     case HCHO:
@@ -443,7 +443,7 @@ void SensorDisplayController::_renderDetailScreenItem(SensorDataType type)
     case HUMID:
       _dev->setTextColor(_hchoColor, RGB565_BLACK);
       _dev->setCursor(DETAIL_LINE_VALUE_OFFSET, _contentOffsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
-      sprintf(_valueStr, "%d", (int)_humid); _dev->write(_valueStr);
+      sprintf(_valueStr, "%.1f", _humid); _dev->write(_valueStr);
       break;
   }
 }

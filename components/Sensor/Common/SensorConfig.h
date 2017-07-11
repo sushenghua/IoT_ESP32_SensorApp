@@ -25,7 +25,7 @@ enum SensorDataType
 #define PMS5003                 1
 #define PMS5003S                2
 #define PMS5003ST               3
-#define PM_SENSOR_TYPE          PMS5003S
+#define PM_SENSOR_TYPE          PMS5003ST
 #endif
 
 #ifndef CO2_SENSOR_TYPE
