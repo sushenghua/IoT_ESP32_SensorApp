@@ -133,7 +133,7 @@ void co2_sensor_task(void *p)
     CO2Sensor co2Sensor;
     co2Sensor.init();
     co2Sensor.setDisplayDelegate(&dc);
-    // SensorDataPacker::sharedInstance()->setPmSensor(&co2Sensor);
+    SensorDataPacker::sharedInstance()->setCO2Sensor(&co2Sensor);
 
     vTaskDelay(3000/portTICK_RATE_MS); // delay 3 seconds
     while (true) {
