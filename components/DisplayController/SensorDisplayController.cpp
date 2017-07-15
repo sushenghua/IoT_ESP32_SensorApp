@@ -9,6 +9,7 @@
 #include "HealthyStandard.h"
 #include "AppLog.h"
 #include "Bitmap.h"
+#include "System.h"
 
 SensorDisplayController::SensorDisplayController(DisplayGFX *dev)
 : DisplayController(dev)
@@ -23,6 +24,11 @@ SensorDisplayController::SensorDisplayController(DisplayGFX *dev)
 void SensorDisplayController::init()
 {
   APP_LOGI("[SensorDC]", "init");
+
+  // cache capability from System instance
+  _devCap = System::instance()->devCapability();
+
+  // device init and screen preparation
   _dev->init();
   _dev->fillScreen(RGB565_BLACK);
 
@@ -162,20 +168,20 @@ void SensorDisplayController::_initDisplayItems()
   _mainItemCount = 0;
   _subItemCount = 0;
 
-#if PM_SENSOR_TYPE >= PMS5003
-  _displayMainItems[_mainItemCount++] = PM;
-#endif
-#if PM_SENSOR_TYPE >= PMS5003S
-  _displayMainItems[_mainItemCount++] = HCHO;
-#endif
-#if PM_SENSOR_TYPE >= PMS5003ST || PM_SENSOR_TYPE == PMS5003T
-  _displaySubItems[_subItemCount++] = TEMP;
-  _displaySubItems[_subItemCount++] = HUMID;
-#endif
+  if (_devCap & PM_CAPABILITY_MASK)
+    _displayMainItems[_mainItemCount++] = PM;
 
-#if CO2_SENSOR_TYPE != NOT_DEFINED
-  _displayMainItems[_mainItemCount++] = CO2;
-#endif
+  if (_devCap & HCHO_CAPABILITY_MASK)
+    _displayMainItems[_mainItemCount++] = HCHO;
+
+  if (_devCap & TEMP_HUMID_CAPABILITY_MASK) {
+    _displaySubItems[_subItemCount++] = TEMP;
+    _displaySubItems[_subItemCount++] = HUMID;
+  }
+
+  if (_devCap & CO2_CAPABILITY_MASK)
+    _displayMainItems[_mainItemCount++] = CO2;
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////

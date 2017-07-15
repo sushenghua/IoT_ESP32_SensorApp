@@ -21,21 +21,21 @@ TaskHandle_t wifiTaskHandle;
 
 void wifi_task(void *pvParameters)
 {
-    // config and start wifi
-    if (Wifi::instance()->loadConfig()) {
-      APP_LOGI("[Wifi]", "load config succeeded");
+  // config and start wifi
+  if (Wifi::instance()->loadConfig()) {
+    APP_LOGI("[Wifi]", "load config succeeded");
+  }
+  else {
+    Wifi::instance()->setDefaultConfig();
+    Wifi::instance()->setStaConfig("woody@home", "58897@mljd-abcde");
+    Wifi::instance()->appendAltApConnectionSsidPassword("iPhone6S", "abcd1234");
+    if (Wifi::instance()->saveConfig()) {
+    APP_LOGI("[Wifi]", "save config succeeded");
     }
-    else {
-      Wifi::instance()->setDefaultConfig();
-      Wifi::instance()->setStaConfig("woody@home", "58897@mljd-abcde");
-      Wifi::instance()->appendAltApConnectionSsidPassword("iPhone6S", "abcd1234");
-      if (Wifi::instance()->saveConfig()) {
-        APP_LOGI("[Wifi]", "save config succeeded");
-      }
-    }
-    Wifi::instance()->init();
-    Wifi::instance()->start(true);
-    vTaskDelete(wifiTaskHandle);
+  }
+  Wifi::instance()->init();
+  Wifi::instance()->start(true);
+  vTaskDelete(wifiTaskHandle);
 }
 
 
@@ -54,15 +54,15 @@ TaskHandle_t displyTaskHandle = 0;
 
 void display_task(void *p)
 {
-    dc.init();
-    while (true) {
-        // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
-            dc.update();
-            // xSemaphoreGive(_dcUpdateSemaphore);
-        // }
-        // APP_LOGE("[display_task]", "alive");
-        vTaskDelay(30/portTICK_RATE_MS);
-    }
+  dc.init();
+  while (true) {
+    // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
+      dc.update();
+      // xSemaphoreGive(_dcUpdateSemaphore);
+    // }
+    // APP_LOGE("[display_task]", "alive");
+    vTaskDelay(30/portTICK_RATE_MS);
+  }
 }
 
 
@@ -78,30 +78,30 @@ uint8_t _sampleCount = 0;
 float   _sampleValue = 0;
 void status_check_task(void *p)
 {
-    _voltageReader.init(ADC1_CHANNEL_4);
+  _voltageReader.init(ADC1_CHANNEL_4);
 
-    while (true) {
-        dc.setWifiConnected(Wifi::instance()->connected());
-        dc.setTimeUpdate(true);
-        // battery voltage read
-        // if (_sampleActiveCounter == SAMPLE_ACTIVE_COUNT) {
-        //     int tmp = _voltageReader.readVoltage();
-        //     _sampleValue += tmp;
-        //     APP_LOGC("[ADC test]", "sample(%d): %d", _sampleCount, tmp);
+  while (true) {
+    dc.setWifiConnected(Wifi::instance()->connected());
+    dc.setTimeUpdate(true);
+    // battery voltage read
+    // if (_sampleActiveCounter == SAMPLE_ACTIVE_COUNT) {
+    //   int tmp = _voltageReader.readVoltage();
+    //   _sampleValue += tmp;
+    //   APP_LOGC("[ADC test]", "sample(%d): %d", _sampleCount, tmp);
 
-        //     ++_sampleCount;
-        //     if (_sampleCount == CALCULATE_AVERAGE_COUNT) {
-        //         _sampleValue /= _sampleCount;
-        //         APP_LOGC("[ADC test]", "--> average sample: %.0f", _sampleValue);
-        //         _sampleValue = 0;
-        //         _sampleCount = 0;
-        //     }
-        //     _sampleActiveCounter = 0;
-        // } else {
-        //     ++_sampleActiveCounter;
-        // }
-        vTaskDelay(500/portTICK_RATE_MS);
-    }
+    //   ++_sampleCount;
+    //   if (_sampleCount == CALCULATE_AVERAGE_COUNT) {
+    //     _sampleValue /= _sampleCount;
+    //     APP_LOGC("[ADC test]", "--> average sample: %.0f", _sampleValue);
+    //     _sampleValue = 0;
+    //     _sampleCount = 0;
+    //   }
+    //   _sampleActiveCounter = 0;
+    // } else {
+    //   ++_sampleActiveCounter;
+    // }
+    vTaskDelay(500/portTICK_RATE_MS);
+  }
 }
 
 
@@ -115,45 +115,45 @@ void status_check_task(void *p)
 
 void pm_sensor_task(void *p)
 {
-    PMSensor pmSensor;
-    pmSensor.init();
-    pmSensor.setDisplayDelegate(&dc);
-    SensorDataPacker::sharedInstance()->setPmSensor(&pmSensor);
-    while (true) {
-        // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
-            pmSensor.sampleData();
-            // xSemaphoreGive(_dcUpdateSemaphore);
-        // }
-        vTaskDelay(500/portTICK_RATE_MS);
-    }
+  PMSensor pmSensor;
+  pmSensor.init();
+  pmSensor.setDisplayDelegate(&dc);
+  SensorDataPacker::sharedInstance()->setPmSensor(&pmSensor);
+  while (true) {
+    // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
+      pmSensor.sampleData();
+      // xSemaphoreGive(_dcUpdateSemaphore);
+    // }
+    vTaskDelay(500/portTICK_RATE_MS);
+  }
 }
 
 void co2_sensor_task(void *p)
 {
-    CO2Sensor co2Sensor;
-    co2Sensor.init();
-    co2Sensor.setDisplayDelegate(&dc);
-    SensorDataPacker::sharedInstance()->setCO2Sensor(&co2Sensor);
+  CO2Sensor co2Sensor;
+  co2Sensor.init();
+  co2Sensor.setDisplayDelegate(&dc);
+  SensorDataPacker::sharedInstance()->setCO2Sensor(&co2Sensor);
 
-    vTaskDelay(3000/portTICK_RATE_MS); // delay 3 seconds
-    while (true) {
-        co2Sensor.sampleData();
-        vTaskDelay(500/portTICK_RATE_MS);
-    }
+  vTaskDelay(3000/portTICK_RATE_MS); // delay 3 seconds
+  while (true) {
+    co2Sensor.sampleData(3000);
+    vTaskDelay(500/portTICK_RATE_MS);
+  }
 }
 
 void orientation_sensor_task(void *p)
 {
-    OrientationSensor orientationSensor;
-    orientationSensor.init();
-    orientationSensor.setDisplayDelegate(&dc);
-    while (true) {
-        // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
-            orientationSensor.tick();
-            // xSemaphoreGive(_dcUpdateSemaphore);
-        // }
-        vTaskDelay(100/portTICK_RATE_MS);
-    }
+  OrientationSensor orientationSensor;
+  orientationSensor.init();
+  orientationSensor.setDisplayDelegate(&dc);
+  while (true) {
+    // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
+      orientationSensor.tick();
+      // xSemaphoreGive(_dcUpdateSemaphore);
+    // }
+    vTaskDelay(100/portTICK_RATE_MS);
+  }
 }
 
 
@@ -165,11 +165,11 @@ void orientation_sensor_task(void *p)
 TaskHandle_t sntpTaskHandle;
 static void sntp_task(void *pvParams)
 {
-    SNTP::init();
-    SNTP::waitSync();
+  SNTP::init();
+  SNTP::waitSync();
 
-    SNTP::test();
-    vTaskDelete(sntpTaskHandle);
+  SNTP::test();
+  vTaskDelete(sntpTaskHandle);
 }
 
 
@@ -183,20 +183,20 @@ static void sntp_task(void *pvParams)
 
 static void mqtt_task(void *pvParams)
 {
-    CmdEngine cmdEngine;
-    MqttClient mqtt;
-    mqtt.init();
-    mqtt.start();
+  CmdEngine cmdEngine;
+  MqttClient mqtt;
+  mqtt.init();
+  mqtt.start();
 
-    cmdEngine.setProtocolDelegate(&mqtt);
-    cmdEngine.init();
-    cmdEngine.enableUpdate();
+  cmdEngine.setProtocolDelegate(&mqtt);
+  cmdEngine.init();
+  cmdEngine.enableUpdate();
 
-    while (true) {
-        mqtt.poll();
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-        // APP_LOGE("[Task]", "task count: %d", uxTaskGetNumberOfTasks());
-    }
+  while (true) {
+    mqtt.poll();
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+    // APP_LOGE("[Task]", "task count: %d", uxTaskGetNumberOfTasks());
+  }
 }
 
 
@@ -209,18 +209,18 @@ static void mqtt_task(void *pvParams)
 
 static void http_task(void *pvParams)
 {
-    CmdEngine cmdEngine;
-    HttpServer server;
-    server.init();
-    server.start();
+  CmdEngine cmdEngine;
+  HttpServer server;
+  server.init();
+  server.start();
 
-    cmdEngine.setProtocolDelegate(&server);
-    cmdEngine.init();
+  cmdEngine.setProtocolDelegate(&server);
+  cmdEngine.init();
 
-    while (true) {
-        server.poll();
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-    }
+  while (true) {
+    server.poll();
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+  }
 }
 
 
@@ -229,7 +229,7 @@ static void http_task(void *pvParams)
 //**********************************************
 static void beforeCreateTasks()
 {
-    // _dcUpdateSemaphore = xSemaphoreCreateMutex();
+  // _dcUpdateSemaphore = xSemaphoreCreateMutex();
 }
 
 
@@ -246,36 +246,46 @@ static char MAC_ADDR[13] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF };
 
 static void _initMacADDR()
 {
-    uint8_t macAddr[6];
-    char *target = MAC_ADDR;
-    esp_efuse_mac_get_default(macAddr);
-    for (int i = 0; i < 6; ++i) {
-        sprintf(target, "%02x", macAddr[i]);
-        target += 2;
-    }
-    MAC_ADDR[12] = '\0';
+  uint8_t macAddr[6];
+  char *target = MAC_ADDR;
+  esp_efuse_mac_get_default(macAddr);
+  for (int i = 0; i < 6; ++i) {
+    sprintf(target, "%02x", macAddr[i]);
+    target += 2;
+  }
+  MAC_ADDR[12] = '\0';
 }
 
 static System _sysInstance;
 
 System * System::instance()
 {
-    return &_sysInstance;
+  return &_sysInstance;
 }
 
 System::System()
 : _state(Uninitialized)
-, _mode(MQTTClientMode)
-{}
+{
+  _setDefaultConfig();
+}
+
+void System::_setDefaultConfig()
+{
+  _config.deployMode = MQTTClientMode;
+  _config.pmSensorType = PMS5003ST;
+  _config.co2SensorType = DSCO220;
+  _config.devCapability = ( capabilityForSensorType(_config.pmSensorType) |
+                            capabilityForSensorType(_config.co2SensorType) );
+}
 
 void System::init()
 {
-    _state = Initializing;
-    NvsFlash::init();
-    _initMacADDR();
-    _loadConfig();
-    _launchTasks();
-    _state = Running;
+  _state = Initializing;
+  NvsFlash::init();
+  _initMacADDR();
+  _loadConfig();
+  _launchTasks();
+  _state = Running;
 }
 
 #define DISPLAY_TASK_PRIORITY               100
@@ -295,25 +305,29 @@ void System::init()
 
 void System::_launchTasks()
 {
-    beforeCreateTasks();
+  beforeCreateTasks();
 
-    xTaskCreatePinnedToCore(&display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, &displyTaskHandle, RUN_ON_CORE);
+  xTaskCreatePinnedToCore(&display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, &displyTaskHandle, RUN_ON_CORE);
 
-    xTaskCreate(&wifi_task, "wifi_connection_task", 4096, NULL, WIFI_TASK_PRIORITY, &wifiTaskHandle);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+  xTaskCreate(&wifi_task, "wifi_connection_task", 4096, NULL, WIFI_TASK_PRIORITY, &wifiTaskHandle);
+  vTaskDelay(100 / portTICK_PERIOD_MS);
 
-    xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, SNTP_TASK_PRIORITY, &sntpTaskHandle);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+  xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, SNTP_TASK_PRIORITY, &sntpTaskHandle);
+  vTaskDelay(100 / portTICK_PERIOD_MS);
 
-    if (_mode == MQTTClientMode || _mode == MQTTClientAndHTTPServerMode)
-        xTaskCreatePinnedToCore(&mqtt_task, "mqtt_task", 8192, NULL, MQTTCLIENT_TASK_PRIORITY, NULL, RUN_ON_CORE);
-    if (_mode == HTTPServerMode || _mode == MQTTClientAndHTTPServerMode)
-        xTaskCreatePinnedToCore(&http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL, RUN_ON_CORE);
+  if (_config.deployMode == MQTTClientMode || _config.deployMode == MQTTClientAndHTTPServerMode)
+    xTaskCreatePinnedToCore(&mqtt_task, "mqtt_task", 8192, NULL, MQTTCLIENT_TASK_PRIORITY, NULL, RUN_ON_CORE);
+  if (_config.deployMode == HTTPServerMode || _config.deployMode == MQTTClientAndHTTPServerMode)
+    xTaskCreatePinnedToCore(&http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
+  if (_config.devCapability & PM_CAPABILITY_MASK)
     xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, NULL, RUN_ON_CORE);
+  if (_config.devCapability & CO2_CAPABILITY_MASK)
     xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 2048, NULL, CO2_SENSOR_TASK_PRIORITY, NULL, RUN_ON_CORE);
-    xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, NULL, RUN_ON_CORE);
-    xTaskCreatePinnedToCore(status_check_task, "status_check_task", 4096, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
+
+  xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, NULL, RUN_ON_CORE);
+
+  xTaskCreatePinnedToCore(status_check_task, "status_check_task", 4096, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
 }
 
 #include "nvs.h"
@@ -322,150 +336,178 @@ void System::_launchTasks()
 
 bool System::_loadConfig()
 {
-    bool succeeded = false;
-    bool nvsOpened = false;
+  bool succeeded = false;
+  bool nvsOpened = false;
 
-    nvs_handle nvsHandle;
-    esp_err_t err;
+  nvs_handle nvsHandle;
+  esp_err_t err;
 
-    do {
-        // open nvs
-        err = nvs_open(SYSTEM_STORAGE_NAMESPACE, NVS_READONLY, &nvsHandle);
-        if (err == ESP_ERR_NVS_NOT_FOUND) {
-            APP_LOGE("[System]", "loadConfig open nvs: storage \"%s\" not found", SYSTEM_STORAGE_NAMESPACE);
-            break;
-        }
-        else if (err != ESP_OK) {
-            APP_LOGE("[System]", "loadConfig open nvs failed %d", err);
-            break;
-        }
-        nvsOpened = true;
+  do {
+    // open nvs
+    err = nvs_open(SYSTEM_STORAGE_NAMESPACE, NVS_READONLY, &nvsHandle);
+    if (err == ESP_ERR_NVS_NOT_FOUND) {
+      APP_LOGE("[System]", "loadConfig open nvs: storage \"%s\" not found", SYSTEM_STORAGE_NAMESPACE);
+      break;
+    }
+    else if (err != ESP_OK) {
+      APP_LOGE("[System]", "loadConfig open nvs failed %d", err);
+      break;
+    }
+    nvsOpened = true;
 
-        // read sys config
-        size_t requiredSize = 0;  // value will default to 0, if not set yet in NVS
-        err = nvs_get_blob(nvsHandle, SYSTEM_CONFIG_TAG, NULL, &requiredSize);
-        if (err == ESP_ERR_NVS_NOT_FOUND) {
-            _mode = HTTPServerMode;
-            break;
-        }
-        if (err != ESP_OK) {
-            APP_LOGE("[System]", "loadConfig read \"sys-config-size\" failed %d", err);
-            break;
-        }
-        if (requiredSize != sizeof(_mode)) {
-            APP_LOGE("[System]", "loadConfig read \"sys-config-size\" got unexpected value");
-            break;
-        }
-        // read previously saved config
-        err = nvs_get_blob(nvsHandle, SYSTEM_CONFIG_TAG, &_mode, &requiredSize);
-        if (err != ESP_OK) {
-            _mode = MQTTClientMode;
-            APP_LOGE("[System]", "loadConfig read \"sys-config-content\" failed %d", err);
-            break;
-        }
-        succeeded = true;
+    // read sys config
+    size_t requiredSize = 0;  // value will default to 0, if not set yet in NVS
+    err = nvs_get_blob(nvsHandle, SYSTEM_CONFIG_TAG, NULL, &requiredSize);
+    if (err == ESP_ERR_NVS_NOT_FOUND) {
+      // _setDefaultConfig();  // already set default in constructor
+      break;
+    }
+    if (err != ESP_OK) {
+      APP_LOGE("[System]", "loadConfig read \"sys-config-size\" failed %d", err);
+      break;
+    }
+    if (requiredSize != sizeof(_config)) {
+      APP_LOGE("[System]", "loadConfig read \"sys-config-size\" got unexpected value");
+      break;
+    }
+    // read previously saved config
+    err = nvs_get_blob(nvsHandle, SYSTEM_CONFIG_TAG, &_config, &requiredSize);
+    if (err != ESP_OK) {
+      // _setDefaultConfig();  // already set default in constructor
+      APP_LOGE("[System]", "loadConfig read \"sys-config-content\" failed %d", err);
+      break;
+    }
+    succeeded = true;
 
-    } while(false);
+  } while(false);
 
-    // close nvs
-    if (nvsOpened) nvs_close(nvsHandle);
+  // close nvs
+  if (nvsOpened) nvs_close(nvsHandle);
 
-    return succeeded;
+  return succeeded;
 }
 
 bool System::_saveConfig()
 {
-    bool succeeded = false;
-    bool nvsOpened = false;
+  bool succeeded = false;
+  bool nvsOpened = false;
 
-    nvs_handle nvsHandle;
-    esp_err_t err;
+  nvs_handle nvsHandle;
+  esp_err_t err;
 
-    do {
-        // open nvs
-        err = nvs_open(SYSTEM_STORAGE_NAMESPACE, NVS_READWRITE, &nvsHandle);
-        if (err != ESP_OK) {
-            APP_LOGE("[System]", "saveConfig open nvs failed %d", err);
-            break;
-        }
-        nvsOpened = true;
+  do {
+    // open nvs
+    err = nvs_open(SYSTEM_STORAGE_NAMESPACE, NVS_READWRITE, &nvsHandle);
+    if (err != ESP_OK) {
+      APP_LOGE("[System]", "saveConfig open nvs failed %d", err);
+      break;
+    }
+    nvsOpened = true;
 
-        // write wifi config
-        err = nvs_set_blob(nvsHandle, SYSTEM_CONFIG_TAG, &_mode, sizeof(_mode));
-        if (err != ESP_OK) {
-            APP_LOGE("[System]", "saveConfig write \"system-config\" failed %d", err);
-            break;
-        }
+    // write wifi config
+    err = nvs_set_blob(nvsHandle, SYSTEM_CONFIG_TAG, &_config, sizeof(_config));
+    if (err != ESP_OK) {
+      APP_LOGE("[System]", "saveConfig write \"system-config\" failed %d", err);
+      break;
+    }
 
-        // commit written value.
-        err = nvs_commit(nvsHandle);
-        if (err != ESP_OK) {
-            ESP_LOGE("[System]", "saveConfig commit failed %d", err);
-            break;
-        }
-        succeeded = true;
+    // commit written value.
+    err = nvs_commit(nvsHandle);
+    if (err != ESP_OK) {
+      ESP_LOGE("[System]", "saveConfig commit failed %d", err);
+      break;
+    }
+    succeeded = true;
 
-    } while(false);
+  } while(false);
 
-    // close nvs
-    if (nvsOpened) nvs_close(nvsHandle);
+  // close nvs
+  if (nvsOpened) nvs_close(nvsHandle);
 
-    return succeeded;
+  return succeeded;
 }
 
-void System::setConfigMode(ConfigMode mode)
+void System::setDeployMode(DeployMode mode)
 {
-    if (_mode != mode) {
-        _mode = mode;
-        _saveConfig();
-    }
+  if (_config.deployMode != mode) {
+    _config.deployMode = mode;
+    _saveConfig();
+  }
+}
+
+void System::setSensorType(SensorType pmType, SensorType co2Type)
+{
+  if (_config.pmSensorType != pmType || _config.co2SensorType != co2Type) {
+    _config.pmSensorType = pmType;
+    _config.co2SensorType = co2Type;
+    _config.devCapability = ( capabilityForSensorType(_config.pmSensorType) |
+                              capabilityForSensorType(_config.co2SensorType) );
+    _saveConfig();
+  }
+}
+
+void System::setDevCapability(uint32_t cap)
+{
+  if (_config.devCapability != cap) {
+    _config.devCapability = cap;
+    _saveConfig();
+  }
+}
+
+DeployMode System::deployMode()
+{
+  return _config.deployMode;
+}
+
+SensorType System::pmSensorType()
+{
+  return _config.pmSensorType;
+}
+
+SensorType System::co2SensorType()
+{
+  return _config.co2SensorType;
+}
+
+uint32_t System::devCapability()
+{
+  return _config.devCapability;
 }
 
 const char* System::macAddress()
 {
-    if (MAC_ADDR[12] == 0xFF)
-        _initMacADDR();
-    return MAC_ADDR;
+  if (MAC_ADDR[12] == 0xFF)
+    _initMacADDR();
+  return MAC_ADDR;
 }
 
 const char* System::idfVersion()
 {
-    return esp_get_idf_version();
+  return esp_get_idf_version();
 }
 
 const char* System::firmwareVersion()
 {
-    return "1.0";
+  return "1.0";
 }
 
 static char MODEL[20];
 
 const char* System::model()
 {
-#if PM_SENSOR_TYPE == PMS5003
-  sprintf(MODEL, "pms5003");
-#elif PM_SENSOR_TYPE == PMS5003T
-  sprintf(MODEL, "pms5003t");
-#elif PM_SENSOR_TYPE == PMS5003S
-  sprintf(MODEL, "pms500s");
-#elif PM_SENSOR_TYPE >= PMS5003ST
-  sprintf(MODEL, "pms5003st");
-#endif
-
-#if CO2_SENSOR_TYPE == DS_CO2_20
-  sprintf(MODEL+strlen(MODEL), "dsco220");
-#endif
-
+  sprintf(MODEL, sensorTypeStr(_config.pmSensorType));
+  sprintf(MODEL+strlen(MODEL), "-");
+  sprintf(MODEL+strlen(MODEL), sensorTypeStr(_config.co2SensorType));
   return MODEL;
 }
 
 void System::restart()
 {
-    _state = Restarting;
-    esp_restart();
+  _state = Restarting;
+  esp_restart();
 }
 
 bool System::restarting()
 {
-    return _state == Restarting;
+  return _state == Restarting;
 }

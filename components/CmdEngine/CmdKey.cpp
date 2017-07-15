@@ -25,7 +25,7 @@ static const char * const CmdKeyStr[] = {
     "GetAltApSsidPassList",     // 13
     "AppendAltApSsidPass",      // 14
     "ClearAltApSsidPassList",   // 15
-    "SetSystemConfigMode",      // 16
+    "SetSystemDeployMode",      // 16
     "TurnOnDisplay",            // 17
     "UpdateFirmware",           // 18
     "Restart"                   // 19

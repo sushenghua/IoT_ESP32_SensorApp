@@ -10,9 +10,6 @@
 #include "SensorDisplayController.h"
 #include "MPU6050.h"
 
-#define CO2_RX_PROTOCOL_LENGTH  12
-#define CO2_RX_BUF_CAPACITY     CO2_RX_PROTOCOL_LENGTH
-
 class OrientationSensor
 {
 public:

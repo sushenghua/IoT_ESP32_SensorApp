@@ -86,7 +86,9 @@ protected:
   uint16_t   _humidColor;
   float      _temp;
   float      _humid;
-  
+
+  // screen layout
+  uint32_t       _devCap;
   uint16_t       _mainItemCount;
   uint16_t       _subItemCount;
   SensorDataType _displayMainItems[5];

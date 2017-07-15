@@ -15,66 +15,49 @@
 #include "HchoData.h"
 #include "TempHumidData.h"
 
-#if PM_SENSOR_TYPE == PMS5003
-#define PM_RX_PROTOCOL_LENGTH   40
-#elif PM_SENSOR_TYPE == PMS5003S
-#define PM_RX_PROTOCOL_LENGTH   32
-#elif PM_SENSOR_TYPE == PMS5003ST
-#define PM_RX_PROTOCOL_LENGTH   40
-#endif
-
-#define PM_RX_BUF_CAPACITY      PM_RX_PROTOCOL_LENGTH
+#define PM_RX_BUF_CAPACITY      PM_RX_PROTOCOL_MAX_LENGTH
 
 class PMSensor : public Uart
 {
 public:
-    void test();
+  void test();
 public:
-    // constructor
-    PMSensor();
-    void init();
-    void reset();
-    void enableActiveDataTx(bool enabled);
-    void clearCache();
-    void setDisplayDelegate(SensorDisplayController *dc) { _dc = dc; }
+  // constructor
+  PMSensor();
+  void init();
+  void reset();
+  void enableActiveDataTx(bool enabled);
+  void clearCache();
+  void setDisplayDelegate(SensorDisplayController *dc) { _dc = dc; }
 
-    // cached values
-#if PM_SENSOR_TYPE >= PMS5003
-    PMData & pmData() { return _pmData; }
-#endif
-#if PM_SENSOR_TYPE >= PMS5003S
-    HchoData & hchoData() { return _hchoData; }
-#endif
-#if PM_SENSOR_TYPE >= PMS5003ST
-    TempHumidData & tempHumidData() { return _tempHumidData; }
-#endif
+  // cached values
+  PMData & pmData() { return _pmData; }
+  HchoData & hchoData() { return _hchoData; }
+  TempHumidData & tempHumidData() { return _tempHumidData; }
 
-    // communication
-    void sampleData(TickType_t waitTicks = UART_MAX_RX_WAIT_TICKS);
+  // communication
+  void sampleData(TickType_t waitTicks = UART_MAX_RX_WAIT_TICKS);
 
-    // tx, rx completed
-    void onTxComplete();
-    void onRxComplete();
+  // tx, rx completed
+  void onTxComplete();
+  void onRxComplete();
 
 protected:
-    // value cache from sensor
-#if PM_SENSOR_TYPE >= PMS5003
-    PMData          _pmData;
-#endif
-#if PM_SENSOR_TYPE >= PMS5003S
-    HchoData        _hchoData;
-#endif
-#if PM_SENSOR_TYPE >= PMS5003ST
-    TempHumidData   _tempHumidData;
-#endif
+  // capability cache
+  uint32_t        _cap;
 
-    // parser and buf
-    const uint16_t  _protocolLen;
-    PTFrameParser   _parser;
-    uint8_t         _rxBuf[PM_RX_BUF_CAPACITY];
+  // value cache from sensor
+  PMData          _pmData;
+  HchoData        _hchoData;
+  TempHumidData   _tempHumidData;
 
-    // display delagate
-    SensorDisplayController  *_dc;
+  // parser and buf
+  uint16_t        _protocolLen;
+  PTFrameParser   _parser;
+  uint8_t         _rxBuf[PM_RX_BUF_CAPACITY];
+
+  // display delagate
+  SensorDisplayController  *_dc;
 };
 
 #endif // _PMSENSOR_H

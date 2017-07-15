@@ -12,26 +12,7 @@
 #include "CO2Sensor.h"
 #include "OrientationSensor.h"
 
-#if PM_SENSOR_TYPE >= PMS5003
-    #define BUF_SIZE_1  sizeof(PMData)
-    #define _BUF_SIZE   BUF_SIZE_1
-#endif
-#if PM_SENSOR_TYPE >= PMS5003S
-    #define BUF_SIZE_2 (BUF_SIZE_1 + sizeof(HchoData))
-    #undef  _BUF_SIZE
-    #define _BUF_SIZE   BUF_SIZE_2
-#endif
-#if PM_SENSOR_TYPE >= PMS5003ST
-    #define BUF_SIZE_3 (BUF_SIZE_2 + sizeof(TempHumidData))
-    #undef  _BUF_SIZE
-    #define _BUF_SIZE   BUF_SIZE_3
-#endif
-
-#if CO2_SENSOR_TYPE != NOT_DEFINED
-    #define BUF_SIZE   (_BUF_SIZE + sizeof(CO2Data))
-#else
-    #define BUF_SIZE    _BUF_SIZE
-#endif
+#define BUF_SIZE (sizeof(PMData) + sizeof(HchoData) + sizeof(TempHumidData) + sizeof(CO2Data))
 
 class SensorDataPacker
 {

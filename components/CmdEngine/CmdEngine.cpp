@@ -113,25 +113,25 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
             break;
         }
 
-        case SetSystemConfigMode: {
+        case SetSystemDeployMode: {
             cJSON *mode = cJSON_GetObjectItem(root, "mode");
             if (mode) {
                 args = _cmdBuf;
                 if (strlen(mode->valuestring) == strlen("HTTPServerMode") &&
                     strcmp(mode->valuestring, "HTTPServerMode") == 0) {
-                    args[0] = System::HTTPServerMode;
+                    args[0] = HTTPServerMode;
                     argsSize = 1;
                     cmdKeyRet = cmdKey;
                 }
                 else if (strlen(mode->valuestring) == strlen("MQTTClientMode") &&
                          strcmp(mode->valuestring, "MQTTClientMode") == 0) {
-                    args[0] = System::MQTTClientMode;
+                    args[0] = MQTTClientMode;
                     argsSize = 1;
                     cmdKeyRet = cmdKey;
                 }
                 else if (strlen(mode->valuestring) == strlen("MQTTClientAndHTTPServerMode") &&
                          strcmp(mode->valuestring, "MQTTClientAndHTTPServerMode") == 0) {
-                    args[0] = System::MQTTClientAndHTTPServerMode;
+                    args[0] = MQTTClientAndHTTPServerMode;
                     argsSize = 1;
                     cmdKeyRet = cmdKey;
                 }
@@ -260,7 +260,7 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
             if (retFmt == JSON) {
                 sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\",\"model\":\"%s\",\"hostname\":\"%s\"}, \"cmd\":\"%s\"}",
                         System::instance()->macAddress(),
-                        SensorDataPacker::sharedInstance()->sensorCapability(),
+                        System::instance()->devCapability(),
                         System::instance()->idfVersion(),
                         System::instance()->firmwareVersion(),
                         System::instance()->model(),
@@ -281,7 +281,7 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
             break;
 
         case GetSensorCapability: {
-            uint32_t capability = SensorDataPacker::sharedInstance()->sensorCapability();
+            uint32_t capability = System::instance()->devCapability();
             if (retFmt == JSON) {
                 sprintf(_strBuf, "{\"ret\":\"%u\", \"cmd\":\"%s\"}", capability, cmdKeyToStr(cmdKey));
                 _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
@@ -412,8 +412,8 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
             Wifi::instance()->saveConfig();
             break;
 
-        case SetSystemConfigMode:
-            System::instance()->setConfigMode((System::ConfigMode)args[0]);
+        case SetSystemDeployMode:
+            System::instance()->setDeployMode((DeployMode)args[0]);
             break;
 
         default:
