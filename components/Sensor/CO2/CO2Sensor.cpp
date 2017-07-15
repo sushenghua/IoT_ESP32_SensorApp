@@ -12,8 +12,14 @@
 
 // ------ co2 sensor pins
 // https://www.esp32.com/viewtopic.php?t=1201
-// GPIO12 at boot time can affect the operation of device  
-// #define CO2_SENSOR_MCU_RX_PIN          12 // UART_DEFAULT_PIN
+// the following pins at boot time can affect the operation of device
+//  GPIO0
+//  GPIO2
+//  GPIO05
+//  GPIO12 - MTDI
+//  GPIO15 - MTDO
+
+// #define CO2_SENSOR_MCU_RX_PIN       12 // UART_DEFAULT_PIN
 #define CO2_SENSOR_MCU_RX_PIN          13
 #define CO2_SENSOR_MCU_TX_PIN          14 // UART_DEFAULT_PIN
 #define CO2_SENSOR_RST_PIN             12
