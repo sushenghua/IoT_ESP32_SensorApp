@@ -13,8 +13,8 @@
 // ------ pm sensor pins
 #define PM_SENSOR_MCU_RX_PIN          16 // UART_DEFAULT_PIN
 #define PM_SENSOR_MCU_TX_PIN          17 // UART_DEFAULT_PIN
-#define PM_SENSOR_SET_PIN             4
-#define PM_SENSOR_RST_PIN             2
+#define PM_SENSOR_SET_PIN             13
+#define PM_SENSOR_RST_PIN             15
 
 // ------ pm sensor command
 // command enum
@@ -127,6 +127,12 @@ void PMSensor::init()
 
   // cache capability from System instance
   _cap = System::instance()->devCapability();
+
+  // wakeup
+  wakeup();
+
+  // reset the sensor
+  reset();
 }
 
 void PMSensor::enableActiveDataTx(bool enabled)
@@ -158,6 +164,16 @@ void PMSensor::reset()
   delay(PM_SENSOR_RST_DELAY);
   gpio_set_level((gpio_num_t)PM_SENSOR_RST_PIN, 1);
   delay(PM_SENSOR_RST_DELAY);
+}
+
+void PMSensor::wakeup()
+{
+  gpio_set_level((gpio_num_t)PM_SENSOR_SET_PIN, 1);
+}
+
+void PMSensor::sleep()
+{
+  gpio_set_level((gpio_num_t)PM_SENSOR_SET_PIN, 0);
 }
 
 void PMSensor::clearCache()

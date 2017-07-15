@@ -26,6 +26,8 @@ public:
   PMSensor();
   void init();
   void reset();
+  void wakeup();
+  void sleep();
   void enableActiveDataTx(bool enabled);
   void clearCache();
   void setDisplayDelegate(SensorDisplayController *dc) { _dc = dc; }

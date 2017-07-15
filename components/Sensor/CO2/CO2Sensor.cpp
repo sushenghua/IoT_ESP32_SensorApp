@@ -20,9 +20,10 @@
 //  GPIO15 - MTDO
 
 // #define CO2_SENSOR_MCU_RX_PIN       12 // UART_DEFAULT_PIN
-#define CO2_SENSOR_MCU_RX_PIN          13
-#define CO2_SENSOR_MCU_TX_PIN          14 // UART_DEFAULT_PIN
-#define CO2_SENSOR_RST_PIN             12
+// #define CO2_SENSOR_MCU_TX_PIN       14 // UART_DEFAULT_PIN
+#define CO2_SENSOR_MCU_RX_PIN          14
+#define CO2_SENSOR_MCU_TX_PIN          33
+#define CO2_SENSOR_RST_PIN             4
 
 // ------ co2 sensor
 #define CO2_VALUE_POS                  0
@@ -70,6 +71,9 @@ void CO2Sensor::init()
 
   // init rx protocol length
   _protocolLen = rxProtocolLengthForSensorType(System::instance()->co2SensorType());
+
+  // reset the sensor
+  reset();
 }
 
 // delay definition
