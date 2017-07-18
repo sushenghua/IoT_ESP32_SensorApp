@@ -20,6 +20,9 @@ public:
     // shared instance
     static SensorDataPacker * sharedInstance();
 
+    // init
+    void init();
+
     // add sensor obj ref
     void setPmSensor(PMSensor *sensor);
     void setOrientationSensor(OrientationSensor *sensor);

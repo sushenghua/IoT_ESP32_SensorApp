@@ -17,8 +17,12 @@ SensorDataPacker * SensorDataPacker::sharedInstance()
 
 SensorDataPacker::SensorDataPacker()
 : _pmSensor(NULL)
-, _sensorCapability(System::instance()->devCapability())
 {}
+
+void SensorDataPacker::init()
+{
+    _sensorCapability = System::instance()->devCapability();
+}
 
 void SensorDataPacker::setPmSensor(PMSensor *sensor)
 {

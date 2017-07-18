@@ -118,6 +118,7 @@ void pm_sensor_task(void *p)
   PMSensor pmSensor;
   pmSensor.init();
   pmSensor.setDisplayDelegate(&dc);
+  SensorDataPacker::sharedInstance()->init();
   SensorDataPacker::sharedInstance()->setPmSensor(&pmSensor);
   while (true) {
     // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
