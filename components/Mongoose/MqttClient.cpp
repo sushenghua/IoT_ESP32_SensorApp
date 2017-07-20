@@ -171,7 +171,7 @@ static xSemaphoreHandle _pubSemaphore = 0;
 #define MQTT_RECONNECT_DEFAULT_DELAY_TICKS                      10000   // 1 second
 #define MQTT_SERVER_UNAVAILABLE_RECONNECT_DEFAULT_DELAY_TICKS   300000 // 5 minutes
 // static const char* MQTT_SERVER_ADDR =                           "192.168.0.99:8883";
-static const char* MQTT_SERVER_ADDR =                           "123.57.0.158:8883";
+static const char* MQTT_SERVER_ADDR =                           "appsgenuine.com:8883";
 
 MqttClient::MqttClient()
 : _inited(false)
