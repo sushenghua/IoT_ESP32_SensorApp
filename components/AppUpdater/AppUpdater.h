@@ -39,6 +39,7 @@ public:
     void updateLoop(const char* data, size_t dataLen);
 
 protected:
+    void _retCode(int code, const char *msg, int value = 0);
     void _sendUpdateCmd();
     bool _beforeUpdateCheck();
     void _prepareUpdate();	
