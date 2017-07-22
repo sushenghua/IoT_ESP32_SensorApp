@@ -127,6 +127,10 @@ void AppUpdater::_retCode(int code, const char *msg, int value)
 
   sprintf(_retBuf, "{\"ret\":\"%d\",\"msg\":\"%s\",\"val\":\"%d\"}", code, msg, value);
   _delegate->publish(_updateCrxCodeTopic, _retBuf, strlen(_retBuf), 1);
+
+  if (code != UPDATE_OK && code != DOWNLOAD_PROGRESS) {
+    System::instance()->resumePeripherals();
+  }
 }
 
 void AppUpdater::_sendUpdateCmd()
@@ -199,6 +203,8 @@ void AppUpdater::_prepareUpdate()
     return;
   }
 
+  System::instance()->pausePeripherals();
+
   esp_err_t err = ESP_OTA_BEGIN(_updatePartition, OTA_SIZE_UNKNOWN, &_updateHandle);
   if (err == ESP_OK) {
     _writeFlag.index = 0;
@@ -225,13 +231,13 @@ bool AppUpdater::_verifyData(const char *verifyBits, size_t length)
 
 void AppUpdater::updateLoop(const char* data, size_t dataLen)
 {
-  APP_LOGI(TAG, "update loop");
+  // APP_LOGI(TAG, "update loop");
   switch (_state) {
     case UPDATE_STATE_WAIT_VERSION_INFO: {
       VersionNoType newVersion = *((VersionNoType *)data);
       if (newVersion > _currentVersion) {
         _newVersionSize = *((size_t *)(data + sizeof(VersionNoType)));
-APP_LOGC(TAG, "version: %d, size: %d", newVersion, _newVersionSize);
+        // APP_LOGC(TAG, "version: %d, size: %d", newVersion, _newVersionSize);
         _prepareUpdate();
         md5_starts(&_md5Contex);
         _delegate->publish(_updateDtxDataTopic, &_writeFlag, sizeof(_writeFlag), 1);
@@ -247,14 +253,13 @@ APP_LOGC(TAG, "version: %d, size: %d", newVersion, _newVersionSize);
     case UPDATE_STATE_WAIT_DATA: {
       // data block index, size
       size_t dataIndex = *((size_t*)data);
-APP_LOGC(TAG, "rx data block index: %d", dataIndex);
       if (dataIndex != _writeFlag.index) {
         _retCode(RXDATA_MISMATCHED_WITH_REQUIRED, "received data index mismatched with requested");
         break;
       }
       const void *dataBlock = data + sizeof(size_t);
       size_t blockSize = dataLen - sizeof(size_t);
-APP_LOGC(TAG, "rx data block size: %d", blockSize);
+      APP_LOGI(TAG, "rx data block index: %d, size: %d", dataIndex, blockSize);
       if (_writeFlag.index + blockSize > _newVersionSize) {
         _retCode(RXDATA_SIZE_LARGER_THAN_EXPECTED, "received data size mismatched with the new version size");
         _state = UPDATE_STATE_IDLE;

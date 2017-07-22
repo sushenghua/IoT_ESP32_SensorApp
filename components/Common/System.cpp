@@ -12,13 +12,18 @@
 #include "AppLog.h"
 
 //----------------------------------------------
+// peripheral task loop control
+//----------------------------------------------
+bool     _enablePeripheralTaskLoop = true;
+uint8_t  _peripheralsStopCount = 0;
+
+//----------------------------------------------
 // Wifi task
 //----------------------------------------------
 #include "Wifi.h"
 #include "tcpip_adapter.h"
 
 TaskHandle_t wifiTaskHandle;
-
 void wifi_task(void *pvParameters)
 {
   // config and start wifi
@@ -45,22 +50,18 @@ void wifi_task(void *pvParameters)
 // #include "ILI9341.h"
 #include "ST7789V.h"
 #include "SensorDisplayController.h"
-// static ILI9341 dev;
-ST7789V dev;
+ST7789V dev;// static ILI9341 dev;
 static SensorDisplayController dc(&dev);
 // static xSemaphoreHandle _dcUpdateSemaphore = 0;
 // #define DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS 1000
 TaskHandle_t displyTaskHandle = 0;
-
+bool _displayTaskPaused = false;
 void display_task(void *p)
 {
   dc.init();
   while (true) {
-    // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
-      dc.update();
-      // xSemaphoreGive(_dcUpdateSemaphore);
-    // }
-    // APP_LOGE("[display_task]", "alive");
+    if (_enablePeripheralTaskLoop) dc.update();
+    else _displayTaskPaused = true;
     vTaskDelay(30/portTICK_RATE_MS);
   }
 }
@@ -70,36 +71,44 @@ void display_task(void *p)
 // status check tasks
 //----------------------------------------------
 #include "Adc.h"
+
 #define SAMPLE_ACTIVE_COUNT     2 // 10 seconds
+#define CALCULATE_AVERAGE_COUNT 10
 Adc _voltageReader;
 uint8_t _sampleActiveCounter = SAMPLE_ACTIVE_COUNT;
-#define CALCULATE_AVERAGE_COUNT 10
 uint8_t _sampleCount = 0;
 float   _sampleValue = 0;
+
+bool _statusTaskPaused = false;
 void status_check_task(void *p)
 {
   _voltageReader.init(ADC1_CHANNEL_4);
 
   while (true) {
-    dc.setWifiConnected(Wifi::instance()->connected());
-    dc.setTimeUpdate(true);
-    // battery voltage read
-    // if (_sampleActiveCounter == SAMPLE_ACTIVE_COUNT) {
-    //   int tmp = _voltageReader.readVoltage();
-    //   _sampleValue += tmp;
-    //   APP_LOGC("[ADC test]", "sample(%d): %d", _sampleCount, tmp);
+    if (_enablePeripheralTaskLoop) {
+      dc.setWifiConnected(Wifi::instance()->connected());
+      dc.setTimeUpdate(true);
+      // battery voltage read
+      // if (_sampleActiveCounter == SAMPLE_ACTIVE_COUNT) {
+      //   int tmp = _voltageReader.readVoltage();
+      //   _sampleValue += tmp;
+      //   APP_LOGC("[ADC test]", "sample(%d): %d", _sampleCount, tmp);
 
-    //   ++_sampleCount;
-    //   if (_sampleCount == CALCULATE_AVERAGE_COUNT) {
-    //     _sampleValue /= _sampleCount;
-    //     APP_LOGC("[ADC test]", "--> average sample: %.0f", _sampleValue);
-    //     _sampleValue = 0;
-    //     _sampleCount = 0;
-    //   }
-    //   _sampleActiveCounter = 0;
-    // } else {
-    //   ++_sampleActiveCounter;
-    // }
+      //   ++_sampleCount;
+      //   if (_sampleCount == CALCULATE_AVERAGE_COUNT) {
+      //     _sampleValue /= _sampleCount;
+      //     APP_LOGC("[ADC test]", "--> average sample: %.0f", _sampleValue);
+      //     _sampleValue = 0;
+      //     _sampleCount = 0;
+      //   }
+      //   _sampleActiveCounter = 0;
+      // } else {
+      //   ++_sampleActiveCounter;
+      // }
+    }
+    else {
+      _statusTaskPaused = true;
+    }
     vTaskDelay(500/portTICK_RATE_MS);
   }
 }
@@ -113,6 +122,8 @@ void status_check_task(void *p)
 #include "OrientationSensor.h"
 #include "SensorDataPacker.h"
 
+TaskHandle_t pmSensorTaskHandle;
+bool _pmSensorTaskPaused = false;
 void pm_sensor_task(void *p)
 {
   PMSensor pmSensor;
@@ -121,14 +132,14 @@ void pm_sensor_task(void *p)
   SensorDataPacker::sharedInstance()->init();
   SensorDataPacker::sharedInstance()->setPmSensor(&pmSensor);
   while (true) {
-    // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
-      pmSensor.sampleData();
-      // xSemaphoreGive(_dcUpdateSemaphore);
-    // }
+    if (_enablePeripheralTaskLoop) pmSensor.sampleData();
+    else _pmSensorTaskPaused = true;
     vTaskDelay(500/portTICK_RATE_MS);
   }
 }
 
+TaskHandle_t co2SensorTaskHandle;
+bool _co2SensorTaskPaused = false;
 void co2_sensor_task(void *p)
 {
   CO2Sensor co2Sensor;
@@ -138,21 +149,22 @@ void co2_sensor_task(void *p)
 
   vTaskDelay(3000/portTICK_RATE_MS); // delay 3 seconds
   while (true) {
-    co2Sensor.sampleData(3000);
+    if (_enablePeripheralTaskLoop) co2Sensor.sampleData(3000);
+    else _co2SensorTaskPaused = true;
     vTaskDelay(500/portTICK_RATE_MS);
   }
 }
 
+TaskHandle_t orientationSensorTaskHandle;
+bool _orientationSensorTaskPaused = false;
 void orientation_sensor_task(void *p)
 {
   OrientationSensor orientationSensor;
   orientationSensor.init();
   orientationSensor.setDisplayDelegate(&dc);
   while (true) {
-    // if (xSemaphoreTake(_dcUpdateSemaphore, DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS)) {
-      orientationSensor.tick();
-      // xSemaphoreGive(_dcUpdateSemaphore);
-    // }
+    if (_enablePeripheralTaskLoop) orientationSensor.tick();
+    else _orientationSensorTaskPaused = true;
     vTaskDelay(100/portTICK_RATE_MS);
   }
 }
@@ -322,13 +334,34 @@ void System::_launchTasks()
     xTaskCreatePinnedToCore(&http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
   if (_config.devCapability & PM_CAPABILITY_MASK)
-    xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, NULL, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
   if (_config.devCapability & CO2_CAPABILITY_MASK)
-    xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 2048, NULL, CO2_SENSOR_TASK_PRIORITY, NULL, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 2048, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
 
-  xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, NULL, RUN_ON_CORE);
+  xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
 
   xTaskCreatePinnedToCore(status_check_task, "status_check_task", 4096, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
+}
+
+void System::pausePeripherals()
+{
+  _enablePeripheralTaskLoop = false;
+
+  while (!_displayTaskPaused || !_statusTaskPaused ||
+         !_pmSensorTaskPaused || !_co2SensorTaskPaused || !_orientationSensorTaskPaused) {
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+    APP_LOGC("[System]", "pause sync delay");
+  }
+}
+
+void System::resumePeripherals()
+{
+  _displayTaskPaused = false;
+  _statusTaskPaused = false;
+  _pmSensorTaskPaused = false;
+  _co2SensorTaskPaused = false;
+  _orientationSensorTaskPaused = false;
+  _enablePeripheralTaskLoop = true;
 }
 
 #include "nvs.h"

@@ -57,6 +57,9 @@ public:
   void restart();
   bool restarting();
 
+  void pausePeripherals();
+  void resumePeripherals();
+
 private:
   void _setDefaultConfig();
   bool _loadConfig();

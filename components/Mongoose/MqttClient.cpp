@@ -422,21 +422,21 @@ void MqttClient::onConnAck(struct mg_mqtt_message *msg)
 
 void MqttClient::onPubAck(struct mg_mqtt_message *msg)
 {
-    APP_LOGI("[MqttClient]", "message QoS(1) Pub acknowledged (msg_id: %d)", msg->message_id);
+    // APP_LOGI("[MqttClient]", "message QoS(1) Pub acknowledged (msg_id: %d)", msg->message_id);
     _msgPubPool.drainPoolMessage(msg->message_id);
     _recentActiveTime = time(NULL);
 }
 
 void MqttClient::onPubRec(struct mg_connection *nc, struct mg_mqtt_message *msg)
 {
-    APP_LOGI("[MqttClient]", "message QoS(2) Pub-Receive acknowledged (msg_id: %d)", msg->message_id);
+    // APP_LOGI("[MqttClient]", "message QoS(2) Pub-Receive acknowledged (msg_id: %d)", msg->message_id);
     mg_mqtt_pubrel(nc, msg->message_id);
     _recentActiveTime = time(NULL);
 }
 
 void MqttClient::onPubComp(struct mg_mqtt_message *msg)
 {
-    APP_LOGI("[MqttClient]", "message QoS(2) Pub-Complete acknowledged (msg_id: %d)", msg->message_id);
+    // APP_LOGI("[MqttClient]", "message QoS(2) Pub-Complete acknowledged (msg_id: %d)", msg->message_id);
     onPubAck(msg);
     _recentActiveTime = time(NULL);
 }
@@ -461,7 +461,8 @@ void MqttClient::onUnsubAct(struct mg_mqtt_message *msg)
 
 void MqttClient::onRxPubMessage(struct mg_mqtt_message *msg)
 {
-    APP_LOGC("[MqttClient]", "got incoming message (msg_id: %d) %.*s: %.*s\n", msg->message_id,
+    printf("\n");
+    APP_LOGC("[MqttClient]", "got incoming message (msg_id: %d) %.*s: %.*s", msg->message_id,
            (int) msg->topic.len, msg->topic.p, (int) msg->payload.len, msg->payload.p);
     if (_msgInterpreter) {
         _msgInterpreter->interpreteMqttMsg(msg->topic.p, msg->topic.len, msg->payload.p, msg->payload.len);
