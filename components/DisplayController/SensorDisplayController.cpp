@@ -152,11 +152,11 @@ void SensorDisplayController::update()
         _renderMainScreen();
         break;
       case DISPLAY_ROTATION_CW_90:
-        _renderDetailScreen();
         break;
       case DISPLAY_ROTATION_CW_180:
         break;
       case DISPLAY_ROTATION_CW_270:
+        _renderDetailScreen();
         break;
     }
     _dynamicContentNeedUpdate = false;

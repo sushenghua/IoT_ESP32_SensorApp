@@ -7,7 +7,7 @@
 #include "OrientationSensor.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "esp_log.h"
+#include "AppLog.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Configuration
@@ -63,7 +63,7 @@ inline float calculateAngle(float x, float y)
     else {
         angle = 180 - angle;
     }
-    angle -= 180; // install rotation adjust
+    angle -= 90; // install rotation adjust
     return angle;
 }
 
@@ -89,19 +89,18 @@ void OrientationSensor::_updateOrientation()
 #ifdef DEBUG_APP
         float accelZ = _mpuData.accel[2] / MPU6050_ACCE_SCALE_FACTOR;
         uint8_t rotation = _dc->rotation();
-        ESP_LOGI("[OriSensor]", "rotation: %d,  aX: %f  aY: %f  aZ: %f  angle: %f", rotation, accelX, accelY, accelZ, angle);
+        APP_LOGC("[OriSensor]", "rotation: %d,  aX: %f  aY: %f  aZ: %f  angle: %f", rotation, accelX, accelY, accelZ, angle);
 #endif
-
         if (fabs(angle - 0) < 20) {
             _dc->setRotation(DISPLAY_ROTATION_CW_0);
         }
         else if (fabs(angle - 90.f) < 20) {
-            _dc->setRotation(DISPLAY_ROTATION_CW_90);
-        }
-        else if (fabs(angle + 90.f) < 20) {
             _dc->setRotation(DISPLAY_ROTATION_CW_270);
         }
-        else if (fabs(angle - 180.f) < 20 || fabs(angle + 180.f) < 20) {
+        else if (fabs(angle + 90.f) < 20 || fabs(angle - 270.f) < 20) {
+            _dc->setRotation(DISPLAY_ROTATION_CW_90);
+        }
+        else if (fabs(angle - 180.f) < 20) {
             _dc->setRotation(DISPLAY_ROTATION_CW_180);
         }
     }
