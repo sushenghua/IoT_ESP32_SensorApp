@@ -274,6 +274,9 @@ void Wifi::_initEap()
 
 #endif
 
+// host name can be changed at Framework level:
+// esp-idf/components/lwip/port/netif/ethernetif.c:213:  netif->hostname = "espressif";
+// esp-idf/components/lwip/port/netif/wlanif.c:202:  netif->hostname = "espressif";
 bool Wifi::setHostName(const char* hostname)
 {
     size_t len = stringLen(hostname);
