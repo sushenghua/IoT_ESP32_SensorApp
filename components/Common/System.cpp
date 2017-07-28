@@ -78,6 +78,7 @@ void display_task(void *p)
 #define CALCULATE_AVERAGE_COUNT 5
 #define BAT_VOLTAGE_CORRECTION  0.4f // issue: 3.3 gives 4095, 0.0 gives 0, but 1.8 does not produce 2234
 #define BAT_VOLTAGE_MAX         4.2f
+#define BAT_VOLTAGE_MIN         3.2f
 Adc     _voltageReader;
 uint8_t _sampleActiveCounter = SAMPLE_ACTIVE_COUNT;
 uint8_t _sampleCount = 0;
@@ -112,7 +113,7 @@ void status_check_task(void *p)
         if (_sampleCount == CALCULATE_AVERAGE_COUNT) {
           _sampleValue /= _sampleCount;
           _batVoltage = _sampleValue * 6.6f / 4095 + BAT_VOLTAGE_CORRECTION;
-          dc.setBatteryLevel(_batVoltage / BAT_VOLTAGE_MAX * 100);
+          dc.setBatteryLevel((_batVoltage - BAT_VOLTAGE_MIN) / (BAT_VOLTAGE_MAX - BAT_VOLTAGE_MIN) * 100);
           // APP_LOGC("[ADC test]", "--> average sample: %.0f, voltage: %.2f", _sampleValue, _batVoltage);
           _sampleValue = 0;
           _sampleCount = 0;
