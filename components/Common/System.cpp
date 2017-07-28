@@ -72,12 +72,20 @@ void display_task(void *p)
 //----------------------------------------------
 #include "Adc.h"
 
-#define SAMPLE_ACTIVE_COUNT     2 // 10 seconds
-#define CALCULATE_AVERAGE_COUNT 10
-Adc _voltageReader;
+#define STATUS_TASK_DELAY_UNIT  100
+
+#define SAMPLE_ACTIVE_COUNT     2    // 0.2 seconds
+#define CALCULATE_AVERAGE_COUNT 5
+#define BAT_VOLTAGE_CORRECTION  0.4f // issue: 3.3 gives 4095, 0.0 gives 0, but 1.8 does not produce 2234
+#define BAT_VOLTAGE_MAX         4.2f
+Adc     _voltageReader;
 uint8_t _sampleActiveCounter = SAMPLE_ACTIVE_COUNT;
 uint8_t _sampleCount = 0;
 float   _sampleValue = 0;
+float   _batVoltage = 0;
+
+#define TIME_WIFI_UPDATE_COUNT  5
+uint8_t _timeWifiUpdateCount = 0;
 
 bool _statusTaskPaused = false;
 void status_check_task(void *p)
@@ -86,30 +94,36 @@ void status_check_task(void *p)
 
   while (true) {
     if (_enablePeripheralTaskLoop) {
-      dc.setWifiConnected(Wifi::instance()->connected());
-      dc.setTimeUpdate(true);
-      // battery voltage read
-      // if (_sampleActiveCounter == SAMPLE_ACTIVE_COUNT) {
-      //   int tmp = _voltageReader.readVoltage();
-      //   _sampleValue += tmp;
-      //   APP_LOGC("[ADC test]", "sample(%d): %d", _sampleCount, tmp);
+      // update time and wifi status every 0.5 second
+      ++_timeWifiUpdateCount;
+      if (_timeWifiUpdateCount >= TIME_WIFI_UPDATE_COUNT) {
+        dc.setWifiConnected(Wifi::instance()->connected());
+        dc.setTimeUpdate(true);
+        _timeWifiUpdateCount = 0;
+      }
 
-      //   ++_sampleCount;
-      //   if (_sampleCount == CALCULATE_AVERAGE_COUNT) {
-      //     _sampleValue /= _sampleCount;
-      //     APP_LOGC("[ADC test]", "--> average sample: %.0f", _sampleValue);
-      //     _sampleValue = 0;
-      //     _sampleCount = 0;
-      //   }
-      //   _sampleActiveCounter = 0;
-      // } else {
-      //   ++_sampleActiveCounter;
-      // }
+      // battery voltage read
+      ++_sampleActiveCounter;
+      if (_sampleActiveCounter >= SAMPLE_ACTIVE_COUNT) {
+        int tmp = _voltageReader.readVoltage();
+        _sampleValue += tmp;
+        // APP_LOGC("[ADC test]", "sample(%d): %d", _sampleCount, tmp);
+        ++_sampleCount;
+        if (_sampleCount == CALCULATE_AVERAGE_COUNT) {
+          _sampleValue /= _sampleCount;
+          _batVoltage = _sampleValue * 6.6f / 4095 + BAT_VOLTAGE_CORRECTION;
+          dc.setBatteryLevel(_batVoltage / BAT_VOLTAGE_MAX * 100);
+          // APP_LOGC("[ADC test]", "--> average sample: %.0f, voltage: %.2f", _sampleValue, _batVoltage);
+          _sampleValue = 0;
+          _sampleCount = 0;
+        }
+        _sampleActiveCounter = 0;
+      }
     }
     else {
       _statusTaskPaused = true;
     }
-    vTaskDelay(500/portTICK_RATE_MS);
+    vTaskDelay(STATUS_TASK_DELAY_UNIT / portTICK_RATE_MS);
   }
 }
 

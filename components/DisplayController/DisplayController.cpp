@@ -79,6 +79,8 @@ void DisplayController::updateStatusBar(bool foreUpdateAll)
   // battery
   if (foreUpdateAll || _batterNeedUpdate) {
     _dev->drawBitmap(190, 7, batShellIcon, 40, 16, RGB565_WEAKWHITE);
+    if (_batteryLevel <= 0) _batteryLevel = 1;
+    else if (_batteryLevel > 100) _batteryLevel = 100;
     uint16_t w = (uint16_t)(28 * _batteryLevel / 100.0f);
     uint16_t color = RGB565_GREEN;
     if (_batteryLevel < 20) color = RGB565_RED;
