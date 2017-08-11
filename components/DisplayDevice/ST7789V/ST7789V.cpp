@@ -126,6 +126,7 @@ typedef struct {
     uint8_t databytes; //No of data in data; bit 7 = delay after set; 0xFF = end of cmds.
 } ST7789VInitCmd;
 
+// for TFT-LCD 240*240 (MF154A24148) from MingFang GuangDian
 DRAM_ATTR static const ST7789VInitCmd st7789vInitCmd[]={
     // --- exit sleep
     {0x11, {0}, 0x80},
