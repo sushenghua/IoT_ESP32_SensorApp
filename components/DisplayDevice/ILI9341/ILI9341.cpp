@@ -28,7 +28,9 @@
 #define MADCTL_MH  0x04
 
 // SPI pin definition
-#define PIN_NUM_MISO 25
+#define PIN_NOT_USED -1
+// #define PIN_NUM_MISO 25
+#define PIN_NUM_MISO PIN_NOT_USED
 #define PIN_NUM_MOSI 23
 #define PIN_NUM_CLK  19
 #define PIN_NUM_CS   22
@@ -162,7 +164,7 @@ typedef struct {
 // --- for TFT-LCD 240x320 (Part NO. Z240IT008) from ZhanHengAn Tech
 DRAM_ATTR static const ILI9341InitCmd ili9341InitCmd[] = {
   // {0x28, {0}, 0x80},                      // display off
-  {0xEF, {0x03, 0x80, 0x02}, 3},             // ?
+  // {0xEF, {0x03, 0x80, 0x02}, 3},             // ?
   // --- power control A: 0x39, 0x2c, 0x00, 0x34(Vcore 1.6V), 0x02(DDVDH 5.6V)
   {0xCB, {0x39, 0x2C, 0x00, 0x34, 0x02}, 5},
   // --- power control B: 0x00, 0x, 0x30(ESD protection)
