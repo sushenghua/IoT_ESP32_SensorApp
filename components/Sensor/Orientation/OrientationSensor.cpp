@@ -44,10 +44,10 @@
 
 void OrientationSensor::init()
 {
-    delay(MPU6050_READY_DELAY);
-    if (_mpu6050.init(MPU6050_CONF_CLK_SOURCE, MPU6050_CONF_GYRO_RANGE,
-                      MPU6050_CONF_ACCEL_RANGE, MPU6050_CONF_DATA_RATE, MPU6050_CONF_ENABLE_DMP)) {
-    }
+  delay(MPU6050_READY_DELAY);
+  if (_mpu6050.init(MPU6050_CONF_CLK_SOURCE, MPU6050_CONF_GYRO_RANGE,
+      MPU6050_CONF_ACCEL_RANGE, MPU6050_CONF_DATA_RATE, MPU6050_CONF_ENABLE_DMP)) {
+  }
 }
 
 #include <math.h>
@@ -56,22 +56,22 @@ const float RADIANS_TO_DEGREES = 180/3.14159269;
 
 inline float calculateAngle(float x, float y)
 {
-    float angle = asinf(y / sqrtf(x*x + y*y)) * RADIANS_TO_DEGREES;
-    if (x > 0) {
-        if (y < 0) angle += 360;
-    }
-    else {
-        angle = 180 - angle;
-    }
-    angle -= 90; // install rotation adjust
-    return angle;
+  float angle = asinf(y / sqrtf(x*x + y*y)) * RADIANS_TO_DEGREES;
+  if (x > 0) {
+    if (y < 0) angle += 360;
+  }
+  else {
+    angle = 180 - angle;
+  }
+  angle -= 90; // install rotation adjust
+  return angle;
 }
 
 #define ORITENTATION_THRESHOLD_VALUE  0.9
 
 void OrientationSensor::_updateOrientation()
 {
-    if (!_mpu6050.getRawData(&_mpuData)) {
+  if (!_mpu6050.getRawData(&_mpuData)) {
 //		printf("accel: %f, %f, %f  ",
 //					 _mpuData.accel[0] / MPU6050_ACCE_SCALE_FACTOR,
 //					 _mpuData.accel[1] / MPU6050_ACCE_SCALE_FACTOR,
@@ -82,26 +82,42 @@ void OrientationSensor::_updateOrientation()
 //					 _mpuData.gyro[1] / MPU6050_GYRO_SCALE_FACTOR,
 //					 _mpuData.gyro[2] / MPU6050_GYRO_SCALE_FACTOR);
 
-        float accelX = _mpuData.accel[0] / MPU6050_ACCE_SCALE_FACTOR;
-        float accelY = _mpuData.accel[1] / MPU6050_ACCE_SCALE_FACTOR;
-        float angle = calculateAngle(accelX, accelY);
+    float accelX = _mpuData.accel[0] / MPU6050_ACCE_SCALE_FACTOR;
+    float accelY = _mpuData.accel[1] / MPU6050_ACCE_SCALE_FACTOR;
+    float angle = calculateAngle(accelX, accelY);
 
 #ifdef DEBUG_APP
-        float accelZ = _mpuData.accel[2] / MPU6050_ACCE_SCALE_FACTOR;
-        uint8_t rotation = _dc->rotation();
-        APP_LOGC("[OriSensor]", "rotation: %d,  aX: %f  aY: %f  aZ: %f  angle: %f", rotation, accelX, accelY, accelZ, angle);
+    float accelZ = _mpuData.accel[2] / MPU6050_ACCE_SCALE_FACTOR;
+    uint8_t rotation = _dc->rotation();
+    APP_LOGC("[OriSensor]", "rotation: %d,  aX: %f  aY: %f  aZ: %f  angle: %f", rotation, accelX, accelY, accelZ, angle);
 #endif
-        if (fabs(angle - 0) < 20) {
-            _dc->setRotation(DISPLAY_ROTATION_CW_0);
-        }
-        else if (fabs(angle - 90.f) < 20) {
-            _dc->setRotation(DISPLAY_ROTATION_CW_270);
-        }
-        else if (fabs(angle + 90.f) < 20 || fabs(angle - 270.f) < 20) {
-            _dc->setRotation(DISPLAY_ROTATION_CW_90);
-        }
-        else if (fabs(angle - 180.f) < 20) {
-            _dc->setRotation(DISPLAY_ROTATION_CW_180);
-        }
+
+    // for MPU6050 chip(on PCB) and LCD installed as both face front
+    // if (fabs(angle - 0) < 20) {
+    //   _dc->setRotation(DISPLAY_ROTATION_CW_0);
+    // }
+    // else if (fabs(angle - 90.f) < 20) {
+    //   _dc->setRotation(DISPLAY_ROTATION_CW_270);
+    // }
+    // else if (fabs(angle + 90.f) < 20 || fabs(angle - 270.f) < 20) {
+    //   _dc->setRotation(DISPLAY_ROTATION_CW_90);
+    // }
+    // else if (fabs(angle - 180.f) < 20) {
+    //   _dc->setRotation(DISPLAY_ROTATION_CW_180);
+    // }
+
+    // for MPU6050 chip(on PCB) and LCD installed as back-to-back
+    if (fabs(angle - 0) < 20) {
+      _dc->setRotation(DISPLAY_ROTATION_CW_0);
     }
+    else if (fabs(angle - 90.f) < 20) {
+      _dc->setRotation(DISPLAY_ROTATION_CW_90);
+    }
+    else if (fabs(angle + 90.f) < 20 || fabs(angle - 270.f) < 20) {
+      _dc->setRotation(DISPLAY_ROTATION_CW_270);
+    }
+    else if (fabs(angle - 180.f) < 20) {
+      _dc->setRotation(DISPLAY_ROTATION_CW_180);
+    }
+  }
 }

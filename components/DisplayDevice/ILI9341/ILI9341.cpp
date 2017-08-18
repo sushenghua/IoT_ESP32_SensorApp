@@ -49,7 +49,7 @@ uint16_t ILI9341::color565(uint8_t r, uint8_t g, uint8_t b)
 }
 
 ILI9341::ILI9341()
-: DisplayGFX(ILI9341_TFTWIDTH, ILI9341_TFTHEIGHT)
+: DisplayGFX(ILI9341_TFTHEIGHT, ILI9341_TFTWIDTH)
 {
 }
 
@@ -185,7 +185,7 @@ DRAM_ATTR static const ILI9341InitCmd ili9341InitCmd[] = {
   {0xC5, {0x33, 0x3F}, 2},
   {0xC7, {0x92}, 1},
   // --- memory access control
-  {0x36, {0x08}, 1},  // BGR color filter panel
+  {0x36, {0xA8}, 1},  // (rotate to CW 90 initially) BGR color filter panel
   // --- pixel format
   {0x3A, {0x55}, 1},  // Pixel format(RGB Interface format, MCU Interface format): 16 bits / pixel
   // --- vertical scrolling star address
@@ -233,24 +233,24 @@ void ILI9341::setRotation(uint8_t m)
   _rotation = m;
   switch (_rotation) {
     case DISPLAY_ROTATION_CW_0:
-      m = (MADCTL_MX | MADCTL_BGR);
-      _width  = ILI9341_TFTWIDTH;
-      _height = ILI9341_TFTHEIGHT;
+      m = (MADCTL_MY | MADCTL_MV | MADCTL_BGR);
+      _width  = ILI9341_TFTHEIGHT;
+      _height = ILI9341_TFTWIDTH;
       break;
     case DISPLAY_ROTATION_CW_90:
-      m = (MADCTL_MV | MADCTL_BGR);
-      _width  = ILI9341_TFTHEIGHT;
-      _height = ILI9341_TFTWIDTH;
-      break;
-    case DISPLAY_ROTATION_CW_180:
-      m = (MADCTL_MY | MADCTL_BGR);
+      m = (MADCTL_ML | MADCTL_MH | MADCTL_BGR);
       _width  = ILI9341_TFTWIDTH;
       _height = ILI9341_TFTHEIGHT;
       break;
-    case DISPLAY_ROTATION_CW_270:
-      m = (MADCTL_MX | MADCTL_MY | MADCTL_MV | MADCTL_BGR);
+    case DISPLAY_ROTATION_CW_180:
+      m = (MADCTL_MX | MADCTL_MH | MADCTL_MV | MADCTL_BGR);
       _width  = ILI9341_TFTHEIGHT;
       _height = ILI9341_TFTWIDTH;
+      break;
+    case DISPLAY_ROTATION_CW_270:
+      m = (MADCTL_MX | MADCTL_MY | MADCTL_ML | MADCTL_MH | MADCTL_BGR);
+      _width  = ILI9341_TFTWIDTH;
+      _height = ILI9341_TFTHEIGHT;
       break;
   }
   writeCommand(ILI9341_MADCTL);
