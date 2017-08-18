@@ -54,6 +54,8 @@ void DisplayController::update()
   updateStatusBar();
 }
 
+#define TIM_OFFSET_FROM_M        35
+#define BAT_BDR_OFFSET_FROM_R    50
 static char strftime_buf[8];
 
 void DisplayController::updateStatusBar(bool foreUpdateAll)
@@ -67,7 +69,7 @@ void DisplayController::updateStatusBar(bool foreUpdateAll)
 
   // time
   if (foreUpdateAll || _timeNeedUpdate) {
-    _dev->setCursor(85, 8);
+    _dev->setCursor(_dev->width()/2 - TIM_OFFSET_FROM_M, 8);
     _dev->setTextSize(2);
     _dev->setTextColor(RGB565_WEAKWHITE, RGB565_BLACK);
     SNTP::setTimezone("CST-8CDT-9,M4.2.0/2,M9.2.0/3");
@@ -78,15 +80,16 @@ void DisplayController::updateStatusBar(bool foreUpdateAll)
 
   // battery
   if (foreUpdateAll || _batterNeedUpdate) {
-    _dev->drawBitmap(190, 7, batShellIcon, 40, 16, RGB565_WEAKWHITE);
+    uint16_t x = _dev->width() - BAT_BDR_OFFSET_FROM_R;
+    _dev->drawBitmap(x, 7, batShellIcon, 40, 16, RGB565_WEAKWHITE);
     if (_batteryLevel <= 0) _batteryLevel = 1;
     else if (_batteryLevel > 100) _batteryLevel = 100;
     uint16_t w = (uint16_t)(28 * _batteryLevel / 100.0f);
     uint16_t color = RGB565_GREEN;
     if (_batteryLevel < 20) color = RGB565_RED;
     else if (_batteryLevel < 50) color = RGB565_YELLOW;
-    _dev->fillRect(195, 10, w, 10, color);
-    _dev->fillRect(195 + w, 10, 28 - w, 10, RGB565_BLACK);
+    _dev->fillRect(x + 5, 10, w, 10, color);
+    _dev->fillRect(x + 5 + w, 10, 28 - w, 10, RGB565_BLACK);
     _batterNeedUpdate = false;
   }
 }
