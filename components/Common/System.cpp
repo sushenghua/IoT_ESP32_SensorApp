@@ -32,7 +32,7 @@ void wifi_task(void *pvParameters)
   }
   else {
     Wifi::instance()->setDefaultConfig();
-    Wifi::instance()->setStaConfig("woody@home", "58897@mljd-abcde");
+    Wifi::instance()->setStaConfig("woody@homea", "58897@mljd-abcde");
     Wifi::instance()->appendAltApConnectionSsidPassword("iPhone6S", "abcd1234");
     if (Wifi::instance()->saveConfig()) {
     APP_LOGI("[Wifi]", "save config succeeded");
@@ -95,36 +95,36 @@ void status_check_task(void *p)
   _voltageReader.init(ADC1_CHANNEL_4);
 
   while (true) {
-    // if (_enablePeripheralTaskLoop) {
-    //   // update time and wifi status every 0.5 second
-    //   ++_timeWifiUpdateCount;
-    //   if (_timeWifiUpdateCount >= TIME_WIFI_UPDATE_COUNT) {
-    //     dc.setWifiConnected(Wifi::instance()->connected());
-    //     dc.setTimeUpdate(true);
-    //     _timeWifiUpdateCount = 0;
-    //   }
+    if (_enablePeripheralTaskLoop) {
+      // update time and wifi status every 0.5 second
+      ++_timeWifiUpdateCount;
+      if (_timeWifiUpdateCount >= TIME_WIFI_UPDATE_COUNT) {
+        dc.setWifiConnected(Wifi::instance()->connected());
+        dc.setTimeUpdate(true);
+        _timeWifiUpdateCount = 0;
+      }
 
-    //   // battery voltage read
-    //   ++_sampleActiveCounter;
-    //   if (_sampleActiveCounter >= SAMPLE_ACTIVE_COUNT) {
-    //     int tmp = _voltageReader.readVoltage();
-    //     _sampleValue += tmp;
-    //     // APP_LOGC("[ADC test]", "sample(%d): %d", _sampleCount, tmp);
-    //     ++_sampleCount;
-    //     if (_sampleCount == CALCULATE_AVERAGE_COUNT) {
-    //       _sampleValue /= _sampleCount;
-    //       _batVoltage = _sampleValue * 6.6f / 4095 + BAT_VOLTAGE_CORRECTION;
-    //       dc.setBatteryLevel((_batVoltage - BAT_VOLTAGE_MIN) / (BAT_VOLTAGE_MAX - BAT_VOLTAGE_MIN) * 100);
-    //       // APP_LOGC("[ADC test]", "--> average sample: %.0f, voltage: %.2f", _sampleValue, _batVoltage);
-    //       _sampleValue = 0;
-    //       _sampleCount = 0;
-    //     }
-    //     _sampleActiveCounter = 0;
-    //   }
-    // }
-    // else {
-    //   _statusTaskPaused = true;
-    // }
+      // battery voltage read
+      ++_sampleActiveCounter;
+      if (_sampleActiveCounter >= SAMPLE_ACTIVE_COUNT) {
+        int tmp = _voltageReader.readVoltage();
+        _sampleValue += tmp;
+        // APP_LOGC("[ADC test]", "sample(%d): %d", _sampleCount, tmp);
+        ++_sampleCount;
+        if (_sampleCount == CALCULATE_AVERAGE_COUNT) {
+          _sampleValue /= _sampleCount;
+          _batVoltage = _sampleValue * 6.6f / 4095 + BAT_VOLTAGE_CORRECTION;
+          dc.setBatteryLevel((_batVoltage - BAT_VOLTAGE_MIN) / (BAT_VOLTAGE_MAX - BAT_VOLTAGE_MIN) * 100);
+          // APP_LOGC("[ADC test]", "--> average sample: %.0f, voltage: %.2f", _sampleValue, _batVoltage);
+          _sampleValue = 0;
+          _sampleCount = 0;
+        }
+        _sampleActiveCounter = 0;
+      }
+    }
+    else {
+      _statusTaskPaused = true;
+    }
     vTaskDelay(STATUS_TASK_DELAY_UNIT / portTICK_RATE_MS);
   }
 }
@@ -133,19 +133,19 @@ void status_check_task(void *p)
 //----------------------------------------------
 // touch check task
 //----------------------------------------------
-#include "TouchPad.h"
+// #include "TouchPad.h"
 
-TaskHandle_t touchPadTaskHandle;
-static void touch_pad_task(void *pvParams)
-{
-  TouchPad tp(TOUCH_PAD_NUM5);
-  tp.init();
+// TaskHandle_t touchPadTaskHandle;
+// static void touch_pad_task(void *pvParams)
+// {
+//   TouchPad tp(TOUCH_PAD_NUM5);
+//   tp.init();
 
-  while (true) {
-    tp.readValue();
-    vTaskDelay(200 / portTICK_PERIOD_MS);
-  }
-}
+//   while (true) {
+//     tp.readValue();
+//     vTaskDelay(200 / portTICK_PERIOD_MS);
+//   }
+// }
 
 
 //----------------------------------------------
@@ -357,6 +357,15 @@ void System::_launchTasks()
 
   xTaskCreatePinnedToCore(&display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, &displyTaskHandle, RUN_ON_CORE);
 
+  if (_config.devCapability & PM_CAPABILITY_MASK)
+    xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
+  if (_config.devCapability & CO2_CAPABILITY_MASK)
+    xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 2048, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
+
+  xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
+
+  xTaskCreatePinnedToCore(status_check_task, "status_check_task", 4096, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
+
   xTaskCreate(&wifi_task, "wifi_connection_task", 4096, NULL, WIFI_TASK_PRIORITY, &wifiTaskHandle);
   vTaskDelay(100 / portTICK_PERIOD_MS);
 
@@ -367,15 +376,6 @@ void System::_launchTasks()
     xTaskCreatePinnedToCore(&mqtt_task, "mqtt_task", 8192, NULL, MQTTCLIENT_TASK_PRIORITY, NULL, RUN_ON_CORE);
   if (_config.deployMode == HTTPServerMode || _config.deployMode == MQTTClientAndHTTPServerMode)
     xTaskCreatePinnedToCore(&http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL, RUN_ON_CORE);
-
-  if (_config.devCapability & PM_CAPABILITY_MASK)
-    xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
-  if (_config.devCapability & CO2_CAPABILITY_MASK)
-    xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 2048, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
-
-  xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
-
-  xTaskCreatePinnedToCore(status_check_task, "status_check_task", 4096, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
   // xTaskCreatePinnedToCore(touch_pad_task, "touch_pad_task", 2048, NULL, TOUCH_PAD_TASK_PRIORITY, NULL, RUN_ON_CORE);
 }

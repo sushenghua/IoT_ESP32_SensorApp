@@ -179,7 +179,7 @@ bool Wifi::appendAltApConnectionSsidPassword(const char *ssid, const char *passw
                           sizeof(_config.staConfig.sta.password)) ) {
 
         _config.altApsHead = index;
-        _nextAltApIndex = index; // update RAM next Alt index
+        _nextAltApIndex = 0; // update RAM next Alt index, point to head (head + 0)
 
         if (_config.altApCount < ALTERNATIVE_AP_LIST_SIZE)
             ++_config.altApCount;
@@ -194,14 +194,15 @@ void Wifi::loadNextAltSsidPassword()
 {
     if (_config.altApCount > 0) {
         if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) {
+            uint8_t index = (_config.altApsHead + _nextAltApIndex) % ALTERNATIVE_AP_LIST_SIZE;
             APP_LOGC("[Wifi]", "load alt ssid: %s, pass: %s",
-                     (const char*)_config.altAps[_nextAltApIndex].ssid,
-                     (const char*)_config.altAps[_nextAltApIndex].password);
+                     (const char*)_config.altAps[index].ssid,
+                     (const char*)_config.altAps[index].password);
             _setConfSsidPass(_config.staConfig.sta.ssid,
-                             (const char*)_config.altAps[_nextAltApIndex].ssid,
+                             (const char*)_config.altAps[index].ssid,
                              sizeof(_config.staConfig.sta.ssid),
                              _config.staConfig.sta.password,
-                             (const char*)_config.altAps[_nextAltApIndex].password,
+                             (const char*)_config.altAps[index].password,
                              sizeof(_config.staConfig.sta.password));
 
             ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &_config.staConfig) );
@@ -556,7 +557,7 @@ bool Wifi::loadConfig()
                 APP_LOGE("[Wifi]", "loadConfig read \"wifi-config-content\" failed %d", err);
                 break;
             }
-            _nextAltApIndex = _config.altApsHead;
+            _nextAltApIndex = 0; // point to _config.altApsHead (head + nextIndex)
             succeeded = true;
         }
     } while(false);
