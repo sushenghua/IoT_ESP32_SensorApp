@@ -393,45 +393,45 @@
 
 // sensor data struct
 struct MPU6050Data {
-    short gyro[3];  // short : int16_t
-    short accel[3];
-    float pitch;
-    float roll;
+  short gyro[3];  // short : int16_t
+  short accel[3];
+  float pitch;
+  float roll;
 };
 
 class MPU6050Sensor
 {
 public:
-    // initialize
-    bool init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRange,
-              uint16_t sampleRate, int8_t enableDMP);
+  // initialize
+  bool init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRange,
+            uint16_t sampleRate, int8_t enableDMP);
 
-    // gyro config
-    uint8_t getFullScaleGyroRange();
-    void setFullScaleGyroRange(uint8_t range);
-    
-    // acclerometer config
-    uint8_t getFullScaleAccelRange();
-    void setFullScaleAccelRange(uint8_t range);
-    
-    // power management config
-    bool getSleepModeStatus();
-    void setSleepModeStatus(int state); // 0: disabled, 1: enabled
-    
-    // clock source config
-    void setClockSource(uint8_t source);
-    
-    // temperature
-    float getTemperature(void);
+  // gyro config
+  uint8_t getFullScaleGyroRange();
+  void setFullScaleGyroRange(uint8_t range);
+  
+  // acclerometer config
+  uint8_t getFullScaleAccelRange();
+  void setFullScaleAccelRange(uint8_t range);
+  
+  // power management config
+  bool getSleepModeStatus();
+  void setSleepModeStatus(int state); // 0: disabled, 1: enabled
+  
+  // clock source config
+  void setClockSource(uint8_t source);
+  
+  // temperature
+  float getTemperature(void);
 
-    // raw gyro data
-    int getRawData(MPU6050Data *data);
-    
-    // dmp gyro data
-    int getDmpData(MPU6050Data *data);
-    
-    // raw data
-    void getRawAccelGyro(int16_t* AccelGyro);
+  // raw gyro data
+  int getRawData(MPU6050Data *data);
+  
+  // dmp gyro data
+  int getDmpData(MPU6050Data *data);
+  
+  // raw data
+  void getRawAccelGyro(int16_t* AccelGyro);
 };
 
 #endif /* __MPU6050_H */
