@@ -33,6 +33,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 #include "I2c.h"
 
+#define MPU6050_I2C_PORT       I2C_NUM_0
 #define MPU6050_I2C_PIN_SCK    26
 #define MPU6050_I2C_PIN_SDA    27
 #define MPU6050_I2C_CLK_SPEED  100000
@@ -296,7 +297,7 @@ bool MPU6050Sensor::init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRang
                          uint16_t sampleRate, int8_t enableDMP)
 {
   // init i2c
-  _i2c = I2c::instanceForPort(I2C_NUM_0, MPU6050_I2C_PIN_SCK, MPU6050_I2C_PIN_SDA);
+  _i2c = I2c::instanceForPort(MPU6050_I2C_PORT, MPU6050_I2C_PIN_SCK, MPU6050_I2C_PIN_SDA);
   _i2c->setMode(I2C_MODE_MASTER);
   _i2c->setMasterClkSpeed(MPU6050_I2C_CLK_SPEED);
   _i2c->init();
