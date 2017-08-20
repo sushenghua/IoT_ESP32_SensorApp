@@ -16,6 +16,7 @@ enum DeployMode {
 };
 
 struct SysConfig {
+  bool        wifiOn;
   DeployMode  deployMode;
   SensorType  pmSensorType;
   SensorType  co2SensorType;
@@ -59,6 +60,9 @@ public:
 
   void pausePeripherals();
   void resumePeripherals();
+  bool wifiOn();
+  void toggleWifi();
+  void toggleScreen();
 
 private:
   void _setDefaultConfig();

@@ -72,6 +72,7 @@ Wifi::Wifi()
 , _autoreconnect(true)
 , _nextAltApIndex(0)
 , _connectionFailCount(0)
+, _altApsConnectionFailRound(0)
 {
     // set default config value
     _config.mode = WIFI_MODE_STA;
@@ -89,7 +90,7 @@ void Wifi::setDefaultConfig()
 {
     setWifiMode(WIFI_MODE_APSTA);
     setStaConfig("ssid", "ssidpasswd");
-    setApConfig("dodosensor", "dodosensor");
+    setApConfig("aqstation", "aqstation");
     setHostName("SensorApp");
 #ifdef ENABLE_EAP
     enableEap(false);
@@ -367,7 +368,12 @@ void Wifi::onStaGotIp()
     APP_LOGI("[Wifi]", "connected, got ip");
     xEventGroupSetBits(wifiEventGroup, CONNECTED_BIT);
     _connectionFailCount = 0;
+    _altApsConnectionFailRound = 0;
     _connected = true;
+
+    if ( (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) && _config.hostName[0] != '\0') {
+        ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
+    }
 }
 
 void Wifi::onStaStop()
@@ -379,27 +385,39 @@ void Wifi::onStaConnected()
 }
 
 #define TRY_OTHER_AP_AFTER_FAIL_COUNT  3
+#define MAX_ALT_APS_TRY_ROUND          4
 
 void Wifi::onStaDisconnected(system_event_info_t &info)
 {
     APP_LOGI("[Wifi]", "disconnected, code: %d", info.disconnected.reason);
     xEventGroupClearBits(wifiEventGroup, CONNECTED_BIT);
     _connected = false;
+    bool tryReconnect = true;
     switch(info.disconnected.reason) {
         case WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT:
         case WIFI_REASON_AUTH_FAIL:
         case WIFI_REASON_NO_AP_FOUND:
             ++_connectionFailCount;
             break;
+        case WIFI_REASON_ASSOC_LEAVE:
+            tryReconnect = false;
+            break;
         default:
             break;
     }
+
+    if (!tryReconnect) return;
+
     if (_connectionFailCount >= TRY_OTHER_AP_AFTER_FAIL_COUNT) {
-        loadNextAltSsidPassword();
-        _connectionFailCount = 0;
+        if (_nextAltApIndex == _config.altApCount - 1) ++_altApsConnectionFailRound;
+        if (_altApsConnectionFailRound < MAX_ALT_APS_TRY_ROUND) {
+            loadNextAltSsidPassword();
+            _connectionFailCount = 0;
+        }
     }
-    if (!System::instance()->restarting() && _autoreconnect) {
-        ESP_ERROR_CHECK( esp_wifi_connect() );
+    if (!System::instance()->restarting() && _altApsConnectionFailRound < MAX_ALT_APS_TRY_ROUND
+        && _autoreconnect) {
+        if (_started) ESP_ERROR_CHECK( esp_wifi_connect() );
     }
 }
 
@@ -485,12 +503,16 @@ void Wifi::deinit()
 void Wifi::start(bool waitConnected)
 {
     if (!_started) {
+        _nextAltApIndex = 0;
+        _connectionFailCount = 0;
+        _altApsConnectionFailRound = 0;
+        APP_LOGC("[Wifi]", "start wifi");
         ESP_ERROR_CHECK( esp_wifi_start() );
         if (waitConnected) this->waitConnected();
-        if ( (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) &&_config.hostName[0] != '\0') {
-            if (!waitConnected) this->waitConnected();  // wait connect anyway
-            ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
-        }
+        // if ( (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) && _config.hostName[0] != '\0') {
+        //     if (!waitConnected) this->waitConnected();  // wait connect anyway
+        //     ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
+        // }
         _started = true;
     }
 }
@@ -498,6 +520,9 @@ void Wifi::start(bool waitConnected)
 void Wifi::stop()
 {
     if (_started) {
+        APP_LOGC("[Wifi]", "stop wifi");
+        ESP_ERROR_CHECK( esp_wifi_disconnect() );
+        while (_connected) vTaskDelay(100/portTICK_RATE_MS);
         ESP_ERROR_CHECK( esp_wifi_stop() );
         _started = false;
     }

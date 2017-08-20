@@ -10,6 +10,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "AppLog.h"
+#include "System.h"
 
 //----------------------------------------------
 // peripheral task loop control
@@ -32,15 +33,24 @@ void wifi_task(void *pvParameters)
   }
   else {
     Wifi::instance()->setDefaultConfig();
-    Wifi::instance()->setStaConfig("woody@homea", "58897@mljd-abcde");
+    Wifi::instance()->setStaConfig("woody@home", "58897@mljd-abcde");
     Wifi::instance()->appendAltApConnectionSsidPassword("iPhone6S", "abcd1234");
     if (Wifi::instance()->saveConfig()) {
-    APP_LOGI("[Wifi]", "save config succeeded");
+      APP_LOGI("[Wifi]", "save config succeeded");
     }
   }
   Wifi::instance()->init();
-  Wifi::instance()->start(true);
-  vTaskDelete(wifiTaskHandle);
+  // Wifi::instance()->start(true);
+  while (true) {
+    if (System::instance()->wifiOn()) {
+      Wifi::instance()->start();
+    }
+    else {
+      Wifi::instance()->stop();
+    }
+    vTaskDelay(1000/portTICK_RATE_MS);
+  }
+  // vTaskDelete(wifiTaskHandle);
 }
 
 
@@ -72,6 +82,7 @@ void display_task(void *p)
 // status check tasks
 //----------------------------------------------
 #include "Adc.h"
+#include "InputMonitor.h"
 
 #define STATUS_TASK_DELAY_UNIT  100
 
@@ -93,6 +104,7 @@ bool _statusTaskPaused = false;
 void status_check_task(void *p)
 {
   _voltageReader.init(ADC1_CHANNEL_4);
+  InputMonitor::instance()->init();   // this will launch another task
 
   while (true) {
     if (_enablePeripheralTaskLoop) {
@@ -283,7 +295,6 @@ static void beforeCreateTasks()
 /////////////////////////////////////////////////////////////////////////////////////////
 // Sytem class
 /////////////////////////////////////////////////////////////////////////////////////////
-#include "System.h"
 #include "NvsFlash.h"
 #include "esp_system.h"
 #include <string.h>
@@ -318,6 +329,7 @@ System::System()
 
 void System::_setDefaultConfig()
 {
+  _config.wifiOn = true;
   _config.deployMode = MQTTClientMode;
   _config.pmSensorType = PMS5003ST;
   _config.co2SensorType = DSCO220;
@@ -399,6 +411,28 @@ void System::resumePeripherals()
   _co2SensorTaskPaused = false;
   _orientationSensorTaskPaused = false;
   _enablePeripheralTaskLoop = true;
+}
+
+bool System::wifiOn()
+{
+  return _config.wifiOn;
+}
+
+void System::toggleWifi()
+{
+  // if (_config.wifiOn) {
+  //   _config.wifiOn = false;
+  // }
+  // else {
+  //   _config.wifiOn = true;
+  // }
+  _config.wifiOn = !_config.wifiOn;
+  _saveConfig();
+}
+
+void System::toggleScreen()
+{
+
 }
 
 #include "nvs.h"

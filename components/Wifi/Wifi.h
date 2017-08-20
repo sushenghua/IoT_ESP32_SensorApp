@@ -17,7 +17,7 @@
 #define WIFI_DEFAULT_AP_MAX_CONNECTION 4
 
 // ------ EAP
-// #define ENABLE_EAP // enable eap will occupy about 50K more byts
+// #define ENABLE_EAP // enable eap will occupy about 50K more bytes
 #ifdef ENABLE_EAP
 #define EAP_ID_MAX_LEN                 127
 #define EAP_USERNAME_MAX_LEN           32
@@ -148,6 +148,7 @@ protected:
     bool                     _autoreconnect;
     uint8_t                  _nextAltApIndex;
     uint16_t                 _connectionFailCount;
+    uint16_t                 _altApsConnectionFailRound;
     // config
     WifiConfig               _config;
 };
