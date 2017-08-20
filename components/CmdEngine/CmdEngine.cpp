@@ -330,7 +330,8 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
             break;
 
         case TurnOnDisplay:
-            DisplayController::activeInstance()->turnOn(args[0] != 0);
+            System::instance()->turnDisplayOn(args[0] != 0);
+            // DisplayController::activeInstance()->turnOn(args[0] != 0);
             break;
 
         case UpdateFirmware:

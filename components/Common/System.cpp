@@ -62,6 +62,7 @@ void wifi_task(void *pvParameters)
 #include "ILI9341.h"
 #include "SensorDisplayController.h"
 ILI9341 dev;
+bool    _displayOn = true;
 static SensorDisplayController dc(&dev);
 // static xSemaphoreHandle _dcUpdateSemaphore = 0;
 // #define DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS 1000
@@ -418,21 +419,34 @@ bool System::wifiOn()
   return _config.wifiOn;
 }
 
+bool System::displayOn()
+{
+  return _displayOn;
+}
+
+void System::turnWifiOn(bool on)
+{
+  _config.wifiOn = on;
+  _saveConfig();
+}
+
+void System::turnDisplayOn(bool on)
+{
+  _displayOn = on;
+  // DisplayController::activeInstance()->turnOn(on);
+  dc.turnOn(on);
+}
+
 void System::toggleWifi()
 {
-  // if (_config.wifiOn) {
-  //   _config.wifiOn = false;
-  // }
-  // else {
-  //   _config.wifiOn = true;
-  // }
   _config.wifiOn = !_config.wifiOn;
   _saveConfig();
 }
 
-void System::toggleScreen()
+void System::toggleDisplay()
 {
-
+  _displayOn = !_displayOn;
+  dc.turnOn(_displayOn);
 }
 
 #include "nvs.h"

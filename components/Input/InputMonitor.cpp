@@ -74,7 +74,7 @@ static void gpio_check_task(void* args)
               APP_LOGC("[BTN]", "usr released, duration cnt: %d, time: %.2f",
                        _usrLowDurationCount, GPIO_CHECK_TASK_DELAY_UNIT*_usrLowDurationCount/1000.);
               if (_usrLowDurationCount < USER_TOGGLE_SCREEN_LOW_COUNT) {
-                APP_LOGC("[BTN]", "toggle screen");
+                System::instance()->toggleDisplay();
               }
               else if (_usrLowDurationCount > USER_TOGGLE_WIFI_MODE_LOW_COUNT) {
                 APP_LOGC("[BTN]", "toggle wifi mode");

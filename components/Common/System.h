@@ -60,9 +60,13 @@ public:
 
   void pausePeripherals();
   void resumePeripherals();
+
   bool wifiOn();
+  bool displayOn();
+  void turnWifiOn(bool on = true);
+  void turnDisplayOn(bool on = true);
   void toggleWifi();
-  void toggleScreen();
+  void toggleDisplay();
 
 private:
   void _setDefaultConfig();

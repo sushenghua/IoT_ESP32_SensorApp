@@ -417,7 +417,16 @@ void Wifi::onStaDisconnected(system_event_info_t &info)
     }
     if (!System::instance()->restarting() && _altApsConnectionFailRound < MAX_ALT_APS_TRY_ROUND
         && _autoreconnect) {
-        if (_started) ESP_ERROR_CHECK( esp_wifi_connect() );
+        if (_started) {
+            // ESP_ERROR_CHECK( esp_wifi_connect() );
+            esp_err_t ret = esp_wifi_connect();
+            if (ret != ESP_OK) {
+                if (ret == ESP_ERR_WIFI_NOT_INIT)
+                    APP_LOGE("[Wifi]", "esp_wifi_connect err: ESP_ERR_WIFI_NOT_INIT");
+                else if (ret == ESP_ERR_WIFI_NOT_STARTED)
+                    APP_LOGE("[Wifi]", "esp_wifi_connect err: ESP_ERR_WIFI_NOT_START");
+            }
+        }
     }
 }
 
