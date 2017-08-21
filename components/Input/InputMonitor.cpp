@@ -34,7 +34,10 @@ static void IRAM_ATTR gpioIsrHandler(void* arg)
 #define GPIO_CHECK_TASK_PRIORITY          100
 #define GPIO_CHECK_TASK_DELAY_UNIT        10
 
-#define USER_TOGGLE_SCREEN_LOW_COUNT      50   // 0.5 second
+#define PWR_TOGGLE_OFF_LOW_COUNT          200  // 2 second
+#define PWR_TOGGLE_DISPLAY_LOW_COUNT      50   // 0.5 second
+
+#define USER_TOGGLE_DISPLAY_LOW_COUNT      50   // 0.5 second
 #define USER_TOGGLE_WIFI_ON_LOW_COUNT     200  // 2 second
 #define USER_TOGGLE_WIFI_MODE_LOW_COUNT   500  // 6 sencod
 
@@ -58,10 +61,16 @@ static void gpio_check_task(void* args)
             _pwrGpioLvl = lvl;
             if (lvl == 1) { // released
               APP_LOGC("[BTN]", "pwr released, duration cnt: %d, time: %.2f",
-                       _pwrLowDurationCount, GPIO_CHECK_TASK_DELAY_UNIT*_pwrLowDurationCount/1000.);
+                       _pwrLowDurationCount, GPIO_CHECK_TASK_DELAY_UNIT*_pwrLowDurationCount/1000.0f);
+              if (_pwrLowDurationCount < PWR_TOGGLE_DISPLAY_LOW_COUNT) {
+                System::instance()->toggleDisplay();
+              }
+              else if (_pwrLowDurationCount > PWR_TOGGLE_OFF_LOW_COUNT) {
+              	APP_LOGC("[BTN]", "power off");
+              }
             }
             else {          // pressed
-              APP_LOGC("[BTN]", "pwr pressed");
+              // APP_LOGC("[BTN]", "pwr pressed");
               _pwrLowDurationCount = 0;
             }
           }
@@ -72,19 +81,19 @@ static void gpio_check_task(void* args)
             _usrGpioLvl = lvl;
             if (lvl == 1) { // released
               APP_LOGC("[BTN]", "usr released, duration cnt: %d, time: %.2f",
-                       _usrLowDurationCount, GPIO_CHECK_TASK_DELAY_UNIT*_usrLowDurationCount/1000.);
-              if (_usrLowDurationCount < USER_TOGGLE_SCREEN_LOW_COUNT) {
+                       _usrLowDurationCount, GPIO_CHECK_TASK_DELAY_UNIT*_usrLowDurationCount/1000.0f);
+              if (_usrLowDurationCount < USER_TOGGLE_DISPLAY_LOW_COUNT) {
                 System::instance()->toggleDisplay();
               }
               else if (_usrLowDurationCount > USER_TOGGLE_WIFI_MODE_LOW_COUNT) {
-                APP_LOGC("[BTN]", "toggle wifi mode");
+                System::instance()->toggleDeployMode();
               }
               else if (_usrLowDurationCount > USER_TOGGLE_WIFI_ON_LOW_COUNT) {
                 System::instance()->toggleWifi();
               }
             }
             else {          // pressed
-              APP_LOGC("[BTN]", "usr pressed");
+              // APP_LOGC("[BTN]", "usr pressed");
               _usrLowDurationCount = 0;
             }
           }
@@ -98,7 +107,6 @@ static void gpio_check_task(void* args)
       if (_usrGpioLvl == 0) ++_usrLowDurationCount;
       if (_pwrGpioLvl == 0) ++_pwrLowDurationCount;
     }
-    // vTaskDelay(GPIO_CHECK_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
   }
 }
 

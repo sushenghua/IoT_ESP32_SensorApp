@@ -41,6 +41,7 @@ void wifi_task(void *pvParameters)
   }
   Wifi::instance()->init();
   // Wifi::instance()->start(true);
+  // vTaskDelete(wifiTaskHandle);
   while (true) {
     if (System::instance()->wifiOn()) {
       Wifi::instance()->start();
@@ -50,7 +51,6 @@ void wifi_task(void *pvParameters)
     }
     vTaskDelay(1000/portTICK_RATE_MS);
   }
-  // vTaskDelete(wifiTaskHandle);
 }
 
 
@@ -331,7 +331,7 @@ System::System()
 void System::_setDefaultConfig()
 {
   _config.wifiOn = true;
-  _config.deployMode = MQTTClientMode;
+  _config.deployMode = HTTPServerMode;
   _config.pmSensorType = PMS5003ST;
   _config.co2SensorType = DSCO220;
   _config.devCapability = ( capabilityForSensorType(_config.pmSensorType) |
@@ -387,7 +387,7 @@ void System::_launchTasks()
 
   if (_config.deployMode == MQTTClientMode || _config.deployMode == MQTTClientAndHTTPServerMode)
     xTaskCreatePinnedToCore(&mqtt_task, "mqtt_task", 8192, NULL, MQTTCLIENT_TASK_PRIORITY, NULL, RUN_ON_CORE);
-  if (_config.deployMode == HTTPServerMode || _config.deployMode == MQTTClientAndHTTPServerMode)
+  else if (_config.deployMode == HTTPServerMode || _config.deployMode == MQTTClientAndHTTPServerMode)
     xTaskCreatePinnedToCore(&http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
   // xTaskCreatePinnedToCore(touch_pad_task, "touch_pad_task", 2048, NULL, TOUCH_PAD_TASK_PRIORITY, NULL, RUN_ON_CORE);
@@ -552,6 +552,19 @@ void System::setDeployMode(DeployMode mode)
     _config.deployMode = mode;
     _saveConfig();
   }
+}
+
+void System::toggleDeployMode()
+{
+  if (_config.deployMode == HTTPServerMode) {
+    _config.deployMode = MQTTClientMode;
+  }
+  else {
+    _config.deployMode = HTTPServerMode;
+  }
+  _config.wifiOn = true; // when deploy mode changed, always turn on wifi
+  _saveConfig();
+  restart();
 }
 
 void System::setSensorType(SensorType pmType, SensorType co2Type)

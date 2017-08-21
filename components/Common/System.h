@@ -53,6 +53,7 @@ public:
   uint32_t devCapability();
 
   void setDeployMode(DeployMode mode);
+  void toggleDeployMode();
   void setSensorType(SensorType pmType, SensorType co2Type);
   void setDevCapability(uint32_t cap);
   void restart();
