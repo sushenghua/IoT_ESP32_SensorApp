@@ -5,18 +5,48 @@
  */
 
 #include "PowerManager.h"
+#include "AppLog.h"
+#include "Adc.h"
+#include "Semaphore.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Power chip I2C
 /////////////////////////////////////////////////////////////////////////////////////////
-#define POWER_I2C_PORT       I2C_NUM_0
-#define POWER_I2C_PIN_SCK    26
-#define POWER_I2C_PIN_SDA    27
-#define POWER_I2C_CLK_SPEED  100000
+#define POWER_I2C_PORT                       I2C_NUM_0
+#define POWER_I2C_PIN_SCK                    26
+#define POWER_I2C_PIN_SDA                    27
+#define POWER_I2C_CLK_SPEED                  100000
 
-#define POWER_ADDR           0x6B
+#define POWER_ADDR                           0x6B
 
-I2c    *_i2c;
+#define PWR_I2C_SEMAPHORE_WAIT_TICKS         1000
+
+I2c    *_sharedI2c;
+
+void pwrI2cInit()
+{
+  Semaphore::init();
+  _sharedI2c = I2c::instanceForPort(POWER_I2C_PORT, POWER_I2C_PIN_SCK, POWER_I2C_PIN_SDA);
+  _sharedI2c->setMode(I2C_MODE_MASTER);
+  _sharedI2c->setMasterClkSpeed(POWER_I2C_CLK_SPEED);
+  _sharedI2c->init();
+}
+
+void pwrI2cMemTx(uint8_t memAddr, uint8_t *data)
+{
+  if (xSemaphoreTake(Semaphore::i2c, PWR_I2C_SEMAPHORE_WAIT_TICKS)) {
+    _sharedI2c->masterMemTx(POWER_ADDR, memAddr, data, 1);
+    xSemaphoreGive(Semaphore::i2c);
+  }
+}
+
+void pwrI2cMemRx(uint8_t memAddr, uint8_t *data)
+{
+  if (xSemaphoreTake(Semaphore::i2c, PWR_I2C_SEMAPHORE_WAIT_TICKS)) {
+    _sharedI2c->masterMemRx(POWER_ADDR, memAddr, data, 1);
+    xSemaphoreGive(Semaphore::i2c);
+  }
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Power chip register
@@ -46,6 +76,21 @@ I2c    *_i2c;
 #define PREG_1536mA_CHRG_CURRENT             0x40 // 0100 0000  for 18650 panasonic battery
 
 /////////////////////////////////////////////////////////////////////////////////////////
+// ADC voltage sample
+/////////////////////////////////////////////////////////////////////////////////////////
+#define SAMPLE_ACTIVE_COUNT     2    // 2 * taskDelay milliseconds
+#define CALCULATE_AVERAGE_COUNT 5
+#define BAT_VOLTAGE_CORRECTION  0.4f // issue: 3.3 gives 4095, 0.0 gives 0, but 1.8 does not produce 2234
+#define BAT_VOLTAGE_MAX         4.2f
+#define BAT_VOLTAGE_MIN         3.2f
+Adc     _voltageReader;
+uint8_t _sampleActiveCounter = SAMPLE_ACTIVE_COUNT;
+uint8_t _sampleCount = 0;
+float   _sampleValue = 0;
+float   _batVoltage = 0;
+float   _batLevel = 0;
+
+/////////////////////////////////////////////////////////////////////////////////////////
 // PowerManager class
 /////////////////////////////////////////////////////////////////////////////////////////
 PowerManager::PowerManager()
@@ -53,17 +98,52 @@ PowerManager::PowerManager()
 
 void PowerManager::init()
 {
-  _i2c = I2c::instanceForPort(POWER_I2C_PORT, POWER_I2C_PIN_SCK, POWER_I2C_PIN_SDA);
-  _i2c->setMode(I2C_MODE_MASTER);
-  _i2c->setMasterClkSpeed(POWER_I2C_CLK_SPEED);
-  _i2c->init();
+  // init i2c
+  pwrI2cInit();
+
+  // init adc
+  _voltageReader.init(ADC1_CHANNEL_4);
+}
+
+bool PowerManager::tick()
+{
+  // battery voltage read
+  bool hasOutput = false;
+  ++_sampleActiveCounter;
+  if (_sampleActiveCounter >= SAMPLE_ACTIVE_COUNT) {
+    int tmp = _voltageReader.readVoltage();
+    _sampleValue += tmp;
+    // APP_LOGC("[Power]", "sample(%d): %d", _sampleCount, tmp);
+    ++_sampleCount;
+    if (_sampleCount == CALCULATE_AVERAGE_COUNT) {
+      _sampleValue /= _sampleCount;
+      _batVoltage = _sampleValue * 6.6f / 4095 + BAT_VOLTAGE_CORRECTION;
+      _batLevel = (_batVoltage - BAT_VOLTAGE_MIN) / (BAT_VOLTAGE_MAX - BAT_VOLTAGE_MIN) * 100;
+      // APP_LOGC("[Power]", "--> average sample: %.0f, voltage: %.2f", _sampleValue, _batVoltage);
+      _sampleValue = 0;
+      _sampleCount = 0;
+      hasOutput = true;
+    }
+    _sampleActiveCounter = 0;
+  }
+
+
+  // APP_LOGC("[Power]", "charge status: %d", chargeStatus(false));
+
+
+  return hasOutput;
+}
+
+float PowerManager::batteryLevel()
+{
+  return _batLevel;
 }
 
 uint8_t _statusCache;
 
 inline void _readSysStatus()
 {
-  _i2c->masterMemRx(POWER_ADDR, PREG_SYS_STATUS, &_statusCache, 1);
+  pwrI2cMemRx(PREG_SYS_STATUS, &_statusCache);
 }
 
 PowerManager::ChargeStatus PowerManager::chargeStatus(bool readCache)
@@ -84,15 +164,15 @@ void PowerManager::powerOff()
 {
   // disable watchdog timer
   _data = PREG_RST_CHRG_TERM_TIMER & PREG_WATCHDOG_TIMER_OFF_AND_MASK;
-  _i2c->masterMemTx(POWER_ADDR, PREG_CHRG_TERM_TIMER, &_data, 1);
+  pwrI2cMemTx(PREG_CHRG_TERM_TIMER, &_data);
 
   // set BATFET_DISABLE bit
   _data = PREG_RST_MISC_OPERATION | PREG_BATFET_OFF_OR_MASK;
-  _i2c->masterMemTx(POWER_ADDR, PREG_MISC_OPERATION, &_data, 1);
+  pwrI2cMemTx(PREG_MISC_OPERATION, &_data);
 }
 
 void PowerManager::setChargeCurrent()
 {
   _data = PREG_1536mA_CHRG_CURRENT;
-  _i2c->masterMemTx(POWER_ADDR, PREG_CHRG_CURRENT, &_data, 1);
+  pwrI2cMemTx(PREG_CHRG_CURRENT, &_data);
 }

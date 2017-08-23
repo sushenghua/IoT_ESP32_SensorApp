@@ -32,15 +32,26 @@
 // I2c
 /////////////////////////////////////////////////////////////////////////////////////////
 #include "I2c.h"
+#include "Semaphore.h"
 
-#define MPU6050_I2C_PORT       I2C_NUM_0
-#define MPU6050_I2C_PIN_SCK    26
-#define MPU6050_I2C_PIN_SDA    27
-#define MPU6050_I2C_CLK_SPEED  100000
+#define MPU6050_I2C_PORT                    I2C_NUM_0
+#define MPU6050_I2C_PIN_SCK                 26
+#define MPU6050_I2C_PIN_SDA                 27
+#define MPU6050_I2C_CLK_SPEED               100000
+
+#define MPU6050_I2C_SEMAPHORE_WAIT_TICKS    1000
 
 // I2c _i2c(I2C_NUM_0, MPU6050_I2C_PIN_SCK, MPU6050_I2C_PIN_SDA);
 I2c  *_i2c;
 
+void initMPU6050I2c()
+{
+  Semaphore::init();
+  _i2c = I2c::instanceForPort(MPU6050_I2C_PORT, MPU6050_I2C_PIN_SCK, MPU6050_I2C_PIN_SDA);
+  _i2c->setMode(I2C_MODE_MASTER);
+  _i2c->setMasterClkSpeed(MPU6050_I2C_CLK_SPEED);
+  _i2c->init();
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // MPU6050Adapter
@@ -50,30 +61,57 @@ I2c  *_i2c;
 
 int i2cReadByte(uint8_t devAddr, uint8_t regAddr, uint8_t* buf)
 {
-  if (_i2c->masterMemRx(devAddr, regAddr, buf, 1))
-    return 0;
-  return -1;
+  int ret = -1;
+  if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
+    if (_i2c->masterMemRx(devAddr, regAddr, buf, 1)) ret = 0;
+    xSemaphoreGive(Semaphore::i2c);
+  }
+  return ret;
 }
 
 int i2cReadBytes(uint8_t devAddr, uint8_t regAddr, uint8_t count, uint8_t* buf)
 {
-  if (_i2c->masterMemRx(devAddr, regAddr, buf, count))
-    return 0;
-  return -1;
+  int ret = -1;
+  if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
+    if (_i2c->masterMemRx(devAddr, regAddr, buf, count)) ret = 0;
+    xSemaphoreGive(Semaphore::i2c);
+  }
+  return ret;
 }
 
 int i2cWriteByte(uint8_t devAddr, uint8_t regAddr, uint8_t data)
 {
-  if (_i2c->masterMemTx(devAddr, regAddr, &data, 1))
-    return 0;
-  return -1;
+  int ret = -1;
+  if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
+    if (_i2c->masterMemTx(devAddr, regAddr, &data, 1)) ret = 0;
+    xSemaphoreGive(Semaphore::i2c);
+  }
+  return ret;
 }
 
 int i2cWriteBytes(uint8_t devAddr, uint8_t regAddr, uint8_t count, uint8_t* data)
 {
-  if (_i2c->masterMemTx(devAddr, regAddr, data, count))
-    return 0;
-  return -1;
+  int ret = -1;
+  if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
+    if (_i2c->masterMemTx(devAddr, regAddr, data, count)) ret = 0;
+    xSemaphoreGive(Semaphore::i2c);
+  }
+  return ret;
+}
+
+bool mpu6050Ready(int trials = 3)
+{
+  bool ready = false;
+  if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
+    for (int i = 0; i < trials; ++i) {
+      if (_i2c->deviceReady(MPU6050_ADDR)) {
+        ready = true;
+        break;
+      }
+    }
+    xSemaphoreGive(Semaphore::i2c);
+  }
+  return ready;
 }
 
 int mpu6050GetMs(unsigned long *time)
@@ -89,17 +127,6 @@ int mpu6050GetMs(unsigned long *time)
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
 #include "esp_log.h"
-
-int mpu6050IsDeviceReady(uint8_t deviceAddr, int trials = 3)
-{
-  for (int i = 0; i < trials; ++i) {
-    if (_i2c->deviceReady(deviceAddr))
-      return -1;
-  }
-  // if (_i2c->deviceReady(deviceAddr))
-  //     return -1;
-  return 0;
-}
 
 static signed char gyro_orientation[9] = {-1, 0, 0,
                                            0,-1, 0,
@@ -297,13 +324,10 @@ bool MPU6050Sensor::init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRang
                          uint16_t sampleRate, int8_t enableDMP)
 {
   // init i2c
-  _i2c = I2c::instanceForPort(MPU6050_I2C_PORT, MPU6050_I2C_PIN_SCK, MPU6050_I2C_PIN_SDA);
-  _i2c->setMode(I2C_MODE_MASTER);
-  _i2c->setMasterClkSpeed(MPU6050_I2C_CLK_SPEED);
-  _i2c->init();
+  initMPU6050I2c();
 
   // check device connected
-  if (!mpu6050IsDeviceReady(MPU6050_ADDR)) {
+  if (!mpu6050Ready()) {
     ESP_LOGE("[MPU6050]", "device not connected");
     return false;
   }

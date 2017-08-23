@@ -25,6 +25,10 @@ public:
   PowerManager();
 
   void init();
+  bool tick();
+  
+  float batteryLevel();
+
   ChargeStatus chargeStatus(bool readCache = false);
   bool powerGood(bool readCache = false);  
   void powerOff();
