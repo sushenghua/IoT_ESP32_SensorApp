@@ -66,7 +66,7 @@ static void gpio_check_task(void* args)
                 System::instance()->toggleDisplay();
               }
               else if (_pwrLowDurationCount > PWR_TOGGLE_OFF_LOW_COUNT) {
-              	APP_LOGC("[BTN]", "power off");
+              	System::instance()->powerOff();
               }
             }
             else {          // pressed

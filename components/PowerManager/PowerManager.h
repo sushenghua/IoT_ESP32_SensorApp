@@ -24,14 +24,19 @@ public:
   // constructor
   PowerManager();
 
+  // init
   void init();
-  bool tick();
-  
+
+  // poll tick called within task
+  bool batteryLevelPollTick();
+
+  // communication
+  void powerOff();
+  bool powerGood(bool readCache = false);
   float batteryLevel();
 
   ChargeStatus chargeStatus(bool readCache = false);
-  bool powerGood(bool readCache = false);  
-  void powerOff();
+  uint8_t chargeCurrentReg();
   void setChargeCurrent();
 
 protected:

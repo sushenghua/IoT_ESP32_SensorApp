@@ -105,10 +105,10 @@ void PowerManager::init()
   _voltageReader.init(ADC1_CHANNEL_4);
 }
 
-bool PowerManager::tick()
+bool PowerManager::batteryLevelPollTick()
 {
-  // battery voltage read
   bool hasOutput = false;
+
   ++_sampleActiveCounter;
   if (_sampleActiveCounter >= SAMPLE_ACTIVE_COUNT) {
     int tmp = _voltageReader.readVoltage();
@@ -126,10 +126,6 @@ bool PowerManager::tick()
     }
     _sampleActiveCounter = 0;
   }
-
-
-  // APP_LOGC("[Power]", "charge status: %d", chargeStatus(false));
-
 
   return hasOutput;
 }
@@ -169,6 +165,13 @@ void PowerManager::powerOff()
   // set BATFET_DISABLE bit
   _data = PREG_RST_MISC_OPERATION | PREG_BATFET_OFF_OR_MASK;
   pwrI2cMemTx(PREG_MISC_OPERATION, &_data);
+}
+
+uint8_t PowerManager::chargeCurrentReg()
+{
+  pwrI2cMemRx(PREG_CHRG_CURRENT, &_data);
+  // APP_LOGC("[Power]", "charge current reg: %#X", data());
+  return _data;
 }
 
 void PowerManager::setChargeCurrent()

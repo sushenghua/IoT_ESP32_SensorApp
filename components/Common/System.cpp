@@ -91,12 +91,12 @@ void display_task(void *p)
 #define TIME_WIFI_UPDATE_COUNT  5
 uint8_t _timeWifiUpdateCount = 0;
 
+PowerManager powerManager;
+
 bool _statusTaskPaused = false;
 void status_check_task(void *p)
 {
   InputMonitor::instance()->init();   // this will launch another task
-
-  PowerManager powerManager;
   powerManager.init();
 
   while (true) {
@@ -109,8 +109,8 @@ void status_check_task(void *p)
         _timeWifiUpdateCount = 0;
       }
 
-      // power check
-      if (powerManager.tick()) {
+      // battery level check
+      if (powerManager.batteryLevelPollTick()) {
         dc.setBatteryLevel(powerManager.batteryLevel());
       }
     }
@@ -335,7 +335,7 @@ void System::init()
 #define PM_SENSOR_TASK_PRIORITY             80
 #define CO2_SENSOR_TASK_PRIORITY            80
 #define ORIENTATION_TASK_PRIORITY           81
-#define STATUS_CHECK_TASK_PRIORITY          82
+#define STATUS_CHECK_TASK_PRIORITY          81
 #define TOUCH_PAD_TASK_PRIORITY             81
 
 #define PRO_CORE    0
@@ -391,6 +391,15 @@ void System::resumePeripherals()
   _co2SensorTaskPaused = false;
   _orientationSensorTaskPaused = false;
   _enablePeripheralTaskLoop = true;
+}
+
+void System::powerOff()
+{
+  APP_LOGC("[System]", "power off");
+  // save memory to data to flash before power off
+
+  // power off
+  powerManager.powerOff();
 }
 
 bool System::wifiOn()

@@ -62,6 +62,7 @@ public:
   void pausePeripherals();
   void resumePeripherals();
 
+  void powerOff();
   bool wifiOn();
   bool displayOn();
   void turnWifiOn(bool on = true);
