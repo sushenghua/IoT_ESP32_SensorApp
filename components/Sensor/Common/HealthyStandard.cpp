@@ -100,8 +100,8 @@ static uint16_t AIRLEVELCOLOR[] = {
         0xFBE0,     // unhealthy for sensentive groups
         0xF800,     // unhealthy
         0x9809,     // very unhealthy
-        0x7804,     // hazardous
-        0x7804      // hazardous
+        0xC804,     // hazardous; original 0x7804 is too dark
+        0xC804      // hazardous
 };
 
 uint16_t HS::colorForAirLevel(uint8_t level)
@@ -148,7 +148,7 @@ static uint16_t HCHOLEVELCOLOR[] = {
         0xFBE0,     // unhealthy
         0xF800,     // very unhealthy
         0x9809,     // terribly unhealthy
-        0x7804      // toxic
+        0xC804      // toxic; original 0x7804 is too dark
 };
 
 uint16_t HS::colorForHchoLevel(uint8_t level)
@@ -180,7 +180,7 @@ static uint16_t TEMPLEVELCOLOR[] = {
         0x07E0,     // comfortable
         0xFBE0,     // hot
         0xF800,     // very hot
-        0x7804      // burn hot
+        0xC804      // burn hot; original 0x7804 is too dark
 };
 
 uint16_t HS::colorForTempLevel(uint8_t level)
@@ -227,7 +227,7 @@ static uint16_t CO2LEVELCOLOR[] = {
         0x07E0,     // fresh
         0xFBE0,     // stagnant, sleepy
         0xF800,     // uncomfortable, heart-beat accelerated
-        0x7804      // dagerous, coma, event dead
+        0xC804      // dagerous, coma, event dead; original 0x7804 is too dark
 };
 
 uint16_t HS::colorForCO2Level(uint8_t level)
