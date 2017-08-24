@@ -202,14 +202,14 @@ const char * padSpace(uint16_t value)
 /////////////////////////////////////////////////////////////////////////////////////////
 // main screen rendering
 /////////////////////////////////////////////////////////////////////////////////////////
-#define ITEM_TITLE_OFFSET_X     4
+#define ITEM_TITLE_OFFSET_X     20  // original 4
 #define ITEM_TITLE_OFFSET_Y     9
 
 #define ITEM_TITLE_CHAR_W       80
 #define ITEM_TITLE_CHAR_H       20
 
 #define ITEM_RECT_RADIUS        10
-#define ITEM_RECT_OFFSET_X      100
+#define ITEM_RECT_OFFSET_X      160 // original 100
 #define ITEM_RECT_HEIGHT        40
 #define ITEM_RECT_WIDTH         140
 
@@ -222,14 +222,14 @@ const char * padSpace(uint16_t value)
 #define ITEM_LEVEL_CHAR_H       24
 
 
-#define SUBITEM_TITLE_OFFSET_X  4
+#define SUBITEM_TITLE_OFFSET_X  20  // original 4
 #define SUBITEM_TITLE_OFFSET_Y  6
 
 #define SUBITEM_TITLE_CHAR_W    40
 #define SUBITEM_TITLE_CHAR_H    20
 
 #define SUBITEM_RECT_RADIUS     5
-#define SUBITEM_RECT_OFFSET_X   51
+#define SUBITEM_RECT_OFFSET_X   67  // original 51
 #define SUBITEM_RECT_HEIGHT     30
 #define SUBITEM_RECT_WIDTH      70
 

@@ -177,7 +177,7 @@ void co2_sensor_task(void *p)
   while (true) {
     if (_enablePeripheralTaskLoop) co2Sensor.sampleData(3000);
     else _co2SensorTaskPaused = true;
-    vTaskDelay(500/portTICK_RATE_MS);
+    vTaskDelay(1000/portTICK_RATE_MS);
   }
 }
 
