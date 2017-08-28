@@ -7,6 +7,7 @@
 #include "ILI9341.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+#include "LedController.h"
 
 // delay definition
 #define RESET_DELAY_TIME         5
@@ -42,6 +43,11 @@
 #define ILI9341_CHANNEL_CLK_SPEED   10000000
 #define ILI9341_CHANNEL_QUEQUE_SIZE 5
 
+// back light led controller
+#define USING_LED_CONTROLLER
+#ifdef USING_LED_CONTROLLER
+LedController _backLed;
+#endif
 
 uint16_t ILI9341::color565(uint8_t r, uint8_t g, uint8_t b)
 {
@@ -61,10 +67,6 @@ void ILI9341::_initBus()
   // initialize non-SPI GPIOs
   gpio_set_direction((gpio_num_t)PIN_NUM_DC, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)PIN_NUM_RST, GPIO_MODE_OUTPUT);
-  gpio_set_direction((gpio_num_t)PIN_NUM_BCKL, GPIO_MODE_OUTPUT);
-
-  // turn off led
-  gpio_set_level((gpio_num_t)PIN_NUM_BCKL, 0);
 
   // spi bus init
   SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
@@ -74,9 +76,21 @@ void ILI9341::_initBus()
   bus->addChannel(_spiChannel);
 }
 
+void ILI9341::_initBackLed()
+{
+#ifdef USING_LED_CONTROLLER
+  _backLed.init(PIN_NUM_BCKL);
+#else
+  gpio_set_direction((gpio_num_t)PIN_NUM_BCKL, GPIO_MODE_OUTPUT);
+  // turnOn(false);
+#endif
+}
+
 void ILI9341::init()
 {
   _initBus();
+
+  _initBackLed();
 
   reset();
 }
@@ -84,7 +98,7 @@ void ILI9341::init()
 void ILI9341::reset()
 {
   // turn off led
-  gpio_set_level((gpio_num_t)PIN_NUM_BCKL, 0);
+  turnOn(false);
 
   // reset
   _fireResetSignal();
@@ -93,12 +107,16 @@ void ILI9341::reset()
   _init();
 
   // turn on led
-  gpio_set_level((gpio_num_t)PIN_NUM_BCKL, 1);
+  turnOn(true);
 }
 
 void ILI9341::turnOn(bool on)
 {
+#ifdef USING_LED_CONTROLLER
+  _backLed.setDuty(on ? 33 : 0);
+#else
   gpio_set_level((gpio_num_t)PIN_NUM_BCKL, on ? 1 : 0);
+#endif
 }
 
 void ILI9341::_fireResetSignal()

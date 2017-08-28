@@ -84,50 +84,51 @@ public:
     ILI9341();
 
 public:
-	// virtual methods
-	virtual void init();
-	virtual void reset();
-	virtual void turnOn(bool on = true);
+  // virtual methods
+  virtual void init();
+  virtual void reset();
+  virtual void turnOn(bool on = true);
 
-	virtual void drawPixel(int16_t x, int16_t y, uint16_t color);
-	virtual void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
-	virtual void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color);
-	virtual	void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+  virtual void drawPixel(int16_t x, int16_t y, uint16_t color);
+  virtual void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
+  virtual void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color);
+  virtual  void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
 
-	virtual void invertDisplay(bool i);
+  virtual void invertDisplay(bool i);
 
-	virtual void setRotation(uint8_t r);
-	virtual void setViewPort(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
-
-public:
-	void scrollTo(uint16_t y);
-
-	// Transaction API not used by GFX
-	void writePixel(uint16_t color);
-	void writePixels(uint16_t *colors, uint32_t len);
-
-	void writeColor(uint16_t color, uint32_t len);
-
-	void drawBitmap(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors);
-
-	uint8_t readcommand8(uint8_t reg, uint8_t index = 0);
-
-	uint16_t color565(uint8_t r, uint8_t g, uint8_t b);
-
-protected:
-	void _initBus();
-	void _init();
-	void _fireResetSignal();
-
-	void writeCommand(uint8_t cmd);
-	void writeData(uint8_t data);
-	void writeData(const uint8_t *data, uint16_t count);
-
-protected:
-	SpiChannel  _spiChannel;
+  virtual void setRotation(uint8_t r);
+  virtual void setViewPort(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
 
 public:
-	void test();
+  void scrollTo(uint16_t y);
+
+  // Transaction API not used by GFX
+  void writePixel(uint16_t color);
+  void writePixels(uint16_t *colors, uint32_t len);
+
+  void writeColor(uint16_t color, uint32_t len);
+
+  void drawBitmap(int16_t x, int16_t y, int16_t w, int16_t h, const uint16_t *pcolors);
+
+  uint8_t readcommand8(uint8_t reg, uint8_t index = 0);
+
+  uint16_t color565(uint8_t r, uint8_t g, uint8_t b);
+
+protected:
+  void _initBus();
+  void _initBackLed();
+  void _init();
+  void _fireResetSignal();
+
+  void writeCommand(uint8_t cmd);
+  void writeData(uint8_t data);
+  void writeData(const uint8_t *data, uint16_t count);
+
+protected:
+  SpiChannel  _spiChannel;
+
+public:
+  void test();
 };
 
 #endif
