@@ -43,7 +43,7 @@ inline void catenateTopic(char * target, const char * head, const char * tail)
 
 void MqttClientDelegate::setup()
 {
-    const char * uid = System::instance()->macAddress();
+    const char * uid = System::instance()->uid();
 
     catenateTopic(_cmdTopic, TOPIC_API_CMD_HEAD, uid);
     catenateTopic(_strCmdTopic, TOPIC_API_STR_CMD_HEAD, uid);

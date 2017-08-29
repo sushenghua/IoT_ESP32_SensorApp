@@ -259,7 +259,7 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
         case GetDeviceInfo:
             if (retFmt == JSON) {
                 sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\",\"model\":\"%s\",\"hostname\":\"%s\"}, \"cmd\":\"%s\"}",
-                        System::instance()->macAddress(),
+                        System::instance()->uid(),
                         System::instance()->devCapability(),
                         System::instance()->idfVersion(),
                         System::instance()->firmwareVersion(),
@@ -272,11 +272,11 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
 
         case GetUID:
             if (retFmt == JSON) {
-                replyJsonResult(_delegate, System::instance()->macAddress(), cmdKey, userdata);
+                replyJsonResult(_delegate, System::instance()->uid(), cmdKey, userdata);
             }
             else {
-                _delegate->replyMessage(System::instance()->macAddress(),
-                                        strlen(System::instance()->macAddress()), userdata);
+                _delegate->replyMessage(System::instance()->uid(),
+                                        strlen(System::instance()->uid()), userdata);
             }
             break;
 

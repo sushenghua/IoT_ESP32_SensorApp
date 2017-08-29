@@ -594,6 +594,11 @@ uint32_t System::devCapability()
   return _config.devCapability;
 }
 
+const char* System::uid()
+{
+  return macAddress();
+}
+
 const char* System::macAddress()
 {
   if (MAC_ADDR[12] == 0xFF)

@@ -100,11 +100,11 @@ AppUpdater::AppUpdater()
 
 void AppUpdater::init()
 {
-  sprintf(_updateDrxDataTopic, "%s/%s/drx", APP_UPDATE_TOPIC, System::instance()->macAddress());
-  sprintf(_updateDtxDataTopic, "%s/%s/dtx", APP_UPDATE_TOPIC, System::instance()->macAddress());
+  sprintf(_updateDrxDataTopic, "%s/%s/drx", APP_UPDATE_TOPIC, System::instance()->uid());
+  sprintf(_updateDtxDataTopic, "%s/%s/dtx", APP_UPDATE_TOPIC, System::instance()->uid());
   _rxTopicLen = strlen(_updateDrxDataTopic);
 
-  sprintf(_updateCrxCodeTopic, "api/updatecode/%s", System::instance()->macAddress());
+  sprintf(_updateCrxCodeTopic, "api/updatecode/%s", System::instance()->uid());
 
   _state = UPDATE_STATE_IDLE;
 }
@@ -138,8 +138,8 @@ void AppUpdater::_sendUpdateCmd()
   if (_delegate) {
     _delegate->addSubTopic(_updateDrxDataTopic);
     _delegate->subscribeTopics();
-    _delegate->publish(APP_UPDATE_TOPIC, System::instance()->macAddress(),
-                       strlen(System::instance()->macAddress()), 1);
+    _delegate->publish(APP_UPDATE_TOPIC, System::instance()->uid(),
+                       strlen(System::instance()->uid()), 1);
   }
 }
 
@@ -188,6 +188,7 @@ void AppUpdater::_onRxDataComplete()
 
   if (succeeded) {
     _retCode(UPDATE_OK, "update completed, prepare to restart system");
+    vTaskDelay(500 / portTICK_PERIOD_MS);
     System::instance()->restart();
   }
 }

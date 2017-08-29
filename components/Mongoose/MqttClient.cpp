@@ -181,7 +181,7 @@ MqttClient::MqttClient()
 , _reconnectTicksOnDisconnection(MQTT_RECONNECT_DEFAULT_DELAY_TICKS)
 , _aliveGuardInterval(MQTT_ALIVE_GUARD_REGULAR_INTERVAL_DEFAULT)
 , _serverAddress(MQTT_SERVER_ADDR)
-, _clientId(System::instance()->macAddress())
+, _clientId(System::instance()->uid())
 {
     // init hand shake option
     _handShakeOpt.flags = 0;
