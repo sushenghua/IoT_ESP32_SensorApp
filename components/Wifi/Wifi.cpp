@@ -88,9 +88,12 @@ Wifi::Wifi()
 // ------ config
 void Wifi::setDefaultConfig()
 {
+    char apName[32];
+    sprintf(apName, "%s_%.*s", "aqstation", 8, System::instance()->uid());
+
     setWifiMode(WIFI_MODE_APSTA);
     setStaConfig("ssid", "ssidpasswd");
-    setApConfig("aqstation", "aqstation");
+    setApConfig(apName, "aqstation");
     setHostName("SensorApp");
 #ifdef ENABLE_EAP
     enableEap(false);
