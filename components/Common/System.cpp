@@ -39,6 +39,12 @@ void wifi_task(void *pvParameters)
       APP_LOGI("[Wifi]", "save config succeeded");
     }
   }
+  // set wifi mode accordingly
+  DeployMode deployMode = System::instance()->deployMode();
+  if (deployMode == MQTTClientMode) Wifi::instance()->setWifiMode(WIFI_MODE_STA);
+  else if (deployMode == HTTPServerMode) Wifi::instance()->setWifiMode(WIFI_MODE_AP);
+  else if (deployMode == MQTTClientAndHTTPServerMode) Wifi::instance()->setWifiMode(WIFI_MODE_APSTA);
+
   Wifi::instance()->init();
   // Wifi::instance()->start(true);
   // vTaskDelete(wifiTaskHandle);

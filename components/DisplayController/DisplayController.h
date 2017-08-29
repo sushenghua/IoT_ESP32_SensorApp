@@ -17,7 +17,7 @@ public:
   DisplayController(DisplayGFX *dev);
 
 public:
-  virtual void init() {};
+  virtual void init();
   virtual void tick() {};
   virtual void update();
 

@@ -23,6 +23,8 @@ SensorDisplayController::SensorDisplayController(DisplayGFX *dev)
 
 void SensorDisplayController::init()
 {
+  DisplayController::init();
+
   APP_LOGI("[SensorDC]", "init");
 
   // cache capability from System instance
