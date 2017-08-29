@@ -65,9 +65,9 @@ static void gpio_check_task(void* args)
               if (_pwrLowDurationCount < PWR_TOGGLE_DISPLAY_LOW_COUNT) {
                 System::instance()->toggleDisplay();
               }
-              else if (_pwrLowDurationCount > PWR_TOGGLE_OFF_LOW_COUNT) {
-              	System::instance()->powerOff();
-              }
+              // else if (_pwrLowDurationCount > PWR_TOGGLE_OFF_LOW_COUNT) {
+              //   System::instance()->powerOff();
+              // }
             }
             else {          // pressed
               // APP_LOGC("[BTN]", "pwr pressed");
@@ -105,7 +105,10 @@ static void gpio_check_task(void* args)
     }
     else {
       if (_usrGpioLvl == 0) ++_usrLowDurationCount;
-      if (_pwrGpioLvl == 0) ++_pwrLowDurationCount;
+      if (_pwrGpioLvl == 0) {
+      	++_pwrLowDurationCount;
+      	if (_pwrLowDurationCount > PWR_TOGGLE_OFF_LOW_COUNT) System::instance()->powerOff();
+      }
     }
   }
 }
