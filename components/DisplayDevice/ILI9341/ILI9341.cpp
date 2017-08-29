@@ -85,7 +85,6 @@ void ILI9341::_initBackLed()
   _backLedDuty = 1023;
 #else
   gpio_set_direction((gpio_num_t)PIN_NUM_BCKL, GPIO_MODE_OUTPUT);
-  // turnOn(false);
 #endif
 }
 
@@ -100,17 +99,13 @@ void ILI9341::init()
 
 void ILI9341::reset()
 {
-  // turn off led
-  turnOn(false);
+  turnOn(false);      // turn off led
 
-  // reset
-  _fireResetSignal();
+  _fireResetSignal(); // reset
 
-  // init self
-  _init();
+  _init();            // init self
 
-  // turn on led
-  turnOn(true);
+  turnOn(true);       // turn on led
 }
 
 void ILI9341::turnOn(bool on)
