@@ -56,6 +56,7 @@ uint16_t ILI9341::color565(uint8_t r, uint8_t g, uint8_t b)
 
 ILI9341::ILI9341()
 : DisplayGFX(ILI9341_TFTHEIGHT, ILI9341_TFTWIDTH)
+, _backLedDuty(0)
 {
 }
 
@@ -80,6 +81,8 @@ void ILI9341::_initBackLed()
 {
 #ifdef USING_LED_CONTROLLER
   _backLed.init(PIN_NUM_BCKL);
+  _brightness = 100;
+  _backLedDuty = 1023;
 #else
   gpio_set_direction((gpio_num_t)PIN_NUM_BCKL, GPIO_MODE_OUTPUT);
   // turnOn(false);
@@ -113,10 +116,28 @@ void ILI9341::reset()
 void ILI9341::turnOn(bool on)
 {
 #ifdef USING_LED_CONTROLLER
-  _backLed.setDuty(on ? 33 : 0);
+  _backLed.setDuty(on ? _backLedDuty : 0);
 #else
   gpio_set_level((gpio_num_t)PIN_NUM_BCKL, on ? 1 : 0);
 #endif
+}
+
+void ILI9341::setBrightness(uint8_t b)
+{
+  if (_brightness != b) {
+    _brightness = b;
+    _backLedDuty = (uint32_t) (10.23f * _brightness);
+    _backLed.setDuty(_backLedDuty);
+  }
+}
+
+void ILI9341::fadeBrightness(uint8_t b, int duration)
+{
+  if (_brightness != b) {
+    _brightness = b;
+    _backLedDuty = (uint32_t) (10.23f * _brightness);
+    _backLed.fadeToDuty(_backLedDuty, duration);
+  }
 }
 
 void ILI9341::_fireResetSignal()

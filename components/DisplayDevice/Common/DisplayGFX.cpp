@@ -74,6 +74,7 @@ POSSIBILITY OF SUCH DAMAGE.
 DisplayGFX::DisplayGFX(int16_t w, int16_t h)
 : WIDTH(w)
 , HEIGHT(h)
+, _brightness(0)
 , _cursorX(0)
 , _cursorY(0)
 , _textColor(0xFFFF)

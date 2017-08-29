@@ -84,6 +84,8 @@ public:
   virtual void init() = 0;
   virtual void reset() = 0;
   virtual void turnOn(bool on = true) = 0;
+  virtual void setBrightness(uint8_t b) = 0;
+  virtual void fadeBrightness(uint8_t b, int duration = 500) = 0;
 
   // device-specific method
   virtual void drawPixel(int16_t x, int16_t y, uint16_t color) = 0;
@@ -156,6 +158,7 @@ public:
 
 protected:
   const int16_t   WIDTH, HEIGHT;             // This is the 'raw' display w/h - never changes
+  uint8_t        _brightness;                // screen (lcd back led) brightness
   int16_t        _width, _height;            // Display w/h as modified by current rotation
   int16_t        _cursorX, _cursorY;
   uint16_t       _textColor, _textBgColor;

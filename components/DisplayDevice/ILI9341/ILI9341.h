@@ -88,6 +88,8 @@ public:
   virtual void init();
   virtual void reset();
   virtual void turnOn(bool on = true);
+  virtual void setBrightness(uint8_t b);
+  virtual void fadeBrightness(uint8_t b, int duration = 500);
 
   virtual void drawPixel(int16_t x, int16_t y, uint16_t color);
   virtual void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
@@ -125,6 +127,7 @@ protected:
   void writeData(const uint8_t *data, uint16_t count);
 
 protected:
+  uint32_t    _backLedDuty;
   SpiChannel  _spiChannel;
 
 public:
