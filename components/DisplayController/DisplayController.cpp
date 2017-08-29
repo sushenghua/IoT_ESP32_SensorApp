@@ -57,8 +57,8 @@ const uint8_t * _connectedIcon = NULL;
 const uint8_t * _notConnectedIcon = NULL;
 
 DisplayController::DisplayController(DisplayGFX *dev)
-: _wifiIconNeedUpdate(true)
-, _wifiConnected(false)
+: _networkIconNeedUpdate(true)
+, _networkConnected(false)
 , _timeNeedUpdate(true)
 , _batterNeedUpdate(true)
 , _contentOffsetY(DEFAULT_STATUS_BAR_HEIGHT + 15)
@@ -95,10 +95,10 @@ static char strftime_buf[8];
 void DisplayController::updateStatusBar(bool foreUpdateAll)
 {
   // wifi connection icon
-  if (foreUpdateAll || _wifiIconNeedUpdate) {
-    _dev->drawBitmap(2, 2, _wifiConnected ? _connectedIcon : _notConnectedIcon, 24, 24, 
-                     _wifiConnected ? RGB565_WEAKWHITE : RGB565_ORANGE, RGB565_BLACK);
-    _wifiIconNeedUpdate = false;
+  if (foreUpdateAll || _networkIconNeedUpdate) {
+    _dev->drawBitmap(2, 2, _networkConnected ? _connectedIcon : _notConnectedIcon, 24, 24, 
+                     _networkConnected ? RGB565_WEAKWHITE : RGB565_ORANGE, RGB565_BLACK);
+    _networkIconNeedUpdate = false;
   }
 
   // time

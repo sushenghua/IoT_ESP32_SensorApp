@@ -24,7 +24,7 @@ public:
   void reset() { _dev->reset(); }
   void turnOn(bool on) { _dev->turnOn(on); }
 
-  void setWifiConnected(bool connected) { _wifiConnected = connected; _wifiIconNeedUpdate = true; }
+  void setNetworkConnected(bool connected) { _networkConnected = connected; _networkIconNeedUpdate = true; }
   void setTimeUpdate(bool update) { _timeNeedUpdate = true; }
   void setBatteryLevel(uint16_t level) { _batteryLevel = level; _batterNeedUpdate = true; }
 
@@ -32,8 +32,8 @@ protected:
   void updateStatusBar(bool foreUpdateAll = false);
 
 protected:
-  bool        _wifiIconNeedUpdate;
-  bool        _wifiConnected;
+  bool        _networkIconNeedUpdate;
+  bool        _networkConnected;
   bool        _timeNeedUpdate;
   bool        _batterNeedUpdate;
   uint16_t    _contentOffsetY;

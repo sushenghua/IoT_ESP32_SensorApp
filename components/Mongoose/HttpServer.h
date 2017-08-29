@@ -30,6 +30,7 @@ public:
     void deinit();
 
     void start();
+    bool clientConnected() { return _clientConnected; }
 
     // ProtocolDelegate virtual
     virtual void setup();
@@ -46,6 +47,7 @@ public:
 
 protected:
     bool                     _inited;
+    bool                     _clientConnected;
     struct mg_mgr            _manager;
 };
 

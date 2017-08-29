@@ -55,6 +55,7 @@ static void mongoose_http_event_handler(struct mg_connection *nc, int event, voi
 
 HttpServer::HttpServer()
 : _inited(false)
+, _clientConnected(false)
 {}
 
 void HttpServer::init()
@@ -143,6 +144,7 @@ void HttpServer::onWebsocketHandshakeRequest(struct mg_connection *nc)
 void HttpServer::onWebsocketHandshakeDone(struct mg_connection *nc)
 {
     APP_LOGI("[HttpServer]", "websocket connection opened");
+    _clientConnected = true;
 }
 
 void HttpServer::onWebsocketFrame(struct mg_connection *nc, struct websocket_message *wm)
@@ -158,6 +160,7 @@ void HttpServer::onClose(struct mg_connection *nc)
 {
     if (nc->flags & MG_F_IS_WEBSOCKET) {
         APP_LOGI("[HttpServer]", "websocket connection closed (nc: %p)", nc);
+        _clientConnected = false;
     }
     else {
         APP_LOGI("[HttpServer]", "http connection closed (nc: %p)", nc);
