@@ -82,7 +82,7 @@ void pwrI2cMemRx(uint8_t memAddr, uint8_t *data)
 #define CALCULATE_AVERAGE_COUNT 5
 #define BAT_VOLTAGE_CORRECTION  0.43f // issue: 3.3 gives 4095, 0.0 gives 0, but 1.8 does not produce 2234
 #define BAT_VOLTAGE_MAX         4.2f
-#define BAT_VOLTAGE_MIN         3.2f
+#define BAT_VOLTAGE_MIN         3.0f
 Adc     _voltageReader;
 uint8_t _sampleActiveCounter = SAMPLE_ACTIVE_COUNT;
 uint8_t _sampleCount = 0;
@@ -119,6 +119,7 @@ bool PowerManager::batteryLevelPollTick()
       _sampleValue /= _sampleCount;
       _batVoltage = _sampleValue * 6.6f / 4095 + BAT_VOLTAGE_CORRECTION;
       _batLevel = (_batVoltage - BAT_VOLTAGE_MIN) / (BAT_VOLTAGE_MAX - BAT_VOLTAGE_MIN) * 100;
+      _batLevel = _batLevel < 0 ? 0 : _batLevel;
       // APP_LOGC("[Power]", "--> average sample: %.0f, voltage: %.2f", _sampleValue, _batVoltage);
       _sampleValue = 0;
       _sampleCount = 0;
