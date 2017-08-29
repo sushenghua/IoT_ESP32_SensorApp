@@ -39,7 +39,7 @@ static void IRAM_ATTR gpioIsrHandler(void* arg)
 
 #define USER_TOGGLE_DISPLAY_LOW_COUNT      50   // 0.5 second
 #define USER_TOGGLE_WIFI_ON_LOW_COUNT     200  // 2 second
-#define USER_TOGGLE_WIFI_MODE_LOW_COUNT   500  // 6 sencod
+#define USER_TOGGLE_WIFI_MODE_LOW_COUNT   400  // 4 sencod
 
 int      _pwrGpioLvl = 1;  // pull up externally
 int      _usrGpioLvl = 1;
