@@ -69,6 +69,7 @@ Wifi::Wifi()
 : _initialized(false)
 , _started(false)
 , _connected(false)
+, _apStaConnected(false)
 , _autoreconnect(true)
 , _nextAltApIndex(0)
 , _connectionFailCount(0)
@@ -288,8 +289,13 @@ bool Wifi::setHostName(const char* hostname)
     if (len > HOST_NAME_MAX_LEN || len == 0) return false;
 
     stringAssign(_config.hostName, hostname, len);
-    if ( _started && (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) ) {
-        ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
+    if ( _started ) {
+        if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) {
+            ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
+        }
+        if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_AP) {
+            ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_AP, _config.hostName) );
+        }
     }
 
     return true;
@@ -298,7 +304,12 @@ bool Wifi::setHostName(const char* hostname)
 const char * Wifi::getHostName()
 {
     const char *hostname = NULL;
-    ESP_ERROR_CHECK( tcpip_adapter_get_hostname(TCPIP_ADAPTER_IF_STA, &hostname) );
+    if (_config.mode == WIFI_MODE_STA || _config.mode == WIFI_MODE_APSTA) {
+        ESP_ERROR_CHECK( tcpip_adapter_get_hostname(TCPIP_ADAPTER_IF_STA, &hostname) );
+    }
+    else if (_config.mode == WIFI_MODE_AP) {
+        ESP_ERROR_CHECK( tcpip_adapter_get_hostname(TCPIP_ADAPTER_IF_AP, &hostname) );
+    }
     return hostname;
 }
 
@@ -346,6 +357,18 @@ static esp_err_t wifi_app_event_handler(void *ctx, system_event_t *event)
 
         case SYSTEM_EVENT_STA_DISCONNECTED:
             Wifi::instance()->onStaDisconnected(event->event_info);
+            break;
+
+        case SYSTEM_EVENT_AP_START:
+            Wifi::instance()->onApStart();
+            break;
+
+        case SYSTEM_EVENT_AP_STACONNECTED:
+            Wifi::instance()->onApStaConnected();
+            break;
+
+        case SYSTEM_EVENT_AP_STADISCONNECTED:
+            Wifi::instance()->onApStaDisconnected(event->event_info);
             break;
 
         default:
@@ -433,6 +456,24 @@ void Wifi::onStaDisconnected(system_event_info_t &info)
     }
 }
 
+void Wifi::onApStart()
+{
+    APP_LOGI("[Wifi]", "AP start");
+    if ( (_config.mode == WIFI_MODE_AP) && _config.hostName[0] != '\0') {
+        ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_AP, _config.hostName) );
+    }
+}
+
+void Wifi::onApStaConnected()
+{
+    _apStaConnected = true;
+}
+
+void Wifi::onApStaDisconnected(system_event_info_t &info)
+{
+    _apStaConnected = false;
+}
+
 void Wifi::waitConnected()
 {
     xEventGroupWaitBits(wifiEventGroup, CONNECTED_BIT, false, true, portMAX_DELAY);
@@ -441,6 +482,11 @@ void Wifi::waitConnected()
 bool Wifi::connected()
 {
     return _connected;
+}
+
+bool Wifi::apStaConnected()
+{
+    return _apStaConnected;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////

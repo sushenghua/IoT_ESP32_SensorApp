@@ -30,7 +30,7 @@ public:
     void deinit();
 
     void start();
-    bool clientConnected() { return _clientConnected; }
+    bool websocketConnected() { return _websocketConnected; }
 
     // ProtocolDelegate virtual
     virtual void setup();
@@ -47,7 +47,7 @@ public:
 
 protected:
     bool                     _inited;
-    bool                     _clientConnected;
+    bool                     _websocketConnected;
     struct mg_mgr            _manager;
 };
 

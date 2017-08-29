@@ -97,7 +97,7 @@ void display_task(void *p)
 #define TIME_WIFI_UPDATE_COUNT  5
 uint8_t _timeWifiUpdateCount = 0;
 
-bool _httpClientConnected = false;
+// bool _websocketConnected = false;
 
 PowerManager powerManager;
 
@@ -113,7 +113,7 @@ void status_check_task(void *p)
       ++_timeWifiUpdateCount;
       if (_timeWifiUpdateCount >= TIME_WIFI_UPDATE_COUNT) {
         if (System::instance()->deployMode() == HTTPServerMode)
-          dc.setNetworkConnected(_httpClientConnected);
+          dc.setNetworkConnected(Wifi::instance()->apStaConnected());
         else
           dc.setNetworkConnected(Wifi::instance()->connected());
         dc.setTimeUpdate(true);
@@ -269,7 +269,7 @@ static void http_task(void *pvParams)
 
   while (true) {
     server.poll();
-    _httpClientConnected = server.clientConnected();
+    // _websocketConnected = server.websocketConnected();
     vTaskDelay(10 / portTICK_PERIOD_MS);
   }
 }

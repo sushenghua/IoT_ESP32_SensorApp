@@ -126,6 +126,7 @@ public:
     void disconnect();
     void waitConnected();
     bool connected();
+    bool apStaConnected();
 
     // storage load, save
     bool loadConfig();
@@ -139,12 +140,16 @@ public:
     void onStaConnected();
     void onStaDisconnected(system_event_info_t &info);
     void onStaGotIp();
+    void onApStart();
+    void onApStaConnected();
+    void onApStaDisconnected(system_event_info_t &info);
 
 protected:
     // flags
     bool                     _initialized;
     bool                     _started;
     bool                     _connected;
+    bool                     _apStaConnected;
     bool                     _autoreconnect;
     uint8_t                  _nextAltApIndex;
     uint16_t                 _connectionFailCount;
