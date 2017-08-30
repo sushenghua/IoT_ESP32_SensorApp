@@ -33,8 +33,8 @@ void wifi_task(void *pvParameters)
   }
   else {
     Wifi::instance()->setDefaultConfig();
-    Wifi::instance()->setStaConfig("woody@home", "58897@mljd-abcde");
-    Wifi::instance()->appendAltApConnectionSsidPassword("iPhone6S", "abcd1234");
+    // Wifi::instance()->setStaConfig("woody@home", "58897@mljd-abcde");
+    // Wifi::instance()->appendAltApConnectionSsidPassword("iPhone6S", "abcd1234");
     if (Wifi::instance()->saveConfig()) {
       APP_LOGI("[Wifi]", "save config succeeded");
     }
