@@ -79,7 +79,7 @@ public:
     // config
     void setDefaultConfig();
     void setWifiMode(wifi_mode_t mode);
-    bool setStaConfig(const char *ssid, const char *passwd, bool forceOverride = false);
+    bool setStaConfig(const char *ssid, const char *passwd, bool forceOverride = false, bool append = true);
     bool setApConfig(const char      *ssid,
                      const char      *passwd,
                      bool forceOverride = false,

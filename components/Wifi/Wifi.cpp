@@ -93,7 +93,7 @@ void Wifi::setDefaultConfig()
     sprintf(apName, "%s_%.*s", "AQStation", 8, System::instance()->uid());
 
     setWifiMode(WIFI_MODE_APSTA);
-    setStaConfig("ssid", "ssidpasswd");
+    setStaConfig("ssid", "ssidpasswd", false, false);
     setApConfig(apName, "aqstation");
     setHostName(apName);
 #ifdef ENABLE_EAP
@@ -124,11 +124,12 @@ bool _setConfSsidPass(uint8_t *ssidT, const char *ssidS, size_t ssidMaxLen,
     return true;
 }
 
-bool Wifi::setStaConfig(const char *ssid, const char *passwd, bool forceOverride)
+bool Wifi::setStaConfig(const char *ssid, const char *passwd, bool forceOverride, bool append)
 {
     if (!forceOverride && _initialized) return false;
 
-    appendAltApConnectionSsidPassword(ssid, passwd);
+    if (append)
+        appendAltApConnectionSsidPassword(ssid, passwd);
 
     return _setConfSsidPass(_config.staConfig.sta.ssid, ssid,
                             sizeof(_config.staConfig.sta.ssid),
