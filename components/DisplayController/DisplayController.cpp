@@ -75,7 +75,7 @@ DisplayController::DisplayController(DisplayGFX *dev)
 , _timeNeedUpdate(true)
 , _batteryNeedUpdate(true)
 , _batteryCharge(false)
-, _batteryLevel(80)
+, _batteryLevel(1)
 , _contentOffsetY(DEFAULT_STATUS_BAR_HEIGHT + 15)
 , _dev(dev)
 {
