@@ -81,7 +81,7 @@ void pwrI2cMemRx(uint8_t memAddr, uint8_t *data)
 #define SAMPLE_ACTIVE_COUNT     2     // 2 * taskDelay milliseconds
 #define CALCULATE_AVERAGE_COUNT 5
 #define BAT_VOLTAGE_CORRECTION  0.43f // issue: 3.3 gives 4095, 0.0 gives 0, but 1.8 does not produce 2234
-#define BAT_VOLTAGE_MAX         4.2f
+#define BAT_VOLTAGE_MAX         4.05f
 #define BAT_VOLTAGE_MIN         3.0f
 Adc     _voltageReader;
 uint8_t _sampleActiveCounter = SAMPLE_ACTIVE_COUNT;
