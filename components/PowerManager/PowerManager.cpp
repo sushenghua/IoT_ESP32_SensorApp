@@ -105,7 +105,14 @@ void PowerManager::init()
   _voltageReader.init(ADC1_CHANNEL_4);
 }
 
-bool PowerManager::batteryLevelPollTick()
+uint8_t _statusCache;
+
+inline void _readSysStatus()
+{
+  pwrI2cMemRx(PREG_SYS_STATUS, &_statusCache);
+}
+
+bool PowerManager::batteryPollTick()
 {
   bool hasOutput = false;
 
@@ -123,6 +130,10 @@ bool PowerManager::batteryLevelPollTick()
       // APP_LOGC("[Power]", "--> average sample: %.0f, voltage: %.2f", _sampleValue, _batVoltage);
       _sampleValue = 0;
       _sampleCount = 0;
+
+      // read battery sys status
+      _readSysStatus();
+
       hasOutput = true;
     }
     _sampleActiveCounter = 0;
@@ -134,13 +145,6 @@ bool PowerManager::batteryLevelPollTick()
 float PowerManager::batteryLevel()
 {
   return _batLevel;
-}
-
-uint8_t _statusCache;
-
-inline void _readSysStatus()
-{
-  pwrI2cMemRx(PREG_SYS_STATUS, &_statusCache);
 }
 
 PowerManager::ChargeStatus PowerManager::chargeStatus(bool readCache)

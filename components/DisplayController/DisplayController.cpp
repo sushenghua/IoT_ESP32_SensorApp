@@ -51,6 +51,12 @@ static const uint8_t batShellIcon [] = { // 40 x 16
 0x00, 0x1e, 0x60, 0x00, 0x00, 0x00, 0x1e, 0x60, 0x00, 0x00, 0x00, 0x1c, 0x60, 0x00, 0x00, 0x00, 
 0x10, 0x60, 0x00, 0x00, 0x00, 0x30, 0x70, 0x00, 0x00, 0x00, 0x70, 0x3f, 0xff, 0xff, 0xff, 0xe0 };
 
+static const uint8_t chargeIcon [] = { // 32 x 16
+0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0f, 0xe0, 
+0x00, 0x1f, 0xff, 0x00, 0x00, 0x1f, 0xfc, 0x00, 0x00, 0x0f, 0xe0, 0x00, 0x00, 0x07, 0xe0, 0x00, 
+0x00, 0x03, 0xe0, 0x00, 0x00, 0x0f, 0xf0, 0x00, 0x00, 0x7f, 0xf8, 0x00, 0x01, 0xff, 0xc0, 0x00, 
+0x07, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
 static DisplayController *_activeDisplayController = NULL;
 
 #define DEFAULT_STATUS_BAR_HEIGHT 24
@@ -67,9 +73,10 @@ DisplayController::DisplayController(DisplayGFX *dev)
 : _networkState(NetworkOff)
 , _networkIconNeedUpdate(true)
 , _timeNeedUpdate(true)
-, _batterNeedUpdate(true)
-, _contentOffsetY(DEFAULT_STATUS_BAR_HEIGHT + 15)
+, _batteryNeedUpdate(true)
+, _batteryCharge(false)
 , _batteryLevel(80)
+, _contentOffsetY(DEFAULT_STATUS_BAR_HEIGHT + 15)
 , _dev(dev)
 {
   _activeDisplayController = this;
@@ -97,6 +104,7 @@ void DisplayController::update()
 
 #define TIM_OFFSET_FROM_M        35
 #define BAT_BDR_OFFSET_FROM_R    50
+#define BAT_CHARGE_ICON_WIDTH    32
 static char strftime_buf[8];
 
 void DisplayController::updateStatusBar(bool foreUpdateAll)
@@ -124,9 +132,17 @@ void DisplayController::updateStatusBar(bool foreUpdateAll)
   }
 
   // battery
-  if (foreUpdateAll || _batterNeedUpdate) {
+  if (foreUpdateAll || _batteryNeedUpdate) {
+    // base x offset
     uint16_t x = _dev->width() - BAT_BDR_OFFSET_FROM_R;
+    // charge state
+    if (_batteryCharge)
+      _dev->drawBitmap(x - BAT_CHARGE_ICON_WIDTH, 7, chargeIcon, BAT_CHARGE_ICON_WIDTH, 16, RGB565_WEAKWHITE);
+    else
+      _dev->fillRect(x - BAT_CHARGE_ICON_WIDTH, 7, BAT_CHARGE_ICON_WIDTH, 16, RGB565_BLACK);
+    // battery shell
     _dev->drawBitmap(x, 7, batShellIcon, 40, 16, RGB565_WEAKWHITE);
+    // battery level
     if (_batteryLevel <= 0) _batteryLevel = 1;
     else if (_batteryLevel > 100) _batteryLevel = 100;
     uint16_t w = (uint16_t)(28 * _batteryLevel / 100.0f);
@@ -135,6 +151,6 @@ void DisplayController::updateStatusBar(bool foreUpdateAll)
     else if (_batteryLevel < 50) color = RGB565_YELLOW;
     _dev->fillRect(x + 5, 10, w, 10, color);
     _dev->fillRect(x + 5 + w, 10, 28 - w, 10, RGB565_BLACK);
-    _batterNeedUpdate = false;
+    _batteryNeedUpdate = false;
   }
 }

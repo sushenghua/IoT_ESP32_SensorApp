@@ -32,7 +32,8 @@ public:
 
   void setNetworkState(NetworkState state) { _networkState = state; _networkIconNeedUpdate = true; }
   void setTimeUpdate(bool update) { _timeNeedUpdate = true; }
-  void setBatteryLevel(uint16_t level) { _batteryLevel = level; _batterNeedUpdate = true; }
+  void setBatteryCharge(bool charge) { _batteryCharge = charge, _batteryNeedUpdate = true; }
+  void setBatteryLevel(uint16_t level) { _batteryLevel = level; _batteryNeedUpdate = true; }
 
 protected:
   void updateStatusBar(bool foreUpdateAll = false);
@@ -41,9 +42,10 @@ protected:
   NetworkState  _networkState;
   bool          _networkIconNeedUpdate;
   bool          _timeNeedUpdate;
-  bool          _batterNeedUpdate;
-  uint16_t      _contentOffsetY;
+  bool          _batteryNeedUpdate;
+  bool          _batteryCharge;
   uint16_t      _batteryLevel;
+  uint16_t      _contentOffsetY;
   DisplayGFX   *_dev;
 };
 

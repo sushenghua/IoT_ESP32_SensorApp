@@ -123,7 +123,9 @@ void status_check_task(void *p)
       }
 
       // battery level check
-      if (powerManager.batteryLevelPollTick()) {
+      if (powerManager.batteryPollTick()) {
+        PowerManager::ChargeStatus chargeStatus = powerManager.chargeStatus(true);
+        dc.setBatteryCharge(chargeStatus == PowerManager::PreCharge || chargeStatus == PowerManager::FastCharge);        
         dc.setBatteryLevel(powerManager.batteryLevel());
       }
     }
