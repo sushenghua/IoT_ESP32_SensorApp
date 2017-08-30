@@ -95,7 +95,7 @@ void Wifi::setDefaultConfig()
     setWifiMode(WIFI_MODE_APSTA);
     setStaConfig("ssid", "ssidpasswd");
     setApConfig(apName, "aqstation");
-    setHostName("SensorApp");
+    setHostName("AQStation");
 #ifdef ENABLE_EAP
     enableEap(false);
     setEapConfig("eapid", "eapusername", "eapuserpassword");
