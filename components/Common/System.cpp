@@ -112,10 +112,12 @@ void status_check_task(void *p)
       // update time and wifi status every 0.5 second
       ++_timeWifiUpdateCount;
       if (_timeWifiUpdateCount >= TIME_WIFI_UPDATE_COUNT) {
-        if (System::instance()->deployMode() == HTTPServerMode)
-          dc.setNetworkConnected(Wifi::instance()->apStaConnected());
+        if (!Wifi::instance()->started())
+          dc.setNetworkState(NetworkOff);
+        else if (System::instance()->deployMode() == HTTPServerMode)
+          dc.setNetworkState(Wifi::instance()->apStaConnected()? NetworkConnected : NetworkNotConnected);
         else
-          dc.setNetworkConnected(Wifi::instance()->connected());
+          dc.setNetworkState(Wifi::instance()->connected()? NetworkConnected : NetworkNotConnected);
         dc.setTimeUpdate(true);
         _timeWifiUpdateCount = 0;
       }

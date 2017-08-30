@@ -127,6 +127,7 @@ public:
     void waitConnected();
     bool connected();
     bool apStaConnected();
+    bool started();
 
     // storage load, save
     bool loadConfig();
@@ -149,8 +150,8 @@ protected:
     bool                     _initialized;
     bool                     _started;
     bool                     _connected;
-    bool                     _apStaConnected;
     bool                     _autoreconnect;
+    int16_t                  _apStaConnectionCount;
     uint8_t                  _nextAltApIndex;
     uint16_t                 _connectionFailCount;
     uint16_t                 _altApsConnectionFailRound;

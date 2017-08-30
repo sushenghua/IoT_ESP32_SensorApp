@@ -69,8 +69,8 @@ Wifi::Wifi()
 : _initialized(false)
 , _started(false)
 , _connected(false)
-, _apStaConnected(false)
 , _autoreconnect(true)
+, _apStaConnectionCount(0)
 , _nextAltApIndex(0)
 , _connectionFailCount(0)
 , _altApsConnectionFailRound(0)
@@ -466,12 +466,14 @@ void Wifi::onApStart()
 
 void Wifi::onApStaConnected()
 {
-    _apStaConnected = true;
+    ++_apStaConnectionCount;
+    // APP_LOGC("[Wifi]", "++_apStaConnectionCount %d", _apStaConnectionCount);
 }
 
 void Wifi::onApStaDisconnected(system_event_info_t &info)
 {
-    _apStaConnected = false;
+    _apStaConnectionCount = 0;
+    // APP_LOGC("[Wifi]", "--_apStaConnectionCount %d", _apStaConnectionCount);
 }
 
 void Wifi::waitConnected()
@@ -486,7 +488,12 @@ bool Wifi::connected()
 
 bool Wifi::apStaConnected()
 {
-    return _apStaConnected;
+    return _apStaConnectionCount > 0;
+}
+
+bool Wifi::started()
+{
+    return _started;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -579,7 +586,9 @@ void Wifi::stop()
 {
     if (_started) {
         APP_LOGC("[Wifi]", "stop wifi");
-        ESP_ERROR_CHECK( esp_wifi_disconnect() );
+        if (_connected) {
+            ESP_ERROR_CHECK( esp_wifi_disconnect() );
+        }
         while (_connected) vTaskDelay(100/portTICK_RATE_MS);
         ESP_ERROR_CHECK( esp_wifi_stop() );
         _started = false;

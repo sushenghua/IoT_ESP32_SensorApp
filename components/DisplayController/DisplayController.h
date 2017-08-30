@@ -9,6 +9,12 @@
 
 #include "DisplayGFX.h"
 
+enum NetworkState {
+  NetworkOff,
+  NetworkConnected,
+  NetworkNotConnected
+};
+
 class DisplayController
 {
 public:
@@ -24,7 +30,7 @@ public:
   void reset() { _dev->reset(); }
   void turnOn(bool on) { _dev->turnOn(on); }
 
-  void setNetworkConnected(bool connected) { _networkConnected = connected; _networkIconNeedUpdate = true; }
+  void setNetworkState(NetworkState state) { _networkState = state; _networkIconNeedUpdate = true; }
   void setTimeUpdate(bool update) { _timeNeedUpdate = true; }
   void setBatteryLevel(uint16_t level) { _batteryLevel = level; _batterNeedUpdate = true; }
 
@@ -32,13 +38,13 @@ protected:
   void updateStatusBar(bool foreUpdateAll = false);
 
 protected:
-  bool        _networkIconNeedUpdate;
-  bool        _networkConnected;
-  bool        _timeNeedUpdate;
-  bool        _batterNeedUpdate;
-  uint16_t    _contentOffsetY;
-  uint16_t    _batteryLevel;
-  DisplayGFX *_dev;
+  NetworkState  _networkState;
+  bool          _networkIconNeedUpdate;
+  bool          _timeNeedUpdate;
+  bool          _batterNeedUpdate;
+  uint16_t      _contentOffsetY;
+  uint16_t      _batteryLevel;
+  DisplayGFX   *_dev;
 };
 
 #endif // _DISPLAY_CONTROLLER_H
