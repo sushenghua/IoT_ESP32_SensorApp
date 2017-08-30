@@ -90,12 +90,12 @@ Wifi::Wifi()
 void Wifi::setDefaultConfig()
 {
     char apName[32];
-    sprintf(apName, "%s_%.*s", "aqstation", 8, System::instance()->uid());
+    sprintf(apName, "%s_%.*s", "AQStation", 8, System::instance()->uid());
 
     setWifiMode(WIFI_MODE_APSTA);
     setStaConfig("ssid", "ssidpasswd");
     setApConfig(apName, "aqstation");
-    setHostName("AQStation");
+    setHostName(apName);
 #ifdef ENABLE_EAP
     enableEap(false);
     setEapConfig("eapid", "eapusername", "eapuserpassword");
