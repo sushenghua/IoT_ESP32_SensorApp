@@ -28,7 +28,7 @@ public:
   void init();
 
   // poll tick called within task
-  bool batteryPollTick();
+  bool batteryLevelPollTick();
 
   // communication
   void powerOff();

@@ -15,7 +15,8 @@
 
 #define PWR_BUTTON_PIN             25
 #define USER_BUTTON_PIN            35
-#define GPIO_INPUT_PIN_SEL         (((uint64_t)1 << PWR_BUTTON_PIN) | ((uint64_t)1 << USER_BUTTON_PIN))
+#define PWR_INT_PIN                34
+#define GPIO_INPUT_PIN_SEL         (((uint64_t)1 << PWR_BUTTON_PIN) | ((uint64_t)1 << USER_BUTTON_PIN) | ((uint64_t)1 << PWR_INT_PIN))
 #define ESP_INTR_FLAG_DEFAULT      0
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -60,7 +61,7 @@ static void gpio_check_task(void* args)
           if (_pwrGpioLvl != lvl) {
             _pwrGpioLvl = lvl;
             if (lvl == 1) { // released
-              APP_LOGC("[BTN]", "pwr released, duration cnt: %d, time: %.2f",
+              // APP_LOGC("[BTN]", "pwr released, duration cnt: %d, time: %.2f",
                        _pwrLowDurationCount, GPIO_CHECK_TASK_DELAY_UNIT*_pwrLowDurationCount/1000.0f);
               if (_pwrLowDurationCount < PWR_TOGGLE_DISPLAY_LOW_COUNT) {
                 System::instance()->toggleDisplay();
@@ -80,7 +81,7 @@ static void gpio_check_task(void* args)
           if (_usrGpioLvl != lvl) {
             _usrGpioLvl = lvl;
             if (lvl == 1) { // released
-              APP_LOGC("[BTN]", "usr released, duration cnt: %d, time: %.2f",
+              // APP_LOGC("[BTN]", "usr released, duration cnt: %d, time: %.2f",
                        _usrLowDurationCount, GPIO_CHECK_TASK_DELAY_UNIT*_usrLowDurationCount/1000.0f);
               if (_usrLowDurationCount < USER_TOGGLE_DISPLAY_LOW_COUNT) {
                 System::instance()->toggleDisplay();
@@ -97,6 +98,11 @@ static void gpio_check_task(void* args)
               _usrLowDurationCount = 0;
             }
           }
+          break;
+
+        case PWR_INT_PIN:
+          // APP_LOGC("[PWR_INT]", "power int");
+          System::instance()->markPowerEvent();
           break;
 
         default:
@@ -140,11 +146,14 @@ void InputMonitor::init()
 
   gpio_config(&_gpioConfig);
 
+  gpio_set_intr_type((gpio_num_t)PWR_INT_PIN, GPIO_INTR_NEGEDGE); // power int falling edge
+
   gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT); //install gpio isr service
 
   // hook isr handler for specific PWR and USER pin
   gpio_isr_handler_add((gpio_num_t)PWR_BUTTON_PIN, gpioIsrHandler, (void*) PWR_BUTTON_PIN);
   gpio_isr_handler_add((gpio_num_t)USER_BUTTON_PIN, gpioIsrHandler, (void*) USER_BUTTON_PIN);
+  gpio_isr_handler_add((gpio_num_t)PWR_INT_PIN, gpioIsrHandler, (void*) PWR_INT_PIN);
   
   //create a queue to handle gpio event from isr
   _gpioEventQueue = xQueueCreate(GPIO_IT_QUEQUE_LENGTH, sizeof(uint32_t));
@@ -159,6 +168,7 @@ void InputMonitor::deinit()
   if (!_inited) return;
   gpio_isr_handler_remove((gpio_num_t)PWR_BUTTON_PIN);
   gpio_isr_handler_remove((gpio_num_t)USER_BUTTON_PIN);
+  gpio_isr_handler_remove((gpio_num_t)PWR_INT_PIN);
   gpio_uninstall_isr_service();
   vQueueDelete(_gpioEventQueue);
   _inited = false;

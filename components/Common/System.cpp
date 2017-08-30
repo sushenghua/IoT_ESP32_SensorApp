@@ -100,6 +100,7 @@ uint8_t _timeWifiUpdateCount = 0;
 // bool _websocketConnected = false;
 
 PowerManager powerManager;
+bool _hasPwrEvent = true;
 
 bool _statusTaskPaused = false;
 void status_check_task(void *p)
@@ -121,12 +122,15 @@ void status_check_task(void *p)
         dc.setTimeUpdate(true);
         _timeWifiUpdateCount = 0;
       }
-
       // battery level check
-      if (powerManager.batteryPollTick()) {
-        PowerManager::ChargeStatus chargeStatus = powerManager.chargeStatus(true);
-        dc.setBatteryCharge(chargeStatus == PowerManager::PreCharge || chargeStatus == PowerManager::FastCharge);        
+      if (powerManager.batteryLevelPollTick()) {       
         dc.setBatteryLevel(powerManager.batteryLevel());
+      }
+      // battery charge check
+      if (_hasPwrEvent) {
+        PowerManager::ChargeStatus chargeStatus = powerManager.chargeStatus();
+        dc.setBatteryCharge(chargeStatus == PowerManager::PreCharge || chargeStatus == PowerManager::FastCharge); 
+        _hasPwrEvent = false;
       }
     }
     else {
@@ -451,6 +455,11 @@ void System::toggleDisplay()
 {
   _displayOn = !_displayOn;
   dc.turnOn(_displayOn);
+}
+
+void System::markPowerEvent()
+{
+  _hasPwrEvent = true;
 }
 
 #include "nvs.h"

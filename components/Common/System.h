@@ -69,6 +69,7 @@ public:
   void turnDisplayOn(bool on = true);
   void toggleWifi();
   void toggleDisplay();
+  void markPowerEvent();
 
 private:
   void _setDefaultConfig();
