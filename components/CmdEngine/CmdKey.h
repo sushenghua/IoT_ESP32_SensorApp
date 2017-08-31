@@ -25,11 +25,12 @@ typedef enum CmdKey {
     GetAltApSsidPassList    ,//= 13,
     AppendAltApSsidPass     ,//= 14,
     ClearAltApSsidPassList  ,//= 15,
-    SetSystemDeployMode     ,//= 16,
-    SetSensorType           ,//= 17,
-    TurnOnDisplay           ,//= 18,
-    UpdateFirmware          ,//= 19,
-    Restart                 ,//= 20,
+    GetSystemDeployMode     ,//= 16,
+    SetSystemDeployMode     ,//= 17,
+    SetSensorType           ,//= 18,
+    TurnOnDisplay           ,//= 19,
+    UpdateFirmware          ,//= 20,
+    Restart                 ,//= 21,
     CmdKeyMaxValue
 
 } CmdKey;

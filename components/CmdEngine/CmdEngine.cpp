@@ -427,6 +427,17 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
       Wifi::instance()->saveConfig();
       break;
 
+    case GetSystemDeployMode: {
+      const char * modeStr = deployModeStr(System::instance()->deployMode());
+      if (retFmt == JSON) {
+        replyJsonResult(_delegate, modeStr, cmdKey, userdata);
+      }
+      else {
+        _delegate->replyMessage(modeStr, strlen(modeStr), userdata);
+      }
+      break;
+    }
+
     case SetSystemDeployMode:
       System::instance()->setDeployMode((DeployMode)args[0]);
       break;
