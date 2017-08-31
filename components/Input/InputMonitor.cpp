@@ -66,9 +66,6 @@ static void gpio_check_task(void* args)
               if (_pwrLowDurationCount < PWR_TOGGLE_DISPLAY_LOW_COUNT) {
                 System::instance()->toggleDisplay();
               }
-              // else if (_pwrLowDurationCount > PWR_TOGGLE_OFF_LOW_COUNT) {
-              //   System::instance()->powerOff();
-              // }
             }
             else {          // pressed
               // APP_LOGC("[BTN]", "pwr pressed");
@@ -83,12 +80,10 @@ static void gpio_check_task(void* args)
             if (lvl == 1) { // released
               // APP_LOGC("[BTN]", "usr released, duration cnt: %d, time: %.2f",
               //          _usrLowDurationCount, GPIO_CHECK_TASK_DELAY_UNIT*_usrLowDurationCount/1000.0f);
-              if (_usrLowDurationCount < USER_TOGGLE_DISPLAY_LOW_COUNT) {
+              if (_usrLowDurationCount > 0 &&
+                  _usrLowDurationCount < USER_TOGGLE_DISPLAY_LOW_COUNT) {
                 System::instance()->toggleDisplay();
               }
-              // else if (_usrLowDurationCount > USER_TOGGLE_WIFI_MODE_LOW_COUNT) {
-              //   System::instance()->toggleDeployMode();
-              // }
               else if (_usrLowDurationCount > USER_TOGGLE_WIFI_ON_LOW_COUNT &&
                        _usrLowDurationCount < USER_TOGGLE_WIFI_MODE_LOW_COUNT) {
                 System::instance()->toggleWifi();
