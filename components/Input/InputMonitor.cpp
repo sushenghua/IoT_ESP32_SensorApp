@@ -86,10 +86,11 @@ static void gpio_check_task(void* args)
               if (_usrLowDurationCount < USER_TOGGLE_DISPLAY_LOW_COUNT) {
                 System::instance()->toggleDisplay();
               }
-              else if (_usrLowDurationCount > USER_TOGGLE_WIFI_MODE_LOW_COUNT) {
-                System::instance()->toggleDeployMode();
-              }
-              else if (_usrLowDurationCount > USER_TOGGLE_WIFI_ON_LOW_COUNT) {
+              // else if (_usrLowDurationCount > USER_TOGGLE_WIFI_MODE_LOW_COUNT) {
+              //   System::instance()->toggleDeployMode();
+              // }
+              else if (_usrLowDurationCount > USER_TOGGLE_WIFI_ON_LOW_COUNT &&
+                       _usrLowDurationCount < USER_TOGGLE_WIFI_MODE_LOW_COUNT) {
                 System::instance()->toggleWifi();
               }
             }
@@ -110,10 +111,15 @@ static void gpio_check_task(void* args)
       }
     }
     else {
-      if (_usrGpioLvl == 0) ++_usrLowDurationCount;
+      if (_usrGpioLvl == 0) {
+        ++_usrLowDurationCount;
+        if (_usrLowDurationCount >= USER_TOGGLE_WIFI_MODE_LOW_COUNT)
+          System::instance()->toggleDeployMode();
+      }
       if (_pwrGpioLvl == 0) {
       	++_pwrLowDurationCount;
-      	if (_pwrLowDurationCount > PWR_TOGGLE_OFF_LOW_COUNT) System::instance()->powerOff();
+      	if (_pwrLowDurationCount >= PWR_TOGGLE_OFF_LOW_COUNT)
+          System::instance()->powerOff();
       }
     }
   }
