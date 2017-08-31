@@ -9,7 +9,7 @@
 // static const char *SensorDataTypeStr = { "PM", "HCHO", "CO2", "TEMP", "HUMID" };
 
 static const char * const SensorTypeStr[] = {
-  "NONE",         // 0
+  "NoneSensor",   // 0
   "PMS5003",      // 1
   "PMS5003T",     // 2
   "PMS5003S",     // 3

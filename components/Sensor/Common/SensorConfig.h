@@ -8,6 +8,10 @@
 #define _SENSOR_CONFIG_H
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /////////////////////////////////////////////////////////////////////////////////////////
 // Sensor capability mask
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -23,13 +27,14 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 enum SensorType
 {
-  NONE             = 0, 
+  NoneSensor       = 0, 
   PMS5003          ,//= 1,
   PMS5003T         ,//= 2,
   PMS5003S         ,//= 3,
   PMS5003ST        ,//= 4,
   DSCO220          ,//= 5,
-  MPU6050           //= 6,
+  MPU6050          ,//= 6,
+  SensorTypeMax
 };
 
 #define PM_RX_PROTOCOL_MAX_LENGTH    40  // for PMS5003* series
@@ -48,5 +53,9 @@ enum SensorDataType
   TEMP      = 3,
   HUMID     = 4
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _SENSOR_CONFIG_H

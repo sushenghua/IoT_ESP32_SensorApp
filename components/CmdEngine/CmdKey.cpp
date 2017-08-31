@@ -26,9 +26,10 @@ static const char * const CmdKeyStr[] = {
     "AppendAltApSsidPass",      // 14
     "ClearAltApSsidPassList",   // 15
     "SetSystemDeployMode",      // 16
-    "TurnOnDisplay",            // 17
-    "UpdateFirmware",           // 18
-    "Restart"                   // 19
+    "SetSensorType",            // 17
+    "TurnOnDisplay",            // 18
+    "UpdateFirmware",           // 19
+    "Restart"                   // 20
 };
 
 CmdKey strToCmdKey(const char *str)
