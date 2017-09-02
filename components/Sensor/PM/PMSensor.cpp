@@ -187,7 +187,7 @@ void PMSensor::sampleData(TickType_t waitTicks)
 {
   int rxLen = rx(_rxBuf, _protocolLen, waitTicks);
 #ifdef DEBUG_APP
-  ESP_LOGI("[PMSensor]", "sampleData rx len %d", rxLen);
+  APP_LOGI("[PMSensor]", "sampleData rx len %d", rxLen);
 #endif
   if (rxLen == _protocolLen) {
     onRxComplete();
@@ -217,7 +217,7 @@ void PMSensor::onRxComplete()
         if (_dc) _dc->setHchoData(_hchoData, false);
       }
 #ifdef DEBUG_APP
-      ESP_LOGI("[PMSensor]", "--->pm1.0: %2.2f  pm2.5: %2.2f  pm10: %2.2f  hcho: %2.2f\n",
+      APP_LOGI("[PMSensor]", "--->pm1.0: %2.2f  pm2.5: %2.2f  pm10: %2.2f  hcho: %2.2f\n",
                _pmData.pm1d0, _pmData.pm2d5, _pmData.pm10, _hchoData.hcho);
 #endif
       if (_cap & TEMP_HUMID_CAPABILITY_MASK) {
