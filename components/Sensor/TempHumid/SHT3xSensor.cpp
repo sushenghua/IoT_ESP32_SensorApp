@@ -66,10 +66,14 @@ void sht3xI2cRx(uint8_t *data)
 #define delay(x)                 vTaskDelay((x)/portTICK_RATE_MS)
 #endif
 
+uint8_t _sht3xTxBuf[2];
+
 void sht3xSendCmd(uint16_t cmd)
 {
+  _sht3xTxBuf[0] = cmd >> 8;
+  _sht3xTxBuf[1] = cmd & 0xFF;
   if (xSemaphoreTake(Semaphore::i2c, SHT3X_I2C_SEMAPHORE_WAIT_TICKS)) {
-    _sharedSHT3xI2c->masterTx(SHT3X_ADDR, (uint8_t*)&cmd, 2);
+    _sharedSHT3xI2c->masterTx(SHT3X_ADDR, _sht3xTxBuf, 2);
     xSemaphoreGive(Semaphore::i2c);
   }
 }
@@ -148,7 +152,7 @@ bool sht3xReadTempHumid(float &temperature, float &humidity)
       ok = false; break;
     }
 
-    temperature = -45 + 175.0 * temp / 0xFFFF;
+    temperature = 175.0 * temp / 0xFFFF - 45;
     humidity = 100.0 * humid / 0xFFFF;
 
   } while (false);
@@ -191,9 +195,9 @@ void SHT3xSensor::sampleData()
 {
   if ( sht3xReadTempHumid(_tempHumidData.temp, _tempHumidData.humid) ) {
     _tempHumidData.calculateLevel();
-    if (_dc) _dc->setTempHumidData(_tempHumidData, false);
-#ifdef DEBUG_APP
-    ESP_LOGC("[SHT3xSensor]", "--->temp: %2.2f  humid: %2.2f", _tempHumidData.temp, _tempHumidData.humid);
-#endif
+    // if (_dc) _dc->setTempHumidData(_tempHumidData, false);
+// #ifdef DEBUG_APP
+    APP_LOGC("[SHT3xSensor]", "--->temp: %2.2f  humid: %2.2f", _tempHumidData.temp, _tempHumidData.humid);
+// #endif
   }
 }
