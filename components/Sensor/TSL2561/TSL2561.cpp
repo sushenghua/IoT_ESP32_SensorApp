@@ -210,9 +210,9 @@ void tsl2561I2cMemRx(uint8_t memAddr, uint8_t *data, size_t count)
 #define delay(x)                 vTaskDelay((x)/portTICK_RATE_MS)
 #endif
 
-#define TSL2561_DELAY_INTTIME_13MS    10
-#define TSL2561_DELAY_INTTIME_101MS   100
-#define TSL2561_DELAY_INTTIME_402MS   400
+#define TSL2561_DELAY_INTTIME_13MS    20
+#define TSL2561_DELAY_INTTIME_101MS   120
+#define TSL2561_DELAY_INTTIME_402MS   420
 
 enum TSL2561IntegrationTime
 {
@@ -281,8 +281,7 @@ void tsl2561GetLuminosityData(uint16_t &broadband, uint16_t &ir)
   ir = _tsl2561RxBuf[0]; ir <<= 8;
   ir |= _tsl2561RxBuf[1] & 0xFF;
 
-  APP_LOGC("[TSL2561]", "broadband: %d, ir: %d", broadband, ir);
-
+  // APP_LOGC("[TSL2561]", "broadband: %d, ir: %d", broadband, ir);
   tsl2561Enable(false); // save power
 }
 
@@ -444,7 +443,7 @@ void TSL2561::init()
   if (!tsl2561Ready()) APP_LOGE("[TSL2561]", "TSL2651 sensor not found");
 
   // init integration time and gain
-  tsl2561SetIntegrationTimeAndGain(TSL2561_INTEGRATIONTIME_13MS, TSL2561_GAIN_1X);
+  tsl2561SetIntegrationTimeAndGain(TSL2561_INTEGRATIONTIME_402MS, TSL2561_GAIN_1X);
 }
 
 uint16_t _broadbandCache;

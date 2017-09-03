@@ -216,6 +216,19 @@ void sht3x_sensor_task(void *p)
   }
 }
 
+TaskHandle_t tsl2561SensorTaskHandle;
+bool _tsl2561SensorTaskPaused = false;
+void tsl2561_sensor_task(void *p)
+{
+  TSL2561 tsl2561Sensor;
+  tsl2561Sensor.init();
+  while (true) {
+    if (_enablePeripheralTaskLoop) tsl2561Sensor.sampleData();
+    else _tsl2561SensorTaskPaused = true;
+    vTaskDelay(1000/portTICK_RATE_MS);
+  }
+}
+
 TaskHandle_t orientationSensorTaskHandle;
 bool _orientationSensorTaskPaused = false;
 void orientation_sensor_task(void *p)
@@ -227,19 +240,6 @@ void orientation_sensor_task(void *p)
     if (_enablePeripheralTaskLoop) orientationSensor.tick();
     else _orientationSensorTaskPaused = true;
     vTaskDelay(100/portTICK_RATE_MS);
-  }
-}
-
-TaskHandle_t tsl2561SensorTaskHandle;
-bool _tsl2561SensorTaskPaused = false;
-void tsl2561_sensor_task(void *p)
-{
-  TSL2561 tsl2561Sensor;
-  tsl2561Sensor.init();
-  while (true) {
-    if (_enablePeripheralTaskLoop) tsl2561Sensor.sampleData();
-    else _tsl2561SensorTaskPaused = true;
-    vTaskDelay(500/portTICK_RATE_MS);
   }
 }
 
@@ -463,6 +463,7 @@ void System::resumePeripherals()
   _pmSensorTaskPaused = false;
   _co2SensorTaskPaused = false;
   _sht3xSensorTaskPaused = false;
+  _tsl2561SensorTaskPaused = false;
   _orientationSensorTaskPaused = false;
   _enablePeripheralTaskLoop = true;
 }
