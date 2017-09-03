@@ -166,6 +166,7 @@ void status_check_task(void *p)
 #include "SHT3xSensor.h"
 #include "CO2Sensor.h"
 #include "OrientationSensor.h"
+#include "TSL2561.h"
 #include "SensorDataPacker.h"
 
 TaskHandle_t pmSensorTaskHandle;
@@ -226,6 +227,19 @@ void orientation_sensor_task(void *p)
     if (_enablePeripheralTaskLoop) orientationSensor.tick();
     else _orientationSensorTaskPaused = true;
     vTaskDelay(100/portTICK_RATE_MS);
+  }
+}
+
+TaskHandle_t tsl2561SensorTaskHandle;
+bool _tsl2561SensorTaskPaused = false;
+void tsl2561_sensor_task(void *p)
+{
+  TSL2561 tsl2561Sensor;
+  tsl2561Sensor.init();
+  while (true) {
+    if (_enablePeripheralTaskLoop) tsl2561Sensor.sampleData();
+    else _tsl2561SensorTaskPaused = true;
+    vTaskDelay(500/portTICK_RATE_MS);
   }
 }
 
@@ -301,9 +315,12 @@ static void http_task(void *pvParams)
 //**********************************************
 // prepare env
 //**********************************************
+#include "Semaphore.h"
+
 static void beforeCreateTasks()
 {
   // _dcUpdateSemaphore = xSemaphoreCreateMutex();
+  Semaphore::init();
 }
 
 
@@ -385,6 +402,7 @@ void System::init()
 #define PM_SENSOR_TASK_PRIORITY             80
 #define CO2_SENSOR_TASK_PRIORITY            80
 #define SHT3X_TASK_PRIORITY                 80
+#define TSL2561_TASK_PRIORITY               80
 #define ORIENTATION_TASK_PRIORITY           81
 #define STATUS_CHECK_TASK_PRIORITY          81
 #define TOUCH_PAD_TASK_PRIORITY             81
@@ -406,6 +424,8 @@ void System::_launchTasks()
     xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 2048, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
 
   xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 2048, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
+
+  xTaskCreatePinnedToCore(tsl2561_sensor_task, "tsl2561_sensor_task", 2048, NULL, TSL2561_TASK_PRIORITY, &tsl2561SensorTaskHandle, RUN_ON_CORE);
 
   xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
 

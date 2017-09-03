@@ -25,27 +25,15 @@ I2c    *_sharedSHT3xI2c;
 
 void sht3xI2cInit()
 {
-  Semaphore::init();
-  _sharedSHT3xI2c = I2c::instanceForPort(SHT3X_I2C_PORT, SHT3X_I2C_PIN_SCK, SHT3X_I2C_PIN_SDA);
-  _sharedSHT3xI2c->setMode(I2C_MODE_MASTER);
-  _sharedSHT3xI2c->setMasterClkSpeed(SHT3X_I2C_CLK_SPEED);
-  _sharedSHT3xI2c->init();
-}
-void sht3xI2cTx(uint8_t *data)
-{
-  if (xSemaphoreTake(Semaphore::i2c, SHT3X_I2C_SEMAPHORE_WAIT_TICKS)) {
-    _sharedSHT3xI2c->masterTx(SHT3X_ADDR, data, 1);
+  if (xSemaphoreTake(Semaphore::i2c, I2C_MAX_WAIT_TICKS)) {
+    _sharedSHT3xI2c = I2c::instanceForPort(SHT3X_I2C_PORT, SHT3X_I2C_PIN_SCK, SHT3X_I2C_PIN_SDA);
+    _sharedSHT3xI2c->setMode(I2C_MODE_MASTER);
+    _sharedSHT3xI2c->setMasterClkSpeed(SHT3X_I2C_CLK_SPEED);
+    _sharedSHT3xI2c->init();
     xSemaphoreGive(Semaphore::i2c);
   }
 }
 
-void sht3xI2cRx(uint8_t *data)
-{
-  if (xSemaphoreTake(Semaphore::i2c, SHT3X_I2C_SEMAPHORE_WAIT_TICKS)) {
-    _sharedSHT3xI2c->masterRx(SHT3X_ADDR, data, 1);
-    xSemaphoreGive(Semaphore::i2c);
-  }
-}
 /////////////////////////////////////////////////////////////////////////////////////////
 // SHT3X comamnd, copied from Adafruit_SHT31.cpp
 /////////////////////////////////////////////////////////////////////////////////////////

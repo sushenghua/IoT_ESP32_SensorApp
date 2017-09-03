@@ -42,15 +42,17 @@
 #define MPU6050_I2C_SEMAPHORE_WAIT_TICKS    1000
 
 // I2c _i2c(I2C_NUM_0, MPU6050_I2C_PIN_SCK, MPU6050_I2C_PIN_SDA);
-I2c  *_i2c;
+I2c  *_mpu6050I2c;
 
 void initMPU6050I2c()
 {
-  Semaphore::init();
-  _i2c = I2c::instanceForPort(MPU6050_I2C_PORT, MPU6050_I2C_PIN_SCK, MPU6050_I2C_PIN_SDA);
-  _i2c->setMode(I2C_MODE_MASTER);
-  _i2c->setMasterClkSpeed(MPU6050_I2C_CLK_SPEED);
-  _i2c->init();
+  if (xSemaphoreTake(Semaphore::i2c, I2C_MAX_WAIT_TICKS)) {
+    _mpu6050I2c = I2c::instanceForPort(MPU6050_I2C_PORT, MPU6050_I2C_PIN_SCK, MPU6050_I2C_PIN_SDA);
+    _mpu6050I2c->setMode(I2C_MODE_MASTER);
+    _mpu6050I2c->setMasterClkSpeed(MPU6050_I2C_CLK_SPEED);
+    _mpu6050I2c->init();
+    xSemaphoreGive(Semaphore::i2c);
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -63,7 +65,7 @@ int i2cReadByte(uint8_t devAddr, uint8_t regAddr, uint8_t* buf)
 {
   int ret = -1;
   if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
-    if (_i2c->masterMemRx(devAddr, regAddr, buf, 1)) ret = 0;
+    if (_mpu6050I2c->masterMemRx(devAddr, regAddr, buf, 1)) ret = 0;
     xSemaphoreGive(Semaphore::i2c);
   }
   return ret;
@@ -73,7 +75,7 @@ int i2cReadBytes(uint8_t devAddr, uint8_t regAddr, uint8_t count, uint8_t* buf)
 {
   int ret = -1;
   if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
-    if (_i2c->masterMemRx(devAddr, regAddr, buf, count)) ret = 0;
+    if (_mpu6050I2c->masterMemRx(devAddr, regAddr, buf, count)) ret = 0;
     xSemaphoreGive(Semaphore::i2c);
   }
   return ret;
@@ -83,7 +85,7 @@ int i2cWriteByte(uint8_t devAddr, uint8_t regAddr, uint8_t data)
 {
   int ret = -1;
   if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
-    if (_i2c->masterMemTx(devAddr, regAddr, &data, 1)) ret = 0;
+    if (_mpu6050I2c->masterMemTx(devAddr, regAddr, &data, 1)) ret = 0;
     xSemaphoreGive(Semaphore::i2c);
   }
   return ret;
@@ -93,7 +95,7 @@ int i2cWriteBytes(uint8_t devAddr, uint8_t regAddr, uint8_t count, uint8_t* data
 {
   int ret = -1;
   if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
-    if (_i2c->masterMemTx(devAddr, regAddr, data, count)) ret = 0;
+    if (_mpu6050I2c->masterMemTx(devAddr, regAddr, data, count)) ret = 0;
     xSemaphoreGive(Semaphore::i2c);
   }
   return ret;
@@ -104,7 +106,7 @@ bool mpu6050Ready(int trials = 3)
   bool ready = false;
   if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
     for (int i = 0; i < trials; ++i) {
-      if (_i2c->deviceReady(MPU6050_ADDR)) {
+      if (_mpu6050I2c->deviceReady(MPU6050_ADDR)) {
         ready = true;
         break;
       }

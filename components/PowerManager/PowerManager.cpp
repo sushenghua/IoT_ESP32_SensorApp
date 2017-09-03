@@ -25,11 +25,13 @@ I2c    *_sharedI2c;
 
 void pwrI2cInit()
 {
-  Semaphore::init();
-  _sharedI2c = I2c::instanceForPort(POWER_I2C_PORT, POWER_I2C_PIN_SCK, POWER_I2C_PIN_SDA);
-  _sharedI2c->setMode(I2C_MODE_MASTER);
-  _sharedI2c->setMasterClkSpeed(POWER_I2C_CLK_SPEED);
-  _sharedI2c->init();
+  if (xSemaphoreTake(Semaphore::i2c, I2C_MAX_WAIT_TICKS)) {
+    _sharedI2c = I2c::instanceForPort(POWER_I2C_PORT, POWER_I2C_PIN_SCK, POWER_I2C_PIN_SDA);
+    _sharedI2c->setMode(I2C_MODE_MASTER);
+    _sharedI2c->setMasterClkSpeed(POWER_I2C_CLK_SPEED);
+    _sharedI2c->init();
+    xSemaphoreGive(Semaphore::i2c);
+  }
 }
 
 void pwrI2cMemTx(uint8_t memAddr, uint8_t *data)
