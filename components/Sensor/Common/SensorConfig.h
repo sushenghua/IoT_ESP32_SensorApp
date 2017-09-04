@@ -20,6 +20,7 @@ extern "C" {
 #define TEMP_HUMID_CAPABILITY_MASK     0x00000004
 #define CO2_CAPABILITY_MASK            0x00000008
 #define ORIENTATION_CAPABILITY_MASK    0x00000010
+#define DEV_BUILD_IN_CAPABILITY_MASK   TEMP_HUMID_CAPABILITY_MASK
 
 
 /////////////////////////////////////////////////////////////////////////////////////////

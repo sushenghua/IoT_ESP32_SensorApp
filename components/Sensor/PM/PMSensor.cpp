@@ -10,6 +10,9 @@
 #include "Debug.h"
 #include "System.h"
 
+// ------ use temp/humid sensor inside PMS5xxxT
+// #define USING_PMS5XXXT_TEMP_HUMID_SENSOR
+
 // ------ pm sensor pins
 #define PM_SENSOR_MCU_RX_PIN          16 // UART_DEFAULT_PIN
 #define PM_SENSOR_MCU_TX_PIN          17 // UART_DEFAULT_PIN
@@ -220,12 +223,14 @@ void PMSensor::onRxComplete()
       APP_LOGI("[PMSensor]", "--->pm1.0: %2.2f  pm2.5: %2.2f  pm10: %2.2f  hcho: %2.2f\n",
                _pmData.pm1d0, _pmData.pm2d5, _pmData.pm10, _hchoData.hcho);
 #endif
+#ifdef USING_PMS5XXXT_TEMP_HUMID_SENSOR
       if (_cap & TEMP_HUMID_CAPABILITY_MASK) {
         _tempHumidData.temp = _parser.valueAt(_tempHumidDataPos) / 10.0f;
         _tempHumidData.humid = _parser.valueAt(_tempHumidDataPos + 1) / 10.0f;
         _tempHumidData.calculateLevel();
         if (_dc) _dc->setTempHumidData(_tempHumidData, false);
       }
+#endif
     }
   }
 }

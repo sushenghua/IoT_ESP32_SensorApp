@@ -8,6 +8,7 @@
 #define _SENSOR_DATA_PACKER_H
 
 #include <stdint.h>
+#include "SHT3xSensor.h"
 #include "PMSensor.h"
 #include "CO2Sensor.h"
 #include "OrientationSensor.h"
@@ -24,6 +25,7 @@ public:
     void init();
 
     // add sensor obj ref
+    void setTempHumidSensor(SHT3xSensor *sensor);
     void setPmSensor(PMSensor *sensor);
     void setOrientationSensor(OrientationSensor *sensor);
     void setCO2Sensor(CO2Sensor *sensor);
@@ -39,6 +41,7 @@ public:
     SensorDataPacker();
 
 protected:
+    SHT3xSensor         *_thSensor;
     PMSensor            *_pmSensor;
     CO2Sensor           *_co2Sensor;
     OrientationSensor   *_orientationSensor;

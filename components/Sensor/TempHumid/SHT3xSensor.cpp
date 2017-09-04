@@ -183,9 +183,9 @@ void SHT3xSensor::sampleData()
 {
   if ( sht3xReadTempHumid(_tempHumidData.temp, _tempHumidData.humid) ) {
     _tempHumidData.calculateLevel();
-    // if (_dc) _dc->setTempHumidData(_tempHumidData, false);
-// #ifdef DEBUG_APP
+    if (_dc) _dc->setTempHumidData(_tempHumidData, false);
+#ifdef DEBUG_APP
     APP_LOGC("[SHT3xSensor]", "--->temp: %2.2f  humid: %2.2f", _tempHumidData.temp, _tempHumidData.humid);
-// #endif
+#endif
   }
 }

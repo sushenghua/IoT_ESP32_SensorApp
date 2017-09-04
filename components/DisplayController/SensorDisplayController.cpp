@@ -176,14 +176,13 @@ void SensorDisplayController::_initDisplayItems()
   if (_devCap & HCHO_CAPABILITY_MASK)
     _displayMainItems[_mainItemCount++] = HCHO;
 
+  if (_devCap & CO2_CAPABILITY_MASK)
+    _displayMainItems[_mainItemCount++] = CO2;
+
   if (_devCap & TEMP_HUMID_CAPABILITY_MASK) {
     _displaySubItems[_subItemCount++] = TEMP;
     _displaySubItems[_subItemCount++] = HUMID;
   }
-
-  if (_devCap & CO2_CAPABILITY_MASK)
-    _displayMainItems[_mainItemCount++] = CO2;
-
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////

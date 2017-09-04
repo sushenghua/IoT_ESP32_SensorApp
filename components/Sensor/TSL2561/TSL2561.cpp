@@ -210,13 +210,13 @@ void tsl2561I2cMemRx(uint8_t memAddr, uint8_t *data, size_t count)
 #define delay(x)                 vTaskDelay((x)/portTICK_RATE_MS)
 #endif
 
-#define TSL2561_DELAY_INTTIME_13MS    20
-#define TSL2561_DELAY_INTTIME_101MS   120
-#define TSL2561_DELAY_INTTIME_402MS   420
+#define TSL2561_DELAY_INTTIME_13MS    13
+#define TSL2561_DELAY_INTTIME_101MS   101
+#define TSL2561_DELAY_INTTIME_402MS   402
 
 enum TSL2561IntegrationTime
 {
-  TSL2561_INTEGRATIONTIME_13MS      = 0x00,    // 13.7ms
+  TSL2561_INTEGRATIONTIME_13P7MS    = 0x00,    // 13.7ms
   TSL2561_INTEGRATIONTIME_101MS     = 0x01,    // 101ms
   TSL2561_INTEGRATIONTIME_402MS     = 0x02     // 402ms
 };
@@ -254,13 +254,13 @@ void tsl2561SetIntegrationTimeAndGain(TSL2561IntegrationTime time, TSL2561Gain g
   tsl2561Enable(false);
 }
 
-void tsl2561GetLuminosityData(uint16_t &broadband, uint16_t &ir)
+void tsl2561GetChannelValues(uint16_t &broadbandCh, uint16_t &irCh)
 {
   tsl2561Enable(true);
 
   // wait x ms for ADC to complete
   switch (_tsl2561IntegrationTime) {
-    case TSL2561_INTEGRATIONTIME_13MS:
+    case TSL2561_INTEGRATIONTIME_13P7MS:
       delay(TSL2561_DELAY_INTTIME_13MS);
       break;
     case TSL2561_INTEGRATIONTIME_101MS:
@@ -273,22 +273,22 @@ void tsl2561GetLuminosityData(uint16_t &broadband, uint16_t &ir)
 
   // reads a two byte value from channel 0 (visible + infrared)
   tsl2561I2cMemRx(TSL2561_COMMAND_BIT | TSL2561_WORD_BIT | TSL2561_REGISTER_CHAN0_LOW, _tsl2561RxBuf, 2);
-  broadband = _tsl2561RxBuf[0]; broadband <<= 8;
-  broadband |= _tsl2561RxBuf[1] & 0xFF;
+  broadbandCh = _tsl2561RxBuf[1]; broadbandCh <<= 8;
+  broadbandCh |= _tsl2561RxBuf[0] & 0xFF;
 
   // reads a two byte value from channel 1 (infrared)
   tsl2561I2cMemRx(TSL2561_COMMAND_BIT | TSL2561_WORD_BIT | TSL2561_REGISTER_CHAN1_LOW, _tsl2561RxBuf, 2);
-  ir = _tsl2561RxBuf[0]; ir <<= 8;
-  ir |= _tsl2561RxBuf[1] & 0xFF;
+  irCh = _tsl2561RxBuf[1]; irCh <<= 8;
+  irCh |= _tsl2561RxBuf[0] & 0xFF;
 
-  // APP_LOGC("[TSL2561]", "broadband: %d, ir: %d", broadband, ir);
+  // APP_LOGC("[TSL2561]", "broadbandCh: %d, irCh: %d", broadbandCh, irCh);
   tsl2561Enable(false); // save power
 }
 
 void tsl2561GetLuminosity(uint16_t &broadband, uint16_t &ir, bool autoGain = false)
 {
   if(!autoGain) {
-    tsl2561GetLuminosityData(broadband, ir);
+    tsl2561GetChannelValues(broadband, ir);
     return;
   }
 
@@ -298,7 +298,7 @@ void tsl2561GetLuminosity(uint16_t &broadband, uint16_t &ir, bool autoGain = fal
   uint16_t hi, lo;
   // get the hi/low threshold for the current integration time
   switch(_tsl2561IntegrationTime) {
-    case TSL2561_INTEGRATIONTIME_13MS:
+    case TSL2561_INTEGRATIONTIME_13P7MS:
       hi = TSL2561_AGC_THI_13MS;
       lo = TSL2561_AGC_TLO_13MS;
       break;
@@ -314,7 +314,7 @@ void tsl2561GetLuminosity(uint16_t &broadband, uint16_t &ir, bool autoGain = fal
 
   // read data until we find a valid range
   do {
-    tsl2561GetLuminosityData(broadbandSample, irSample);
+    tsl2561GetChannelValues(broadbandSample, irSample);
 
     // run an auto-gain check if we haven't already done so
     if (!autoGainCheck) {
@@ -322,7 +322,7 @@ void tsl2561GetLuminosity(uint16_t &broadband, uint16_t &ir, bool autoGain = fal
         // increase the gain and try again
         tsl2561SetIntegrationTimeAndGain(_tsl2561IntegrationTime, TSL2561_GAIN_16X);
         // drop the previous conversion results
-        tsl2561GetLuminosityData(broadbandSample, irSample);
+        tsl2561GetChannelValues(broadbandSample, irSample);
         // set a flag to indicate we've adjusted the gain
         autoGainCheck = true;
       }
@@ -330,7 +330,7 @@ void tsl2561GetLuminosity(uint16_t &broadband, uint16_t &ir, bool autoGain = fal
         // drop gain to 1x and try again
         tsl2561SetIntegrationTimeAndGain(_tsl2561IntegrationTime, TSL2561_GAIN_1X);
         // drop the previous conversion results
-        tsl2561GetLuminosityData(broadbandSample, irSample);
+        tsl2561GetChannelValues(broadbandSample, irSample);
         // set a flag to indicate we've adjusted the gain
         autoGainCheck = true;
       }
@@ -362,7 +362,7 @@ void tsl2561CalculateLuminosity(uint32_t &ret, uint16_t broadband, uint16_t ir)
   // make sure the sensor isn't saturated
   uint16_t clipThreshold;
   switch (_tsl2561IntegrationTime) {
-    case TSL2561_INTEGRATIONTIME_13MS:
+    case TSL2561_INTEGRATIONTIME_13P7MS:
       clipThreshold = TSL2561_CLIPPING_13MS;
       chScale = TSL2561_LUX_CHSCALE_TINT0;
       break;
@@ -382,7 +382,7 @@ void tsl2561CalculateLuminosity(uint32_t &ret, uint16_t broadband, uint16_t ir)
   }
 
   // scale for gain (1x or 16x)
-  if (!_tsl2561Gain) chScale = chScale << 4;
+  if (_tsl2561Gain != TSL2561_GAIN_16X) chScale = chScale << 4;
 
   // scale the channel values
   channel0 = (broadband * chScale) >> TSL2561_LUX_CHSCALE;
@@ -397,31 +397,32 @@ void tsl2561CalculateLuminosity(uint32_t &ret, uint16_t broadband, uint16_t ir)
   unsigned int b = 0, m = 0;
 
 #ifdef TSL2561_PACKAGE_CS
-  if (ratio <= TSL2561_LUX_K1C)      { b = TSL2561_LUX_B1C; m = TSL2561_LUX_M1C; }
+  if      (ratio <= TSL2561_LUX_K1C) { b = TSL2561_LUX_B1C; m = TSL2561_LUX_M1C; }
   else if (ratio <= TSL2561_LUX_K2C) { b = TSL2561_LUX_B2C; m = TSL2561_LUX_M2C; }
   else if (ratio <= TSL2561_LUX_K3C) { b = TSL2561_LUX_B3C; m = TSL2561_LUX_M3C; }
   else if (ratio <= TSL2561_LUX_K4C) { b = TSL2561_LUX_B4C; m = TSL2561_LUX_M4C; }
   else if (ratio <= TSL2561_LUX_K5C) { b = TSL2561_LUX_B5C; m = TSL2561_LUX_M5C; }
   else if (ratio <= TSL2561_LUX_K6C) { b = TSL2561_LUX_B6C; m = TSL2561_LUX_M6C; }
   else if (ratio <= TSL2561_LUX_K7C) { b = TSL2561_LUX_B7C; m = TSL2561_LUX_M7C; }
-  else if (ratio > TSL2561_LUX_K8C)  { b = TSL2561_LUX_B8C; m = TSL2561_LUX_M8C; }
+  else if (ratio  > TSL2561_LUX_K8C) { b = TSL2561_LUX_B8C; m = TSL2561_LUX_M8C; }
 #else
-  if (ratio <= TSL2561_LUX_K1T)      { b = TSL2561_LUX_B1T; m = TSL2561_LUX_M1T; }
+  if      (ratio <= TSL2561_LUX_K1T) { b = TSL2561_LUX_B1T; m = TSL2561_LUX_M1T; }
   else if (ratio <= TSL2561_LUX_K2T) { b = TSL2561_LUX_B2T; m = TSL2561_LUX_M2T; }
   else if (ratio <= TSL2561_LUX_K3T) { b = TSL2561_LUX_B3T; m = TSL2561_LUX_M3T; }
   else if (ratio <= TSL2561_LUX_K4T) { b = TSL2561_LUX_B4T; m = TSL2561_LUX_M4T; }
   else if (ratio <= TSL2561_LUX_K5T) { b = TSL2561_LUX_B5T; m = TSL2561_LUX_M5T; }
   else if (ratio <= TSL2561_LUX_K6T) { b = TSL2561_LUX_B6T; m = TSL2561_LUX_M6T; }
   else if (ratio <= TSL2561_LUX_K7T) { b = TSL2561_LUX_B7T; m = TSL2561_LUX_M7T; }
-  else if (ratio > TSL2561_LUX_K8T)  { b = TSL2561_LUX_B8T; m = TSL2561_LUX_M8T; }
+  else if (ratio  > TSL2561_LUX_K8T) { b = TSL2561_LUX_B8T; m = TSL2561_LUX_M8T; }
 #endif
 
-  unsigned long temp = (channel0 * b);
+  unsigned long temp = channel0 * b;
+  unsigned long tempCh1 = channel1 * m;
   // do not allow negative lux value
-  if (temp < channel1 * m) temp = 0;
-  else temp -= channel1 * m;
+  if (temp < tempCh1) temp = 0;
+  else temp -= tempCh1;
   // round lsb (2^(LUX_SCALE-1))
-  temp += (1 << (TSL2561_LUX_LUXSCALE - 1));
+  temp += (1 << (TSL2561_LUX_LUXSCALE-1));
 
   // strip off fractional portion
   ret = temp >> TSL2561_LUX_LUXSCALE;
@@ -453,7 +454,7 @@ void TSL2561::sampleData()
 {
   tsl2561GetLuminosity(_broadbandCache, _irCache);
   tsl2561CalculateLuminosity(_luminosity, _broadbandCache, _irCache);
-// #ifdef DEBUG_APP
+#ifdef DEBUG_APP
   APP_LOGC("[TSL2561]", "--->lux: %d b: %d, ir: %d", _luminosity, _broadbandCache, _irCache);
-// #endif
+#endif
 }

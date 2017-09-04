@@ -162,12 +162,27 @@ void status_check_task(void *p)
 //----------------------------------------------
 // sensor tasks
 //----------------------------------------------
-#include "PMSensor.h"
 #include "SHT3xSensor.h"
+#include "PMSensor.h"
 #include "CO2Sensor.h"
 #include "OrientationSensor.h"
 #include "TSL2561.h"
 #include "SensorDataPacker.h"
+
+TaskHandle_t sht3xSensorTaskHandle;
+bool _sht3xSensorTaskPaused = false;
+void sht3x_sensor_task(void *p)
+{
+  SHT3xSensor sht3xSensor;
+  sht3xSensor.init();
+  sht3xSensor.setDisplayDelegate(&dc);
+  SensorDataPacker::sharedInstance()->setTempHumidSensor(&sht3xSensor);
+  while (true) {
+    if (_enablePeripheralTaskLoop) sht3xSensor.sampleData();
+    else _sht3xSensorTaskPaused = true;
+    vTaskDelay(500/portTICK_RATE_MS);
+  }
+}
 
 TaskHandle_t pmSensorTaskHandle;
 bool _pmSensorTaskPaused = false;
@@ -199,20 +214,6 @@ void co2_sensor_task(void *p)
     if (_enablePeripheralTaskLoop) co2Sensor.sampleData(3000);
     else _co2SensorTaskPaused = true;
     vTaskDelay(1000/portTICK_RATE_MS);
-  }
-}
-
-TaskHandle_t sht3xSensorTaskHandle;
-bool _sht3xSensorTaskPaused = false;
-void sht3x_sensor_task(void *p)
-{
-  SHT3xSensor sht3xSensor;
-  sht3xSensor.init();
-  sht3xSensor.setDisplayDelegate(&dc);
-  while (true) {
-    if (_enablePeripheralTaskLoop) sht3xSensor.sampleData();
-    else _sht3xSensorTaskPaused = true;
-    vTaskDelay(500/portTICK_RATE_MS);
   }
 }
 
@@ -382,6 +383,7 @@ void System::_setDefaultConfig()
   _config.co2SensorType = DSCO220;
   _config.devCapability = ( capabilityForSensorType(_config.pmSensorType) |
                             capabilityForSensorType(_config.co2SensorType) );
+  _config.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
 }
 
 void System::init()
@@ -418,12 +420,12 @@ void System::_launchTasks()
 
   xTaskCreatePinnedToCore(&display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, &displyTaskHandle, RUN_ON_CORE);
 
+  xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 2048, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
+
   if (_config.devCapability & PM_CAPABILITY_MASK)
     xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
   if (_config.devCapability & CO2_CAPABILITY_MASK)
     xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 2048, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
-
-  xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 2048, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
 
   xTaskCreatePinnedToCore(tsl2561_sensor_task, "tsl2561_sensor_task", 2048, NULL, TSL2561_TASK_PRIORITY, &tsl2561SensorTaskHandle, RUN_ON_CORE);
 
@@ -642,6 +644,7 @@ void System::setSensorType(SensorType pmType, SensorType co2Type)
     _config.co2SensorType = co2Type;
     _config.devCapability = ( capabilityForSensorType(_config.pmSensorType) |
                               capabilityForSensorType(_config.co2SensorType) );
+    _config.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
     _saveConfig();
   }
 }
