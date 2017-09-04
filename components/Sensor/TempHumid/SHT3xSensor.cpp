@@ -34,6 +34,21 @@ void sht3xI2cInit()
   }
 }
 
+bool sht3xReady(int trials = 3)
+{
+  bool ready = false;
+  if (xSemaphoreTake(Semaphore::i2c, SHT3X_I2C_SEMAPHORE_WAIT_TICKS)) {
+    for (int i = 0; i < trials; ++i) {
+      if (_sharedSHT3xI2c->deviceReady(SHT3X_ADDR)) {
+        ready = true;
+        break;
+      }
+    }
+    xSemaphoreGive(Semaphore::i2c);
+  }
+  return ready;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////
 // SHT3X comamnd, copied from Adafruit_SHT31.cpp
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -175,6 +190,9 @@ void SHT3xSensor::init()
   // init SHT3x I2C
   sht3xI2cInit();
 
+  // check ready
+  if (!sht3xReady()) APP_LOGE("[SHT3X]", "SHT3X sensor not found");
+
   // soft-reset the sensor
   sht3xReset();
 }
@@ -185,7 +203,7 @@ void SHT3xSensor::sampleData()
     _tempHumidData.calculateLevel();
     if (_dc) _dc->setTempHumidData(_tempHumidData, false);
 #ifdef DEBUG_APP
-    APP_LOGC("[SHT3xSensor]", "--->temp: %2.2f  humid: %2.2f", _tempHumidData.temp, _tempHumidData.humid);
+    APP_LOGC("[SHT3X]", "--->temp: %2.2f  humid: %2.2f", _tempHumidData.temp, _tempHumidData.humid);
 #endif
   }
 }
