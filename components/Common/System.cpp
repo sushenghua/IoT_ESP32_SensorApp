@@ -229,9 +229,14 @@ void tsl2561_sensor_task(void *p)
       if (System::instance()->displayAutoAdjustOn()) {
         tsl2561Sensor.sampleData();
         _luminsity = tsl2561Sensor.luminosity();
+        APP_LOGC("[TSL2561 Task]", "lux: %d", _luminsity);
         if (_luminsity >= 100) dc.fadeBrightness(100);
-        else if (_luminsity < 20) dc.fadeBrightness(20);
+        else if (_luminsity < 10) dc.fadeBrightness(10);
         else dc.fadeBrightness(_luminsity);
+      }
+      else if (_luminsity != 100) {
+        _luminsity = 100;
+        dc.fadeBrightness(100);
       }
     }
     else _tsl2561SensorTaskPaused = true;
