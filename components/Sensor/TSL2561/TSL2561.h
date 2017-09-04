@@ -19,7 +19,7 @@ public:
   void init();
 
   // cached values
-  uint32_t & luminosity() { return _luminosity; }
+  const uint32_t & luminosity() { return _luminosity; }
 
   // sample
   void sampleData();

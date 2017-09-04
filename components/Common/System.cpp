@@ -219,12 +219,21 @@ void co2_sensor_task(void *p)
 
 TaskHandle_t tsl2561SensorTaskHandle;
 bool _tsl2561SensorTaskPaused = false;
+uint32_t _luminsity = 0;
 void tsl2561_sensor_task(void *p)
 {
   TSL2561 tsl2561Sensor;
   tsl2561Sensor.init();
   while (true) {
-    if (_enablePeripheralTaskLoop) tsl2561Sensor.sampleData();
+    if (_enablePeripheralTaskLoop) {
+      if (System::instance()->displayAutoAdjustOn()) {
+        tsl2561Sensor.sampleData();
+        _luminsity = tsl2561Sensor.luminosity();
+        if (_luminsity >= 100) dc.fadeBrightness(100);
+        else if (_luminsity < 20) dc.fadeBrightness(20);
+        else dc.fadeBrightness(_luminsity);
+      }
+    }
     else _tsl2561SensorTaskPaused = true;
     vTaskDelay(1000/portTICK_RATE_MS);
   }
@@ -378,6 +387,7 @@ System::System()
 void System::_setDefaultConfig()
 {
   _config.wifiOn = true;
+  _config.displayAutoAdjustOn = true;
   _config.deployMode = HTTPServerMode;
   _config.pmSensorType = PMS5003ST;
   _config.co2SensorType = DSCO220;
@@ -479,11 +489,6 @@ void System::powerOff()
   powerManager.powerOff();
 }
 
-bool System::wifiOn()
-{
-  return _config.wifiOn;
-}
-
 bool System::displayOn()
 {
   return _displayOn;
@@ -491,8 +496,10 @@ bool System::displayOn()
 
 void System::turnWifiOn(bool on)
 {
-  _config.wifiOn = on;
-  _saveConfig();
+  if (_config.wifiOn != on) {
+    _config.wifiOn = on;
+    _saveConfig();
+  }
 }
 
 void System::turnDisplayOn(bool on)
@@ -500,6 +507,14 @@ void System::turnDisplayOn(bool on)
   _displayOn = on;
   // DisplayController::activeInstance()->turnOn(on);
   dc.turnOn(on);
+}
+
+void System::turnDisplayAutoAdjustOn(bool on)
+{
+  if (_config.displayAutoAdjustOn != on) {
+    _config.displayAutoAdjustOn = on;
+    _saveConfig();
+  }
 }
 
 void System::toggleWifi()

@@ -29,6 +29,9 @@ public:
 
   void reset() { _dev->reset(); }
   void turnOn(bool on) { _dev->turnOn(on); }
+  void setBrightness(uint8_t b) { _dev->setBrightness(b); }
+  void fadeBrightness(uint8_t b, int duration = 500) { _dev->fadeBrightness(b, duration); }
+
 
   void setNetworkState(NetworkState state) { _networkState = state; _networkIconNeedUpdate = true; }
   void setTimeUpdate(bool update) { _timeNeedUpdate = true; }

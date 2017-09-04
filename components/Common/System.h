@@ -27,6 +27,7 @@ const char * deployModeStr(DeployMode type);
 
 struct SysConfig {
   bool        wifiOn;
+  bool        displayAutoAdjustOn;
   DeployMode  deployMode;
   SensorType  pmSensorType;
   SensorType  co2SensorType;
@@ -81,10 +82,12 @@ public:
   void resumePeripherals();
 
   void powerOff();
-  bool wifiOn();
+  bool wifiOn() { return _config.wifiOn; }
   bool displayOn();
+  bool displayAutoAdjustOn() { return _config.displayAutoAdjustOn; }
   void turnWifiOn(bool on = true);
   void turnDisplayOn(bool on = true);
+  void turnDisplayAutoAdjustOn(bool on = true);
   void toggleWifi();
   void toggleDisplay();
   void markPowerEvent();
