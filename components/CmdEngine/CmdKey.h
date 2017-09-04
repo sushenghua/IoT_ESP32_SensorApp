@@ -29,8 +29,9 @@ typedef enum CmdKey {
     SetSystemDeployMode     ,//= 17,
     SetSensorType           ,//= 18,
     TurnOnDisplay           ,//= 19,
-    UpdateFirmware          ,//= 20,
-    Restart                 ,//= 21,
+    TurnOnAutoAdjustDisplay ,//= 20,
+    UpdateFirmware          ,//= 21,
+    Restart                 ,//= 22,
     CmdKeyMaxValue
 
 } CmdKey;

@@ -152,7 +152,8 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
       break;
     }
 
-    case TurnOnDisplay: {
+    case TurnOnDisplay:
+    case TurnOnAutoAdjustDisplay: {
       cJSON *on = cJSON_GetObjectItem(root, "on");
       if (on) {
         args = _cmdBuf;
@@ -345,7 +346,10 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
 
     case TurnOnDisplay:
       System::instance()->turnDisplayOn(args[0] != 0);
-      // DisplayController::activeInstance()->turnOn(args[0] != 0);
+      break;
+
+    case TurnOnAutoAdjustDisplay:
+      System::instance()->turnDisplayAutoAdjustOn(args[0] != 0);
       break;
 
     case UpdateFirmware:
@@ -353,7 +357,6 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
       break;
 
     case Restart:
-      // Todo: save those need to save ...
       System::instance()->restart();
       break;
 

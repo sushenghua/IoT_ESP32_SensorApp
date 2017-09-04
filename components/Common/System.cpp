@@ -229,7 +229,7 @@ void tsl2561_sensor_task(void *p)
       if (System::instance()->displayAutoAdjustOn()) {
         tsl2561Sensor.sampleData();
         _luminsity = tsl2561Sensor.luminosity();
-        APP_LOGC("[TSL2561 Task]", "lux: %d", _luminsity);
+        // APP_LOGC("[TSL2561 Task]", "lux: %d", _luminsity);
         if (_luminsity >= 100) dc.fadeBrightness(100);
         else if (_luminsity < 10) dc.fadeBrightness(10);
         else dc.fadeBrightness(_luminsity);
@@ -438,15 +438,15 @@ void System::_launchTasks()
   xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 2048, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
 
   if (_config.devCapability & PM_CAPABILITY_MASK)
-    xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 2048, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
   if (_config.devCapability & CO2_CAPABILITY_MASK)
     xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 2048, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
 
   xTaskCreatePinnedToCore(tsl2561_sensor_task, "tsl2561_sensor_task", 2048, NULL, TSL2561_TASK_PRIORITY, &tsl2561SensorTaskHandle, RUN_ON_CORE);
 
-  xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
+  xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 2048, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
 
-  xTaskCreatePinnedToCore(status_check_task, "status_check_task", 4096, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
+  xTaskCreatePinnedToCore(status_check_task, "status_check_task", 2048, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
   xTaskCreate(&wifi_task, "wifi_connection_task", 4096, NULL, WIFI_TASK_PRIORITY, &wifiTaskHandle);
   vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -731,6 +731,7 @@ const char* System::model()
 
 void System::restart()
 {
+  // Todo: save those need to save ...
   _state = Restarting;
   esp_restart();
 }

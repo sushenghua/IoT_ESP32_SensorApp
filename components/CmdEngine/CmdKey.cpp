@@ -29,8 +29,9 @@ static const char * const CmdKeyStr[] = {
     "SetSystemDeployMode",      // 17
     "SetSensorType",            // 18
     "TurnOnDisplay",            // 19
-    "UpdateFirmware",           // 20
-    "Restart"                   // 21
+    "TurnOnAutoAdjustDisplay",  // 20
+    "UpdateFirmware",           // 21
+    "Restart"                   // 22
 };
 
 CmdKey strToCmdKey(const char *str)
