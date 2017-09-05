@@ -732,6 +732,7 @@ const char* System::model()
 void System::restart()
 {
   // Todo: save those need to save ...
+  pausePeripherals();
   _state = Restarting;
   esp_restart();
 }
