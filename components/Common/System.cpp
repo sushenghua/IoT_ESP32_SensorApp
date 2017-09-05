@@ -385,6 +385,7 @@ System * System::instance()
 
 System::System()
 : _state(Uninitialized)
+, _configNeedToSave(false)
 {
   _setDefaultConfig();
 }
@@ -489,6 +490,7 @@ void System::powerOff()
 {
   APP_LOGC("[System]", "power off");
   // save memory to data to flash before power off
+  if (_configNeedToSave) _saveConfig();
 
   // power off
   powerManager.powerOff();
@@ -633,7 +635,17 @@ bool System::_saveConfig()
   // close nvs
   if (nvsOpened) nvs_close(nvsHandle);
 
+  _configNeedToSave = false; // ? or _configNeedToSave = !succeeded;
+
   return succeeded;
+}
+
+void System::_updateConfig(bool saveImmedidately)
+{
+  if (saveImmedidately)
+    _saveConfig();
+  else
+    _configNeedToSave = true; // save when reboot or power off
 }
 
 void System::setDeployMode(DeployMode mode)
@@ -731,8 +743,12 @@ const char* System::model()
 
 void System::restart()
 {
-  // Todo: save those need to save ...
+  // save those need to save ...
+  if (_configNeedToSave) _saveConfig();
+
+  // stop those need to stop ...
   pausePeripherals();
+
   _state = Restarting;
   esp_restart();
 }

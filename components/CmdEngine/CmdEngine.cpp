@@ -272,12 +272,13 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
 
     case GetDeviceInfo:
       if (retFmt == JSON) {
-        sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\",\"model\":\"%s\",\"deploy\":\"%s\",\"hostname\":\"%s\"}, \"cmd\":\"%s\"}",
+        sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\",\"model\":\"%s\",\"alcd\":\"%s\",\"deploy\":\"%s\",\"hostname\":\"%s\"}, \"cmd\":\"%s\"}",
                 System::instance()->uid(),
                 System::instance()->devCapability(),
                 System::instance()->idfVersion(),
                 System::instance()->firmwareVersion(),
                 System::instance()->model(),
+                System::instance()->displayAutoAdjustOn()? "on" : "off",
                 deployModeStr(System::instance()->deployMode()),
                 Wifi::instance()->getHostName(),
                 cmdKeyToStr(cmdKey));

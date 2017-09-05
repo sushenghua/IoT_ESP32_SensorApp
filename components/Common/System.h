@@ -96,10 +96,12 @@ private:
   void _setDefaultConfig();
   bool _loadConfig();
   bool _saveConfig();
+  void _updateConfig(bool saveImmediately = false);
   void _launchTasks();
 
 private:
   State        _state;
+  bool         _configNeedToSave;
   SysConfig    _config;
 };
 
