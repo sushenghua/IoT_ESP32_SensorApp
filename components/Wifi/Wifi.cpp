@@ -528,9 +528,6 @@ void Wifi::init()
 {
     if (_initialized) return;
 
-    esp_err_t ret = esp_wifi_set_ps(_config.powerSaveType);
-    APP_LOGI("[Wifi]", "init with power save support: %s", ret != ESP_ERR_NOT_SUPPORTED ? "Yes" : "No");
-
     tcpip_adapter_init();
 
     if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_AP) {
@@ -550,9 +547,12 @@ void Wifi::init()
     ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
     ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
 
-    ESP_ERROR_CHECK( esp_wifi_set_mode(_config.mode) );
+    esp_err_t ret = esp_wifi_set_ps(_config.powerSaveType);
+    APP_LOGI("[Wifi]", "init with power save support: %s", ret != ESP_ERR_NOT_SUPPORTED ? "Yes" : "No");
 
     APP_LOGI("[Wifi]", "init with mode %d", _config.mode);
+    ESP_ERROR_CHECK( esp_wifi_set_mode(_config.mode) );
+
     if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA)
         ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &_config.staConfig) );
     if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_AP)
