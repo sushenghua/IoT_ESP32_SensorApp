@@ -76,7 +76,8 @@ Wifi::Wifi()
 , _altApsConnectionFailRound(0)
 {
     // set default config value
-    _config.mode = WIFI_MODE_STA;
+    _config.mode = WIFI_MODE_AP;
+    _config.powerSaveType = WIFI_PS_MODEM;
 #ifdef ENABLE_EAP
     _config.eapConfig.enabled = false;
     _config.eapConfig.eapMode = EAP_PEAP;
@@ -109,6 +110,12 @@ void Wifi::setWifiMode(wifi_mode_t mode)
 {
     if (!_initialized)
         _config.mode = mode;
+}
+
+void Wifi::setPowerSaveEnabled(bool enabled)
+{
+    _config.powerSaveType = enabled ? WIFI_PS_MODEM : WIFI_PS_NONE;
+    esp_wifi_set_ps(_config.powerSaveType);
 }
 
 bool _setConfSsidPass(uint8_t *ssidT, const char *ssidS, size_t ssidMaxLen,
@@ -521,7 +528,8 @@ void Wifi::init()
 {
     if (_initialized) return;
 
-    APP_LOGI("[Wifi]", "init with mode %d", _config.mode);
+    esp_err_t ret = esp_wifi_set_ps(_config.powerSaveType);
+    APP_LOGI("[Wifi]", "init with power save support: %s", ret != ESP_ERR_NOT_SUPPORTED ? "Yes" : "No");
 
     tcpip_adapter_init();
 
@@ -544,6 +552,7 @@ void Wifi::init()
 
     ESP_ERROR_CHECK( esp_wifi_set_mode(_config.mode) );
 
+    APP_LOGI("[Wifi]", "init with mode %d", _config.mode);
     if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA)
         ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &_config.staConfig) );
     if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_AP)

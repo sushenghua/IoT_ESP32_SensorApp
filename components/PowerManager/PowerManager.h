@@ -24,8 +24,9 @@ public:
   // constructor
   PowerManager();
 
-  // init
+  // init and set default
   void init();
+  void applyDefaultSettings();
 
   // poll tick called within task
   bool batteryLevelPollTick();
@@ -36,10 +37,10 @@ public:
   float batteryLevel();
 
   ChargeStatus chargeStatus(bool readCache = false);
-  uint8_t chargeCurrentReg();
-  void setChargeCurrent();
 
 protected:
+  uint8_t _chargeCurrentReg();
+  void _setChargeCurrent();
 };
 
 #endif // end of _POWER_MANAGER_H

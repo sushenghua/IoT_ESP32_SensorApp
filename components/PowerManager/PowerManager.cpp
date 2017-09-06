@@ -103,8 +103,16 @@ void PowerManager::init()
   // init i2c
   pwrI2cInit();
 
+  // default settings
+  applyDefaultSettings();
+
   // init adc
   _voltageReader.init(ADC1_CHANNEL_4);
+}
+
+void PowerManager::applyDefaultSettings()
+{
+  _setChargeCurrent();
 }
 
 bool PowerManager::batteryLevelPollTick()
@@ -170,14 +178,14 @@ void PowerManager::powerOff()
   pwrI2cMemTx(PREG_MISC_OPERATION, &_data);
 }
 
-uint8_t PowerManager::chargeCurrentReg()
+uint8_t PowerManager::_chargeCurrentReg()
 {
   pwrI2cMemRx(PREG_CHRG_CURRENT, &_data);
   // APP_LOGC("[Power]", "charge current reg: %#X", data());
   return _data;
 }
 
-void PowerManager::setChargeCurrent()
+void PowerManager::_setChargeCurrent()
 {
   _data = PREG_1536mA_CHRG_CURRENT;
   pwrI2cMemTx(PREG_CHRG_CURRENT, &_data);

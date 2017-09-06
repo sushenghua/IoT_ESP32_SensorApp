@@ -49,6 +49,7 @@ struct SsidPasswd {
 
 struct WifiConfig {
     wifi_mode_t              mode;
+    wifi_ps_type_t           powerSaveType;
     wifi_config_t            apConfig;
     wifi_config_t            staConfig;
 #ifdef ENABLE_EAP
@@ -79,6 +80,7 @@ public:
     // config
     void setDefaultConfig();
     void setWifiMode(wifi_mode_t mode);
+    void setPowerSaveEnabled(bool enabled = true);
     bool setStaConfig(const char *ssid, const char *passwd, bool forceOverride = false, bool append = true);
     bool setApConfig(const char      *ssid,
                      const char      *passwd,
