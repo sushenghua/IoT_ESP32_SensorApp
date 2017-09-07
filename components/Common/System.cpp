@@ -136,9 +136,9 @@ void status_check_task(void *p)
           dc.setNetworkState(Wifi::instance()->apStaConnected()? NetworkConnected : NetworkNotConnected);
         else
           dc.setNetworkState(Wifi::instance()->connected()? NetworkConnected : NetworkNotConnected);
+
         // time
-        if (SNTP::synced())
-          dc.setTimeUpdate(true);
+        dc.setTimeUpdate(true);
 
         _timeWifiUpdateCount = 0;
       }
