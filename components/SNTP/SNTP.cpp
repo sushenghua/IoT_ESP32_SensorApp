@@ -12,6 +12,7 @@
 #include <string.h>
 
 bool       SNTP::_inited = false;
+bool       SNTP::_synced = false;
 time_t     SNTP::_timeNow = 0;
 struct tm  SNTP::_timeInfo;
 
@@ -57,7 +58,8 @@ bool SNTP::sync(int trials)
         time(&_timeNow);
         localtime_r(&_timeNow, &_timeInfo);
     }
-    return _timeInfo.tm_year > (2016 - 1900);
+    _synced = _timeInfo.tm_year > (2016 - 1900);
+    return _synced;
 }
 
 void SNTP::waitSync()
@@ -73,6 +75,11 @@ void SNTP::waitSync()
 void SNTP::waitSynced()
 {
     xEventGroupWaitBits(sntpEventGroup, SYNCED_BIT, false, true, portMAX_DELAY);
+}
+
+bool SNTP::synced()
+{
+    return _synced;
 }
 
 void SNTP::test()

@@ -61,6 +61,22 @@ void wifi_task(void *pvParameters)
 
 
 //----------------------------------------------
+// SNTP time task
+//----------------------------------------------
+#include "SNTP.h"
+
+TaskHandle_t sntpTaskHandle;
+static void sntp_task(void *pvParams)
+{
+  SNTP::init();
+  SNTP::waitSync();
+
+  SNTP::test();
+  vTaskDelete(sntpTaskHandle);
+}
+
+
+//----------------------------------------------
 // display tasks
 //----------------------------------------------
 // #include "ST7789V.h"
@@ -113,13 +129,17 @@ void status_check_task(void *p)
       // update time and wifi status every 0.5 second
       ++_timeWifiUpdateCount;
       if (_timeWifiUpdateCount >= TIME_WIFI_UPDATE_COUNT) {
+        // wifi status
         if (!Wifi::instance()->started())
           dc.setNetworkState(NetworkOff);
         else if (System::instance()->deployMode() == HTTPServerMode)
           dc.setNetworkState(Wifi::instance()->apStaConnected()? NetworkConnected : NetworkNotConnected);
         else
           dc.setNetworkState(Wifi::instance()->connected()? NetworkConnected : NetworkNotConnected);
-        dc.setTimeUpdate(true);
+        // time
+        if (SNTP::synced())
+          dc.setTimeUpdate(true);
+
         _timeWifiUpdateCount = 0;
       }
       // battery level check
@@ -256,22 +276,6 @@ void orientation_sensor_task(void *p)
     else _orientationSensorTaskPaused = true;
     vTaskDelay(100/portTICK_RATE_MS);
   }
-}
-
-
-//----------------------------------------------
-// SNTP time task
-//----------------------------------------------
-#include "SNTP.h"
-
-TaskHandle_t sntpTaskHandle;
-static void sntp_task(void *pvParams)
-{
-  SNTP::init();
-  SNTP::waitSync();
-
-  SNTP::test();
-  vTaskDelete(sntpTaskHandle);
 }
 
 

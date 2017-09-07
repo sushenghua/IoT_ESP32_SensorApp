@@ -29,12 +29,14 @@ public:
     }
     static void waitSync();
     static void waitSynced();
+    static bool synced();
 
 public:
 	static void test();
 
 protected:
     static bool         _inited;
+    static bool         _synced;
     static time_t       _timeNow;
     static struct tm    _timeInfo;
 };
