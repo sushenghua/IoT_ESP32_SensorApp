@@ -21,15 +21,15 @@
 
 #define PWR_I2C_SEMAPHORE_WAIT_TICKS         1000
 
-I2c    *_sharedI2c;
+I2c    *_sharedPwrI2c;
 
 void pwrI2cInit()
 {
   if (xSemaphoreTake(Semaphore::i2c, I2C_MAX_WAIT_TICKS)) {
-    _sharedI2c = I2c::instanceForPort(POWER_I2C_PORT, POWER_I2C_PIN_SCK, POWER_I2C_PIN_SDA);
-    _sharedI2c->setMode(I2C_MODE_MASTER);
-    _sharedI2c->setMasterClkSpeed(POWER_I2C_CLK_SPEED);
-    _sharedI2c->init();
+    _sharedPwrI2c = I2c::instanceForPort(POWER_I2C_PORT, POWER_I2C_PIN_SCK, POWER_I2C_PIN_SDA);
+    _sharedPwrI2c->setMode(I2C_MODE_MASTER);
+    _sharedPwrI2c->setMasterClkSpeed(POWER_I2C_CLK_SPEED);
+    _sharedPwrI2c->init();
     xSemaphoreGive(Semaphore::i2c);
   }
 }
@@ -37,7 +37,7 @@ void pwrI2cInit()
 void pwrI2cMemTx(uint8_t memAddr, uint8_t *data)
 {
   if (xSemaphoreTake(Semaphore::i2c, PWR_I2C_SEMAPHORE_WAIT_TICKS)) {
-    _sharedI2c->masterMemTx(POWER_ADDR, memAddr, data, 1);
+    _sharedPwrI2c->masterMemTx(POWER_ADDR, memAddr, data, 1);
     xSemaphoreGive(Semaphore::i2c);
   }
 }
@@ -45,9 +45,24 @@ void pwrI2cMemTx(uint8_t memAddr, uint8_t *data)
 void pwrI2cMemRx(uint8_t memAddr, uint8_t *data)
 {
   if (xSemaphoreTake(Semaphore::i2c, PWR_I2C_SEMAPHORE_WAIT_TICKS)) {
-    _sharedI2c->masterMemRx(POWER_ADDR, memAddr, data, 1);
+    _sharedPwrI2c->masterMemRx(POWER_ADDR, memAddr, data, 1);
     xSemaphoreGive(Semaphore::i2c);
   }
+}
+
+bool pwrI2cReady(int trials = 3)
+{
+  bool ready = false;
+  if (xSemaphoreTake(Semaphore::i2c, PWR_I2C_SEMAPHORE_WAIT_TICKS)) {
+    for (int i = 0; i < trials; ++i) {
+      if (_sharedPwrI2c->deviceReady(POWER_ADDR)) {
+        ready = true;
+        break;
+      }
+    }
+    xSemaphoreGive(Semaphore::i2c);
+  }
+  return ready;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -102,6 +117,9 @@ void PowerManager::init()
 {
   // init i2c
   pwrI2cInit();
+
+  // check ready
+  if (!pwrI2cReady()) APP_LOGE("[Power]", "Power chip not found");
 
   // default settings
   applyDefaultSettings();

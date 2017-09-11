@@ -70,7 +70,7 @@ void tsl2561I2cInit()
   }
 }
 
-bool tsl2561Ready(int trials = 3)
+bool tsl2561I2cReady(int trials = 3)
 {
   bool ready = false;
   if (xSemaphoreTake(Semaphore::i2c, TSL2561_I2C_SEMAPHORE_WAIT_TICKS)) {
@@ -441,7 +441,7 @@ void TSL2561::init()
   tsl2561I2cInit();
 
   // check ready
-  if (!tsl2561Ready()) APP_LOGE("[TSL2561]", "TSL2651 sensor not found");
+  if (!tsl2561I2cReady()) APP_LOGE("[TSL2561]", "TSL2651 sensor not found");
 
   // init integration time and gain
   tsl2561SetIntegrationTimeAndGain(TSL2561_INTEGRATIONTIME_402MS, TSL2561_GAIN_1X);

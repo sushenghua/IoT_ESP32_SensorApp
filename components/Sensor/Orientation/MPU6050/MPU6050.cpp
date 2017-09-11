@@ -330,7 +330,7 @@ bool MPU6050Sensor::init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRang
 
   // check device connected
   if (!mpu6050Ready()) {
-    ESP_LOGE("[MPU6050]", "device not connected");
+    ESP_LOGE("[MPU6050]", "device not found");
     return false;
   }
 

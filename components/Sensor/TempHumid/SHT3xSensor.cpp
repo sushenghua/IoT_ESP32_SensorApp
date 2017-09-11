@@ -34,7 +34,7 @@ void sht3xI2cInit()
   }
 }
 
-bool sht3xReady(int trials = 3)
+bool sht3xI2cReady(int trials = 3)
 {
   bool ready = false;
   if (xSemaphoreTake(Semaphore::i2c, SHT3X_I2C_SEMAPHORE_WAIT_TICKS)) {
@@ -191,7 +191,7 @@ void SHT3xSensor::init()
   sht3xI2cInit();
 
   // check ready
-  if (!sht3xReady()) APP_LOGE("[SHT3X]", "SHT3X sensor not found");
+  if (!sht3xI2cReady()) APP_LOGE("[SHT3X]", "SHT3X sensor not found");
 
   // soft-reset the sensor
   sht3xReset();
