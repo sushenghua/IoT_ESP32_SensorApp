@@ -470,9 +470,12 @@ void System::_launchTasks()
 void System::pausePeripherals()
 {
   _enablePeripheralTaskLoop = false;
+  InputMonitor::instance()->setTaskPaused();
 
   while (!_displayTaskPaused || !_statusTaskPaused ||
-         !_pmSensorTaskPaused || !_co2SensorTaskPaused || !_orientationSensorTaskPaused) {
+         !_pmSensorTaskPaused || !_co2SensorTaskPaused ||
+         !_orientationSensorTaskPaused || _sht3xSensorTaskPaused ||
+         !_tsl2561SensorTaskPaused || !InputMonitor::instance()->taskPaused()) {
     vTaskDelay(100 / portTICK_PERIOD_MS);
     APP_LOGC("[System]", "pause sync delay");
   }
@@ -487,6 +490,7 @@ void System::resumePeripherals()
   _sht3xSensorTaskPaused = false;
   _tsl2561SensorTaskPaused = false;
   _orientationSensorTaskPaused = false;
+  InputMonitor::instance()->setTaskPaused(false);
   _enablePeripheralTaskLoop = true;
 }
 

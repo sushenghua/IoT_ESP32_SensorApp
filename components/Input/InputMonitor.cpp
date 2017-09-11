@@ -42,17 +42,27 @@ static void IRAM_ATTR gpioIsrHandler(void* arg)
 #define USER_TOGGLE_WIFI_ON_LOW_COUNT     200  // 2 second
 #define USER_TOGGLE_WIFI_MODE_LOW_COUNT   400  // 4 sencod
 
+#define GPIO_CHECK_TASK_PAUSE_DELAY       400       
+
 int      _pwrGpioLvl = 1;  // pull up externally
 int      _usrGpioLvl = 1;
 
 uint16_t _pwrLowDurationCount = 0;
 uint16_t _usrLowDurationCount = 0;
 
+bool _gpio_check_task_paused = false;
+bool _synced_gpio_check_task_paused = false;
+
 static void gpio_check_task(void* args)
 {
   uint32_t ioNum;
   int lvl;
   while (true) {
+    _synced_gpio_check_task_paused = _gpio_check_task_paused;
+    if (_synced_gpio_check_task_paused) {
+      vTaskDelay(GPIO_CHECK_TASK_PAUSE_DELAY / portTICK_RATE_MS);
+      continue;
+    }
     if(xQueueReceive(_gpioEventQueue, &ioNum, GPIO_CHECK_TASK_DELAY_UNIT)) {
       lvl = gpio_get_level((gpio_num_t)ioNum);
       switch(ioNum) {
@@ -174,3 +184,14 @@ void InputMonitor::deinit()
   vQueueDelete(_gpioEventQueue);
   _inited = false;
 }
+
+void InputMonitor::setTaskPaused(bool paused)
+{
+  _gpio_check_task_paused = paused;
+}
+
+bool InputMonitor::taskPaused()
+{
+  return _synced_gpio_check_task_paused;
+}
+

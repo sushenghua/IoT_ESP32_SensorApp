@@ -21,6 +21,8 @@ public:
   void init();
   void deinit();
   void tick();
+  void setTaskPaused(bool paused = true);
+  bool taskPaused();
 
 protected:
   bool            _inited;
