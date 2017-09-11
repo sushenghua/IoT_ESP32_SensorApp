@@ -92,16 +92,16 @@ static void sntp_task(void *pvParams)
 ILI9341 dev;
 bool    _displayOn = true;
 static SensorDisplayController dc(&dev);
-TaskHandle_t displyTaskHandle = 0;
+TaskHandle_t displayTaskHandle = 0;
 bool _displayTaskPaused = false;
 void display_task(void *p)
 {
   dc.init();
   while (true) {
-    APP_LOGI("[display_task]", "update");
+    // APP_LOGI("[display_task]", "update");
     if (_enablePeripheralTaskLoop) dc.update();
     else _displayTaskPaused = true;
-    vTaskDelay(DISPLAY_TASK_DELAY_UNIT/portTICK_RATE_MS);
+    vTaskDelay(DISPLAY_TASK_DELAY_UNIT / portTICK_RATE_MS);
   }
 }
 
@@ -336,6 +336,24 @@ static void http_task(void *pvParams)
 }
 
 
+//----------------------------------------------
+// daemon task
+//----------------------------------------------
+static void daemon_task(void *pvParams)
+{
+  while (true) {
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    // if (displayTaskHandle) vTaskResume(displayTaskHandle);
+    // if (displayTaskHandle) vTaskSuspend(displayTaskHandle);
+    if (displayTaskHandle) {
+      uxTaskPriorityGet(displayTaskHandle);
+      // APP_LOGC("[daemon_task]", "display task priority %d", uxTaskPriorityGet(displayTaskHandle));
+      // APP_LOGC("[daemon_task]", "display task state %d", eTaskGetState(displayTaskHandle));
+    }
+  }
+}
+
+
 //**********************************************
 // prepare env
 //**********************************************
@@ -422,7 +440,7 @@ void System::init()
 }
 
 // configMAX_PRIORITIES defined in "FreeRTOSConfig.h"
-#define DISPLAY_TASK_PRIORITY               3
+#define DISPLAY_TASK_PRIORITY               4
 #define WIFI_TASK_PRIORITY                  3
 #define SNTP_TASK_PRIORITY                  3
 #define MQTTCLIENT_TASK_PRIORITY            3
@@ -434,6 +452,7 @@ void System::init()
 #define ORIENTATION_TASK_PRIORITY           3
 #define STATUS_CHECK_TASK_PRIORITY          3
 #define TOUCH_PAD_TASK_PRIORITY             3
+#define DAEMON_TASK_PRIORITY                3
 
 #define PRO_CORE    0
 #define APP_CORE    1
@@ -444,7 +463,7 @@ void System::_launchTasks()
 {
   beforeCreateTasks();
 
-  xTaskCreatePinnedToCore(&display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, &displyTaskHandle, RUN_ON_CORE);
+  xTaskCreatePinnedToCore(display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, &displayTaskHandle, PRO_CORE);
 
   xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 4096, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
 
@@ -466,11 +485,13 @@ void System::_launchTasks()
   vTaskDelay(100 / portTICK_PERIOD_MS);
 
   if (_config.deployMode == MQTTClientMode || _config.deployMode == MQTTClientAndHTTPServerMode)
-    xTaskCreatePinnedToCore(&mqtt_task, "mqtt_task", 8192, NULL, MQTTCLIENT_TASK_PRIORITY, NULL, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(mqtt_task, "mqtt_task", 8192, NULL, MQTTCLIENT_TASK_PRIORITY, NULL, RUN_ON_CORE);
   else if (_config.deployMode == HTTPServerMode || _config.deployMode == MQTTClientAndHTTPServerMode)
-    xTaskCreatePinnedToCore(&http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
   // xTaskCreatePinnedToCore(touch_pad_task, "touch_pad_task", 2048, NULL, TOUCH_PAD_TASK_PRIORITY, NULL, RUN_ON_CORE);
+
+  xTaskCreatePinnedToCore(daemon_task, "daemon_task", 2048, NULL, DAEMON_TASK_PRIORITY, NULL, RUN_ON_CORE);
 }
 
 void System::pausePeripherals()
