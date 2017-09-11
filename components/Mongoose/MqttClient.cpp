@@ -112,7 +112,7 @@ static void mongoose_mqtt_event_handler(struct mg_connection *nc, int ev, void *
 /////////////////////////////////////////////////////////////////////////////////////////
 // alive guard check task
 /////////////////////////////////////////////////////////////////////////////////////////
-#define ALIVE_GUARD_TASK_PRIORITY  10
+#define ALIVE_GUARD_TASK_PRIORITY  3
 static xSemaphoreHandle _closeProcessSemaphore = 0;
 static TaskHandle_t _aliveGuardTaskHandle = 0;
 static void alive_guard_task(void *pvParams)
@@ -129,7 +129,7 @@ static void alive_guard_task(void *pvParams)
 /////////////////////////////////////////////////////////////////////////////////////////
 // Message pub pool process loop task
 /////////////////////////////////////////////////////////////////////////////////////////
-#define MSG_POOL_TASK_PRIORITY     10
+#define MSG_POOL_TASK_PRIORITY     3
 static TaskHandle_t _msgTaskHandle = 0;
 static void msg_pool_task(void *pvParams)
 {

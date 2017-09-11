@@ -18,6 +18,11 @@
 bool     _enablePeripheralTaskLoop = true;
 uint8_t  _peripheralsStopCount = 0;
 
+// watch dog
+// #include "esp_task_wdt.h"
+// esp_task_wdt_init(); // put it before task loop
+// esp_task_wdt_feed(); // put it in task loop
+
 //----------------------------------------------
 // Wifi task
 //----------------------------------------------
@@ -83,20 +88,20 @@ static void sntp_task(void *pvParams)
 // ST7789V dev;// static ILI9341 dev;
 #include "ILI9341.h"
 #include "SensorDisplayController.h"
+#define DISPLAY_TASK_DELAY_UNIT  100
 ILI9341 dev;
 bool    _displayOn = true;
 static SensorDisplayController dc(&dev);
-// static xSemaphoreHandle _dcUpdateSemaphore = 0;
-// #define DC_UPDATE_SEMAPHORE_TAKE_WAIT_TICKS 1000
 TaskHandle_t displyTaskHandle = 0;
 bool _displayTaskPaused = false;
 void display_task(void *p)
 {
   dc.init();
   while (true) {
+    APP_LOGI("[display_task]", "update");
     if (_enablePeripheralTaskLoop) dc.update();
     else _displayTaskPaused = true;
-    vTaskDelay(30/portTICK_RATE_MS);
+    vTaskDelay(DISPLAY_TASK_DELAY_UNIT/portTICK_RATE_MS);
   }
 }
 
@@ -416,18 +421,19 @@ void System::init()
   _state = Running;
 }
 
-#define DISPLAY_TASK_PRIORITY               100
-#define WIFI_TASK_PRIORITY                  50
-#define SNTP_TASK_PRIORITY                  40
-#define MQTTCLIENT_TASK_PRIORITY            30
-#define HTTPSERVER_TASK_PRIORITY            30
-#define PM_SENSOR_TASK_PRIORITY             80
-#define CO2_SENSOR_TASK_PRIORITY            80
-#define SHT3X_TASK_PRIORITY                 80
-#define TSL2561_TASK_PRIORITY               80
-#define ORIENTATION_TASK_PRIORITY           81
-#define STATUS_CHECK_TASK_PRIORITY          81
-#define TOUCH_PAD_TASK_PRIORITY             81
+// configMAX_PRIORITIES defined in "FreeRTOSConfig.h"
+#define DISPLAY_TASK_PRIORITY               3
+#define WIFI_TASK_PRIORITY                  3
+#define SNTP_TASK_PRIORITY                  3
+#define MQTTCLIENT_TASK_PRIORITY            3
+#define HTTPSERVER_TASK_PRIORITY            3
+#define PM_SENSOR_TASK_PRIORITY             3
+#define CO2_SENSOR_TASK_PRIORITY            3
+#define SHT3X_TASK_PRIORITY                 3
+#define TSL2561_TASK_PRIORITY               3
+#define ORIENTATION_TASK_PRIORITY           3
+#define STATUS_CHECK_TASK_PRIORITY          3
+#define TOUCH_PAD_TASK_PRIORITY             3
 
 #define PRO_CORE    0
 #define APP_CORE    1
@@ -440,16 +446,16 @@ void System::_launchTasks()
 
   xTaskCreatePinnedToCore(&display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, &displyTaskHandle, RUN_ON_CORE);
 
-  xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 2048, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
+  xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 4096, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
 
   if (_config.devCapability & PM_CAPABILITY_MASK)
-    xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 2048, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
   if (_config.devCapability & CO2_CAPABILITY_MASK)
-    xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 2048, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 4096, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
 
-  xTaskCreatePinnedToCore(tsl2561_sensor_task, "tsl2561_sensor_task", 2048, NULL, TSL2561_TASK_PRIORITY, &tsl2561SensorTaskHandle, RUN_ON_CORE);
+  xTaskCreatePinnedToCore(tsl2561_sensor_task, "tsl2561_sensor_task", 4096, NULL, TSL2561_TASK_PRIORITY, &tsl2561SensorTaskHandle, RUN_ON_CORE);
 
-  xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 2048, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
+  xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
 
   xTaskCreatePinnedToCore(status_check_task, "status_check_task", 2048, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
