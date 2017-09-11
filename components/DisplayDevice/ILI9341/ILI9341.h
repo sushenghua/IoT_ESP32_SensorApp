@@ -127,6 +127,7 @@ protected:
   void writeData(const uint8_t *data, uint16_t count);
 
 protected:
+  bool        _on;
   uint32_t    _backLedDuty;
   SpiChannel  _spiChannel;
 

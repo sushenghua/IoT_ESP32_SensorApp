@@ -56,6 +56,7 @@ uint16_t ILI9341::color565(uint8_t r, uint8_t g, uint8_t b)
 
 ILI9341::ILI9341()
 : DisplayGFX(ILI9341_TFTHEIGHT, ILI9341_TFTWIDTH)
+, _on(true)
 , _backLedDuty(0)
 {
 }
@@ -110,6 +111,7 @@ void ILI9341::reset()
 
 void ILI9341::turnOn(bool on)
 {
+  _on = on;
 #ifdef USING_LED_CONTROLLER
   _backLed.setDuty(on ? _backLedDuty : 0);
 #else
@@ -119,7 +121,7 @@ void ILI9341::turnOn(bool on)
 
 void ILI9341::setBrightness(uint8_t b)
 {
-  if (_brightness != b) {
+  if (_brightness != b && _on) {
     _brightness = b;
     _backLedDuty = (uint32_t) (10.23f * _brightness);
     _backLed.setDuty(_backLedDuty);
@@ -128,7 +130,7 @@ void ILI9341::setBrightness(uint8_t b)
 
 void ILI9341::fadeBrightness(uint8_t b, int duration)
 {
-  if (_brightness != b) {
+  if (_brightness != b && _on) {
     _brightness = b;
     _backLedDuty = (uint32_t) (10.23f * _brightness);
     _backLed.fadeToDuty(_backLedDuty, duration);

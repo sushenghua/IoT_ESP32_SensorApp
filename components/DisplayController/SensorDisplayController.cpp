@@ -149,6 +149,7 @@ void SensorDisplayController::update()
 
   // update content
   if (_dynamicContentNeedUpdate && !_devUpdateRotationInProgress) {
+    // APP_LOGE("[SensorDC]", "content update");
     switch(_dev->rotation()) {
       case DISPLAY_ROTATION_CW_0:
         _renderMainScreen();
