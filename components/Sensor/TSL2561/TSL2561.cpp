@@ -442,6 +442,7 @@ void TSL2561::init()
 
   // check ready
   if (!tsl2561I2cReady()) APP_LOGE("[TSL2561]", "TSL2651 sensor not found");
+  else APP_LOGE("[TSL2561]", "TSL2561 sensor init");
 
   // init integration time and gain
   tsl2561SetIntegrationTimeAndGain(TSL2561_INTEGRATIONTIME_402MS, TSL2561_GAIN_1X);

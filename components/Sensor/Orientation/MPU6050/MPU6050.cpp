@@ -333,6 +333,9 @@ bool MPU6050Sensor::init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRang
     ESP_LOGE("[MPU6050]", "device not found");
     return false;
   }
+  else {
+    APP_LOGE("[MPU6050]", "device init");
+  }
 
   // check device who am i
   uint8_t whoami = 0x00;
