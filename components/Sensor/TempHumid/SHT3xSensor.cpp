@@ -192,7 +192,7 @@ void SHT3xSensor::init()
 
   // check ready
   if (!sht3xI2cReady()) APP_LOGE("[SHT3X]", "SHT3X sensor not found");
-  else APP_LOGE("[SHT3X]", "SHT3X sensor init");
+  else APP_LOGI("[SHT3X]", "SHT3X sensor init");
 
   // soft-reset the sensor
   sht3xReset();

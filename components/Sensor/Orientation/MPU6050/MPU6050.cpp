@@ -129,6 +129,7 @@ int mpu6050GetMs(unsigned long *time)
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
 #include "esp_log.h"
+#include "AppLog.h"
 
 static signed char gyro_orientation[9] = {-1, 0, 0,
                                            0,-1, 0,
@@ -195,13 +196,13 @@ int mpu6050InitDMP(uint16_t fifoRate)
 {
   // load motion driver
   if(dmp_load_motion_driver_firmware()) {
-    ESP_LOGE("[MPU6050]", "dmp load motion driver firmware failed");
+    APP_LOGE("[MPU6050]", "dmp load motion driver firmware failed");
     return -1;
   }
 
   // set orientation
   if(dmp_set_orientation(inv_orientation_matrix_to_scalar(gyro_orientation))) {
-    ESP_LOGE("[MPU6050]", "dmp set orientation failed");
+    APP_LOGE("[MPU6050]", "dmp set orientation failed");
     return -1;
   }
 
@@ -209,23 +210,23 @@ int mpu6050InitDMP(uint16_t fifoRate)
   if(dmp_enable_feature(DMP_FEATURE_6X_LP_QUAT | DMP_FEATURE_TAP |
                         DMP_FEATURE_ANDROID_ORIENT | DMP_FEATURE_SEND_RAW_ACCEL | DMP_FEATURE_SEND_CAL_GYRO |
                         DMP_FEATURE_GYRO_CAL)) {
-    ESP_LOGE("[MPU6050]", "dmp enable features failed");
+    APP_LOGE("[MPU6050]", "dmp enable features failed");
     return -1;
   }
 
   // set fifo rate
   if(dmp_set_fifo_rate(fifoRate)) {
-    ESP_LOGE("[MPU6050]", "mp set fifo rate failed");
+    APP_LOGE("[MPU6050]", "mp set fifo rate failed");
     return -1;
   }
 
   if (dmp_self_test()) {
-    ESP_LOGE("[MPU6050]", "dmp set bias failed");
+    APP_LOGE("[MPU6050]", "dmp set bias failed");
     return -1;
   }
 
   if(mpu_set_dmp_state(1)) { // turn on DMP
-    ESP_LOGE("[MPU6050]", "set dmp state failed");
+    APP_LOGE("[MPU6050]", "set dmp state failed");
     return -1;
   }
 
@@ -330,24 +331,24 @@ bool MPU6050Sensor::init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRang
 
   // check device connected
   if (!mpu6050Ready()) {
-    ESP_LOGE("[MPU6050]", "device not found");
+    APP_LOGE("[MPU6050]", "device not found");
     return false;
   }
   else {
-    APP_LOGE("[MPU6050]", "device init");
+    APP_LOGI("[MPU6050]", "device init");
   }
 
   // check device who am i
   uint8_t whoami = 0x00;
   i2cReadByte(MPU6050_ADDR, MPU6050_RA_WHO_AM_I, &whoami);
   if (whoami != MPU6050_I_AM) {
-    ESP_LOGE("[MPU6050]", "not mpu6050 device");
+    APP_LOGE("[MPU6050]", "not mpu6050 device");
     return false;
   }
 
   // try to init mpu with default value from InvenSense lib inv_mpu.c
   if(mpu_init(NULL)) {
-    ESP_LOGE("[MPU6050]", "init failed");
+    APP_LOGE("[MPU6050]", "init failed");
     return false;
   }
 
@@ -365,25 +366,25 @@ bool MPU6050Sensor::init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRang
 
   // disable mpu6050 i2c bypass
   if (mpu_set_bypass(0)) {
-    ESP_LOGE("[MPU6050]", "disable i2c bypass failed");
+    APP_LOGE("[MPU6050]", "disable i2c bypass failed");
     return false;
   }
 
   // set sensors
   if(mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL)) {
-    ESP_LOGE("[MPU6050]", "set sensor failed");
+    APP_LOGE("[MPU6050]", "set sensor failed");
     return false;
   }
 
   // config fifo
   if(mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL)) {
-    ESP_LOGE("[MPU6050]", "configure fifo failed");
+    APP_LOGE("[MPU6050]", "configure fifo failed");
     return false;
   }
 
   // set sample rate
   if(mpu_set_sample_rate(sampleRate)) {
-    ESP_LOGE("[MPU6050]", "set sample rate failed");
+    APP_LOGE("[MPU6050]", "set sample rate failed");
     return false;
   }
 

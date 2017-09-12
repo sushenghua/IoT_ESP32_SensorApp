@@ -120,7 +120,7 @@ void PowerManager::init()
 
   // check ready
   if (!pwrI2cReady()) APP_LOGE("[Power]", "Power chip not found");
-  else APP_LOGE("[Power]", "Power chip init");
+  else APP_LOGI("[Power]", "Power chip init");
 
   // default settings
   applyDefaultSettings();
