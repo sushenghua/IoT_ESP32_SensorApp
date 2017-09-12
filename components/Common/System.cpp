@@ -99,6 +99,8 @@ void display_task(void *p)
   dc.init();
   while (true) {
     // APP_LOGI("[display_task]", "update");
+    // APP_LOGC("[display_task]", "task schedule state %d", xTaskGetSchedulerState());
+    xTaskGetSchedulerState();
     if (_enablePeripheralTaskLoop) dc.update();
     else _displayTaskPaused = true;
     vTaskDelay(DISPLAY_TASK_DELAY_UNIT / portTICK_RATE_MS);
@@ -346,7 +348,10 @@ static void daemon_task(void *pvParams)
     // if (displayTaskHandle) vTaskResume(displayTaskHandle);
     // if (displayTaskHandle) vTaskSuspend(displayTaskHandle);
     if (displayTaskHandle) {
-      uxTaskPriorityGet(displayTaskHandle);
+      // uxTaskPriorityGet(displayTaskHandle);
+      // APP_LOGC("[daemon_task]", "task schedule state %d", xTaskGetSchedulerState());
+
+      // vTaskGetRunTimeStats(pcWriteBuf);
       // APP_LOGC("[daemon_task]", "display task priority %d", uxTaskPriorityGet(displayTaskHandle));
       // APP_LOGC("[daemon_task]", "display task state %d", eTaskGetState(displayTaskHandle));
     }
@@ -497,12 +502,14 @@ void System::_launchTasks()
 void System::pausePeripherals()
 {
   _enablePeripheralTaskLoop = false;
-  InputMonitor::instance()->setTaskPaused();
 
   while (!_displayTaskPaused || !_statusTaskPaused ||
          !_pmSensorTaskPaused || !_co2SensorTaskPaused ||
-         !_orientationSensorTaskPaused || _sht3xSensorTaskPaused ||
-         !_tsl2561SensorTaskPaused || !InputMonitor::instance()->taskPaused()) {
+         !_orientationSensorTaskPaused || !_sht3xSensorTaskPaused ||
+         !_tsl2561SensorTaskPaused) {
+    APP_LOGC("[System]", "pause dis: %d, sta: %d, pm: %d, co2: %d, ori: %d, sht: %d, tsl: %d",
+      _displayTaskPaused, _statusTaskPaused, _pmSensorTaskPaused, _co2SensorTaskPaused, _orientationSensorTaskPaused,
+      _statusTaskPaused, _tsl2561SensorTaskPaused);
     vTaskDelay(100 / portTICK_PERIOD_MS);
     APP_LOGC("[System]", "pause sync delay");
   }
@@ -517,7 +524,6 @@ void System::resumePeripherals()
   _sht3xSensorTaskPaused = false;
   _tsl2561SensorTaskPaused = false;
   _orientationSensorTaskPaused = false;
-  InputMonitor::instance()->setTaskPaused(false);
   _enablePeripheralTaskLoop = true;
 }
 
