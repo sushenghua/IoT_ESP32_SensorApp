@@ -32,7 +32,7 @@ public:
   bool batteryLevelPollTick();
 
   // communication
-  void powerOff();
+  bool powerOff();
   bool powerGood(bool readCache = false);
   float batteryLevel();
 
@@ -40,7 +40,7 @@ public:
 
 protected:
   uint8_t _chargeCurrentReg();
-  void _setChargeCurrent();
+  bool _setChargeCurrent();
 };
 
 #endif // end of _POWER_MANAGER_H

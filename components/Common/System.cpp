@@ -9,6 +9,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "Config.h"
 #include "AppLog.h"
 #include "System.h"
 
@@ -534,7 +535,16 @@ void System::powerOff()
   if (_configNeedToSave) _saveConfig();
 
   // power off
-  powerManager.powerOff();
+  if (powerManager.powerOff()) {
+#ifdef DEBUG_APP_OK
+    APP_LOGC("[System]", "power off cmd succeeded");
+#endif
+  }
+#ifdef DEBUG_APP_ERR
+  else {
+    APP_LOGE("[System]", "pwer off cmd failed");
+  }
+#endif
 }
 
 bool System::displayOn()

@@ -85,20 +85,24 @@ bool tsl2561I2cReady(int trials = 3)
   return ready;
 }
 
-void tsl2561I2cMemTx(uint8_t memAddr, uint8_t *data)
+bool tsl2561I2cMemTx(uint8_t memAddr, uint8_t *data)
 {
+  bool ret = false;
   if (xSemaphoreTake(Semaphore::i2c, TSL2561_I2C_SEMAPHORE_WAIT_TICKS)) {
-    _sharedTsl2561I2c->masterMemTx(TSL2561_ADDR, memAddr, data, 1);
+    ret = _sharedTsl2561I2c->masterMemTx(TSL2561_ADDR, memAddr, data, 1);
     xSemaphoreGive(Semaphore::i2c);
   }
+  return ret;
 }
 
-void tsl2561I2cMemRx(uint8_t memAddr, uint8_t *data, size_t count)
+bool tsl2561I2cMemRx(uint8_t memAddr, uint8_t *data, size_t count)
 {
+  bool ret = false;
   if (xSemaphoreTake(Semaphore::i2c, TSL2561_I2C_SEMAPHORE_WAIT_TICKS)) {
-    _sharedTsl2561I2c->masterMemRx(TSL2561_ADDR, memAddr, data, count);
+    ret = _sharedTsl2561I2c->masterMemRx(TSL2561_ADDR, memAddr, data, count);
     xSemaphoreGive(Semaphore::i2c);
   }
+  return ret;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -233,69 +237,89 @@ TSL2561Gain _tsl2561Gain = TSL2561_GAIN_1X;
 uint8_t _tsl2561RxBuf[2];
 uint8_t _tsl2561TxVal;
 
-void tsl2561Enable(bool enable)
+bool tsl2561Enable(bool enable)
 {
   _tsl2561TxVal = enable ? TSL2561_CONTROL_POWERON : TSL2561_CONTROL_POWEROFF;
-  tsl2561I2cMemTx(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CONTROL, &_tsl2561TxVal);
+  return tsl2561I2cMemTx(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CONTROL, &_tsl2561TxVal);
 }
 
-void tsl2561SetIntegrationTimeAndGain(TSL2561IntegrationTime time, TSL2561Gain gain)
+bool tsl2561SetIntegrationTimeAndGain(TSL2561IntegrationTime time, TSL2561Gain gain)
 {
-  tsl2561Enable(true);
+  bool ret = false;
 
-  // update the timing register
-  _tsl2561TxVal = time | gain;
-  tsl2561I2cMemTx(TSL2561_COMMAND_BIT | TSL2561_REGISTER_TIMING, &_tsl2561TxVal);
+  do {
+    ret = tsl2561Enable(true);
+    if (!ret) break;
 
-  // update value placeholder
-  _tsl2561IntegrationTime = time;
-  _tsl2561Gain = gain;
+    // update the timing register
+    _tsl2561TxVal = time | gain;
+    ret = tsl2561I2cMemTx(TSL2561_COMMAND_BIT | TSL2561_REGISTER_TIMING, &_tsl2561TxVal);
+    if (!ret) break;
 
-  tsl2561Enable(false);
+    // update value placeholder
+    _tsl2561IntegrationTime = time;
+    _tsl2561Gain = gain;
+
+  } while (false);
+
+  ret = tsl2561Enable(false) && ret;
+
+  return ret;
 }
 
-void tsl2561GetChannelValues(uint16_t &broadbandCh, uint16_t &irCh)
+bool tsl2561GetChannelValues(uint16_t &broadbandCh, uint16_t &irCh)
 {
-  tsl2561Enable(true);
+  bool ret = false;
 
-  // wait x ms for ADC to complete
-  switch (_tsl2561IntegrationTime) {
-    case TSL2561_INTEGRATIONTIME_13P7MS:
-      delay(TSL2561_DELAY_INTTIME_13MS);
-      break;
-    case TSL2561_INTEGRATIONTIME_101MS:
-      delay(TSL2561_DELAY_INTTIME_101MS);
-      break;
-    default:
-      delay(TSL2561_DELAY_INTTIME_402MS);
-      break;
-  }
+  do {
+    ret = tsl2561Enable(true);
+    if (!ret) break;
 
-  // reads a two byte value from channel 0 (visible + infrared)
-  tsl2561I2cMemRx(TSL2561_COMMAND_BIT | TSL2561_WORD_BIT | TSL2561_REGISTER_CHAN0_LOW, _tsl2561RxBuf, 2);
-  broadbandCh = _tsl2561RxBuf[1]; broadbandCh <<= 8;
-  broadbandCh |= _tsl2561RxBuf[0] & 0xFF;
+    // wait x ms for ADC to complete
+    switch (_tsl2561IntegrationTime) {
+      case TSL2561_INTEGRATIONTIME_13P7MS:
+        delay(TSL2561_DELAY_INTTIME_13MS);
+        break;
+      case TSL2561_INTEGRATIONTIME_101MS:
+        delay(TSL2561_DELAY_INTTIME_101MS);
+        break;
+      default:
+        delay(TSL2561_DELAY_INTTIME_402MS);
+        break;
+    }
 
-  // reads a two byte value from channel 1 (infrared)
-  tsl2561I2cMemRx(TSL2561_COMMAND_BIT | TSL2561_WORD_BIT | TSL2561_REGISTER_CHAN1_LOW, _tsl2561RxBuf, 2);
-  irCh = _tsl2561RxBuf[1]; irCh <<= 8;
-  irCh |= _tsl2561RxBuf[0] & 0xFF;
+    // reads a two byte value from channel 0 (visible + infrared)
+    ret = tsl2561I2cMemRx(TSL2561_COMMAND_BIT | TSL2561_WORD_BIT | TSL2561_REGISTER_CHAN0_LOW, _tsl2561RxBuf, 2);
+    if (!ret) break;
+    broadbandCh = _tsl2561RxBuf[1]; broadbandCh <<= 8;
+    broadbandCh |= _tsl2561RxBuf[0] & 0xFF;
+
+    // reads a two byte value from channel 1 (infrared)
+    ret = tsl2561I2cMemRx(TSL2561_COMMAND_BIT | TSL2561_WORD_BIT | TSL2561_REGISTER_CHAN1_LOW, _tsl2561RxBuf, 2);
+    if (!ret) break;
+    irCh = _tsl2561RxBuf[1]; irCh <<= 8;
+    irCh |= _tsl2561RxBuf[0] & 0xFF;
+
+  } while (false);
 
   // APP_LOGC("[TSL2561]", "broadbandCh: %d, irCh: %d", broadbandCh, irCh);
-  tsl2561Enable(false); // save power
+  ret = tsl2561Enable(false) && ret; // save power
+
+  return ret;
 }
 
-void tsl2561GetLuminosity(uint16_t &broadband, uint16_t &ir, bool autoGain = false)
+bool tsl2561GetLuminosity(uint16_t &broadband, uint16_t &ir, bool autoGain = false)
 {
   if(!autoGain) {
-    tsl2561GetChannelValues(broadband, ir);
-    return;
+    return tsl2561GetChannelValues(broadband, ir);
   }
 
+  bool ret = false;
   bool valid = false;
   bool autoGainCheck = false;
   uint16_t broadbandSample, irSample;
   uint16_t hi, lo;
+
   // get the hi/low threshold for the current integration time
   switch(_tsl2561IntegrationTime) {
     case TSL2561_INTEGRATIONTIME_13P7MS:
@@ -314,23 +338,28 @@ void tsl2561GetLuminosity(uint16_t &broadband, uint16_t &ir, bool autoGain = fal
 
   // read data until we find a valid range
   do {
-    tsl2561GetChannelValues(broadbandSample, irSample);
+    ret = tsl2561GetChannelValues(broadbandSample, irSample);
+    if (!ret) break;
 
     // run an auto-gain check if we haven't already done so
     if (!autoGainCheck) {
       if ((broadbandSample < lo) && (_tsl2561Gain == TSL2561_GAIN_1X)) {
         // increase the gain and try again
-        tsl2561SetIntegrationTimeAndGain(_tsl2561IntegrationTime, TSL2561_GAIN_16X);
+        ret = tsl2561SetIntegrationTimeAndGain(_tsl2561IntegrationTime, TSL2561_GAIN_16X);
+        if (!ret) break;
         // drop the previous conversion results
-        tsl2561GetChannelValues(broadbandSample, irSample);
+        ret = tsl2561GetChannelValues(broadbandSample, irSample);
+        if (!ret) break;
         // set a flag to indicate we've adjusted the gain
         autoGainCheck = true;
       }
       else if ((broadbandSample > hi) && (_tsl2561Gain == TSL2561_GAIN_16X)) {
         // drop gain to 1x and try again
-        tsl2561SetIntegrationTimeAndGain(_tsl2561IntegrationTime, TSL2561_GAIN_1X);
+        ret = tsl2561SetIntegrationTimeAndGain(_tsl2561IntegrationTime, TSL2561_GAIN_1X);
+        if (!ret) break;
         // drop the previous conversion results
-        tsl2561GetChannelValues(broadbandSample, irSample);
+        ret = tsl2561GetChannelValues(broadbandSample, irSample);
+        if (!ret) break;
         // set a flag to indicate we've adjusted the gain
         autoGainCheck = true;
       }
@@ -351,6 +380,8 @@ void tsl2561GetLuminosity(uint16_t &broadband, uint16_t &ir, bool autoGain = fal
       valid = true;
     }
   } while (!valid);
+
+  return ret;
 }
 
 void tsl2561CalculateLuminosity(uint32_t &ret, uint16_t broadband, uint16_t ir)
@@ -453,9 +484,15 @@ uint16_t _irCache;
 
 void TSL2561::sampleData()
 {
-  tsl2561GetLuminosity(_broadbandCache, _irCache);
-  tsl2561CalculateLuminosity(_luminosity, _broadbandCache, _irCache);
-#ifdef DEBUG_APP
-  APP_LOGC("[TSL2561]", "--->lux: %d b: %d, ir: %d", _luminosity, _broadbandCache, _irCache);
+  if (tsl2561GetLuminosity(_broadbandCache, _irCache)) {
+    tsl2561CalculateLuminosity(_luminosity, _broadbandCache, _irCache);
+#ifdef DEBUG_APP_OK
+    APP_LOGC("[TSL2561]", "--->lux: %d b: %d, ir: %d", _luminosity, _broadbandCache, _irCache);
+#endif
+  }
+#ifdef DEBUG_APP_ERR
+  else {
+    APP_LOGE("[TSL2561]", "sample data failed");
+  }
 #endif
 }

@@ -106,7 +106,7 @@ void CO2Sensor::sampleData(TickType_t waitTicks)
 
   // rx data
   int rxLen = rx(_rxBuf, _protocolLen, waitTicks);
-#ifdef DEBUG_APP
+#ifdef DEBUG_APP_OK
   APP_LOGI("[CO2Sensor]", "sampleData rx len %d", rxLen);
 #endif
   if (rxLen == _protocolLen) {

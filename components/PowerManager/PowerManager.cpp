@@ -34,20 +34,24 @@ void pwrI2cInit()
   }
 }
 
-void pwrI2cMemTx(uint8_t memAddr, uint8_t *data)
+bool pwrI2cMemTx(uint8_t memAddr, uint8_t *data)
 {
+  bool ret = false;
   if (xSemaphoreTake(Semaphore::i2c, PWR_I2C_SEMAPHORE_WAIT_TICKS)) {
-    _sharedPwrI2c->masterMemTx(POWER_ADDR, memAddr, data, 1);
+    ret = _sharedPwrI2c->masterMemTx(POWER_ADDR, memAddr, data, 1);
     xSemaphoreGive(Semaphore::i2c);
   }
+  return ret;
 }
 
-void pwrI2cMemRx(uint8_t memAddr, uint8_t *data)
+bool pwrI2cMemRx(uint8_t memAddr, uint8_t *data)
 {
+  bool ret = false;
   if (xSemaphoreTake(Semaphore::i2c, PWR_I2C_SEMAPHORE_WAIT_TICKS)) {
-    _sharedPwrI2c->masterMemRx(POWER_ADDR, memAddr, data, 1);
+    ret = _sharedPwrI2c->masterMemRx(POWER_ADDR, memAddr, data, 1);
     xSemaphoreGive(Semaphore::i2c);
   }
+  return ret;
 }
 
 bool pwrI2cReady(int trials = 3)
@@ -167,9 +171,9 @@ float PowerManager::batteryLevel()
 
 uint8_t _statusCache;
 
-inline void _readSysStatus()
+inline bool _readSysStatus()
 {
-  pwrI2cMemRx(PREG_SYS_STATUS, &_statusCache);
+  return pwrI2cMemRx(PREG_SYS_STATUS, &_statusCache);
 }
 
 PowerManager::ChargeStatus PowerManager::chargeStatus(bool readCache)
@@ -186,15 +190,17 @@ bool PowerManager::powerGood(bool readCache)
 
 uint8_t _data;
 
-void PowerManager::powerOff()
+bool PowerManager::powerOff()
 {
   // disable watchdog timer
   _data = PREG_RST_CHRG_TERM_TIMER & PREG_WATCHDOG_TIMER_OFF_AND_MASK;
-  pwrI2cMemTx(PREG_CHRG_TERM_TIMER, &_data);
+  if (!pwrI2cMemTx(PREG_CHRG_TERM_TIMER, &_data)) return false;
 
   // set BATFET_DISABLE bit
   _data = PREG_RST_MISC_OPERATION | PREG_BATFET_OFF_OR_MASK;
-  pwrI2cMemTx(PREG_MISC_OPERATION, &_data);
+  if (!pwrI2cMemTx(PREG_MISC_OPERATION, &_data)) return false;
+
+  return true;
 }
 
 uint8_t PowerManager::_chargeCurrentReg()
@@ -204,8 +210,8 @@ uint8_t PowerManager::_chargeCurrentReg()
   return _data;
 }
 
-void PowerManager::_setChargeCurrent()
+bool PowerManager::_setChargeCurrent()
 {
   _data = PREG_1536mA_CHRG_CURRENT;
-  pwrI2cMemTx(PREG_CHRG_CURRENT, &_data);
+  return pwrI2cMemTx(PREG_CHRG_CURRENT, &_data);
 }

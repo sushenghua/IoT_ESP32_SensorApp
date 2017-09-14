@@ -86,7 +86,7 @@ void OrientationSensor::_updateOrientation()
     float accelY = _mpuData.accel[1] / MPU6050_ACCE_SCALE_FACTOR;
     float angle = calculateAngle(accelX, accelY);
 
-#ifdef DEBUG_APP
+#ifdef DEBUG_APP_OK
     float accelZ = _mpuData.accel[2] / MPU6050_ACCE_SCALE_FACTOR;
     uint8_t rotation = _dc->rotation();
     APP_LOGC("[OriSensor]", "rotation: %d,  aX: %f  aY: %f  aZ: %f  angle: %f", rotation, accelX, accelY, accelZ, angle);
@@ -120,4 +120,9 @@ void OrientationSensor::_updateOrientation()
       _dc->setRotation(DISPLAY_ROTATION_CW_180);
     }
   }
+#ifdef DEBUG_APP_ERR
+  else {
+    APP_LOGE("[OriSensor]", "sample data failed");
+  }
+#endif
 }
