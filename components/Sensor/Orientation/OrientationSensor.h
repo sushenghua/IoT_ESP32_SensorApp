@@ -16,15 +16,9 @@ public:
     void init();    
     void setDisplayDelegate(SensorDisplayController *dc) { _dc = dc; }
 
-    // called on every interruption
-    virtual void tick() {
-        if (_dc) {
-            _updateOrientation();
-        }
-    }
-protected:
-    // helper
-    void _updateOrientation();
+    // sample
+    void sampleData();
+    float readTemperature();
 
 protected:
     uint16_t                  _pin;

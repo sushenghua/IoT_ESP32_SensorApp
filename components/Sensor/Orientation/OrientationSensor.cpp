@@ -70,8 +70,10 @@ inline float calculateAngle(float x, float y)
 
 #define ORITENTATION_THRESHOLD_VALUE  0.9
 
-void OrientationSensor::_updateOrientation()
+void OrientationSensor::sampleData()
 {
+  if (!_dc) return;
+
   if (!_mpu6050.getRawData(&_mpuData)) {
 //		printf("accel: %f, %f, %f  ",
 //					 _mpuData.accel[0] / MPU6050_ACCE_SCALE_FACTOR,
@@ -126,4 +128,9 @@ void OrientationSensor::_updateOrientation()
     APP_LOGE("[OriSensor]", "sample data failed");
   }
 #endif
+}
+
+float OrientationSensor::readTemperature()
+{
+  return _mpu6050.getTemperature();
 }

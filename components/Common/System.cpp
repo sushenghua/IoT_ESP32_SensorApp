@@ -272,7 +272,10 @@ void tsl2561_sensor_task(void *p)
   }
 }
 
+#define ORI_SENSOR_TEMP_READ_COUNT 30
 TaskHandle_t orientationSensorTaskHandle;
+uint16_t _oriSensorTempReadCount = 0;
+float _oriSensorTemperature = 0;
 bool _orientationSensorTaskPaused = false;
 void orientation_sensor_task(void *p)
 {
@@ -280,7 +283,14 @@ void orientation_sensor_task(void *p)
   orientationSensor.init();
   orientationSensor.setDisplayDelegate(&dc);
   while (true) {
-    if (_enablePeripheralTaskLoop) orientationSensor.tick();
+    if (_enablePeripheralTaskLoop) {
+      orientationSensor.sampleData();
+      if (_oriSensorTempReadCount++ == ORI_SENSOR_TEMP_READ_COUNT) {
+        _oriSensorTemperature = orientationSensor.readTemperature();
+        APP_LOGC("[orientation_sensor_task]", "temp: %.2f", _oriSensorTemperature);
+        _oriSensorTempReadCount = 0;
+      }
+    }
     else _orientationSensorTaskPaused = true;
     vTaskDelay(100/portTICK_RATE_MS);
   }
