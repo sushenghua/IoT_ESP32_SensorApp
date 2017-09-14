@@ -33,6 +33,8 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 #include "I2c.h"
 #include "Semaphore.h"
+#include "Config.h"
+#include "AppLog.h"
 
 #define MPU6050_I2C_PORT                    I2C_NUM_0
 #define MPU6050_I2C_PIN_SCK                 26
@@ -128,8 +130,6 @@ int mpu6050GetMs(unsigned long *time)
 
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
-#include "esp_log.h"
-#include "AppLog.h"
 
 static signed char gyro_orientation[9] = {-1, 0, 0,
                                            0,-1, 0,
