@@ -556,11 +556,10 @@ void MPU6050Sensor::getRawAccelGyro(int16_t* accelGyro)
 float MPU6050Sensor::getTemperature(void)
 {
   uint8_t data[2];
-  uint16_t temp;
+  int16_t temp;
   i2cReadBytes(MPU6050_ADDR, MPU6050_RA_TEMP_OUT_H, 2, data);
   temp = data[0] << 8 | data[1];
   return temp / 340.0f + 36.53f;
-  //return (int)((temp / 340.0f + 36.53f) * 10);
 }
 
 //typedef struct {
