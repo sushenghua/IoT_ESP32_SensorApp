@@ -36,6 +36,7 @@
  */
 
 #include "TSL2561.h"
+#include "Config.h"
 #include "AppLog.h"
 #include "I2c.h"
 #include "Semaphore.h"

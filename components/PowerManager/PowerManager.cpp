@@ -5,6 +5,7 @@
  */
 
 #include "PowerManager.h"
+#include "Config.h"
 #include "AppLog.h"
 #include "Adc.h"
 #include "Semaphore.h"

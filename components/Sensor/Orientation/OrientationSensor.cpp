@@ -7,6 +7,7 @@
 #include "OrientationSensor.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "Config.h"
 #include "AppLog.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////

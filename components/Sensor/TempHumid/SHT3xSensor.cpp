@@ -5,6 +5,7 @@
  */
 
 #include "SHT3xSensor.h"
+#include "Config.h"
 #include "AppLog.h"
 #include "I2c.h"
 #include "Semaphore.h"
