@@ -73,8 +73,9 @@ enum UpdateRetCode {
   OTA_WRITE_FAILED,
   RXDATA_MISMATCHED_WITH_REQUIRED,
   RXDATA_SIZE_LARGER_THAN_EXPECTED,
+  MD5_CHECK_OK,
   MD5_CHECK_FAILED,
-  DOWNLOAD_PROGRESS,
+  DOWNLOAD_PROGRESS
 };
 
 char        _retBuf[512];
@@ -123,12 +124,13 @@ void AppUpdater::_retCode(int code, const char *msg, int value)
 {
   if (code == UPDATE_OK) APP_LOGC(TAG, "%s", msg);
   else if (code == DOWNLOAD_PROGRESS) APP_LOGI(TAG, "write data complete %d%%", value);
+  else if (code == MD5_CHECK_OK) APP_LOGI(TAG, "downloaded data md5 check OK");
   else APP_LOGE(TAG, "%s, 0x%x", msg, value);
 
   sprintf(_retBuf, "{\"ret\":\"%d\",\"msg\":\"%s\",\"val\":\"%d\"}", code, msg, value);
-  _delegate->publish(_updateCrxCodeTopic, _retBuf, strlen(_retBuf), 1);
+  _delegate->publish(_updateCrxCodeTopic, _retBuf, strlen(_retBuf), 0);
 
-  if (code != UPDATE_OK && code != DOWNLOAD_PROGRESS) {
+  if (code != UPDATE_OK && code != DOWNLOAD_PROGRESS && code != MD5_CHECK_OK) {
     System::instance()->resumePeripherals();
   }
 }
@@ -222,10 +224,11 @@ bool AppUpdater::_verifyData(const char *verifyBits, size_t length)
   // APP_LOGC(TAG, "md5 result:   %.*s", length, _md5Result);
   // APP_LOGC(TAG, "verify bytes: %.*s", length, verifyBits);
   if (memcmp(verifyBits, _md5Result, MD5_LENGTH) == 0) {
+    _retCode(MD5_CHECK_OK, "downloaded data verified OK");
     return true;
   }
   else {
-    _retCode(MD5_CHECK_FAILED, "downloaded data md5 check failed");
+    _retCode(MD5_CHECK_FAILED, "downloaded data verified fail");
     return false;
   }
 }

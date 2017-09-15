@@ -287,7 +287,7 @@ void orientation_sensor_task(void *p)
       orientationSensor.sampleData();
       if (_oriSensorTempReadCount++ == ORI_SENSOR_TEMP_READ_COUNT) {
         _oriSensorTemperature = orientationSensor.readTemperature();
-        APP_LOGC("[orientation_sensor_task]", "temp: %.2f", _oriSensorTemperature);
+        // APP_LOGC("[orientation_sensor_task]", "temp: %.2f", _oriSensorTemperature);
         _oriSensorTempReadCount = 0;
       }
     }
