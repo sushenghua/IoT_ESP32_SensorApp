@@ -37,6 +37,7 @@ public:
                          uint8_t     qos,
                          bool        retain = false,
                          bool        dup = false) = 0;
+    virtual bool hasUnackPub() = 0;
 };
 
 #endif // _MQTT_CLIENT_H

@@ -66,6 +66,7 @@ public:
                     bool        retain);
     void drainPoolMessage(uint16_t msgId);
     void cleanPool();
+    size_t poolMessageCount();
 
 protected:
     // repub helper

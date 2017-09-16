@@ -373,6 +373,11 @@ void MqttClient::publish(const char *topic, const void *data, size_t len, uint8_
     }
 }
 
+bool MqttClient::hasUnackPub()
+{
+    return _msgPubPool.poolMessageCount() > 0;
+}
+
 void MqttClient::repubMessage(PoolMessage *message)
 {
     APP_LOGE("[MqttClient]", "repub message of topic: %s", message->topic);

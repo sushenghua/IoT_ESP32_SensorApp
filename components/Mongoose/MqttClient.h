@@ -169,6 +169,7 @@ public:
                          uint8_t     qos,
                          bool        retain = false,
                          bool        dup = false);
+    virtual bool hasUnackPub();
 
     // for alive guard check task
     void aliveGuardCheck();

@@ -141,3 +141,8 @@ void MessagePubPool::cleanPool()
     _messageMap.clear();
     _initFreeSlotStack();
 }
+
+size_t MessagePubPool::poolMessageCount()
+{
+    return _messageMap.size();
+}

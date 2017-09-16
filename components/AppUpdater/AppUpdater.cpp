@@ -128,7 +128,7 @@ void AppUpdater::_retCode(int code, const char *msg, int value)
   else APP_LOGE(TAG, "%s, 0x%x", msg, value);
 
   sprintf(_retBuf, "{\"ret\":\"%d\",\"msg\":\"%s\",\"val\":\"%d\"}", code, msg, value);
-  _delegate->publish(_updateCrxCodeTopic, _retBuf, strlen(_retBuf), 0);
+  _delegate->publish(_updateCrxCodeTopic, _retBuf, strlen(_retBuf), 1);
 
   if (code != UPDATE_OK && code != DOWNLOAD_PROGRESS && code != MD5_CHECK_OK) {
     System::instance()->resumePeripherals();
@@ -190,7 +190,9 @@ void AppUpdater::_onRxDataComplete()
 
   if (succeeded) {
     _retCode(UPDATE_OK, "update completed, prepare to restart system");
-    vTaskDelay(500 / portTICK_PERIOD_MS);
+    // wait for all message pub ack
+    while (_delegate->hasUnackPub())
+      vTaskDelay(500 / portTICK_PERIOD_MS);
     System::instance()->restart();
   }
 }
