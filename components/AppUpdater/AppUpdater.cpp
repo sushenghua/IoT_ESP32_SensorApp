@@ -133,7 +133,7 @@ void AppUpdater::_retCode(int code, const char *msg, int value)
   else if (code != UPDATE_OK && code != DOWNLOAD_PROGRESS) APP_LOGE(TAG, "%s, 0x%x", msg, value);
 #endif
 
-  sprintf(_retBuf, "{\"ret\":\"%d\",\"msg\":\"%s\",\"val\":\"%d\"}", code, msg, value);
+  sprintf(_retBuf, "{\"code\":\"%d\",\"msg\":\"%s\",\"val\":\"%d\"}", code, msg, value);
   _delegate->publish(_updateCrxCodeTopic, _retBuf, strlen(_retBuf), 1);
 
   if (code != UPDATE_OK && code != DOWNLOAD_PROGRESS && code != MD5_CHECK_OK) {
