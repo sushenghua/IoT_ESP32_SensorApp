@@ -6,6 +6,7 @@
 
 #include "MqttClient.h"
 
+#include "Config.h"
 #include "AppLog.h"
 #include "Wifi.h"
 #include "SNTP.h"
@@ -307,7 +308,7 @@ bool MqttClient::_makeConnection()
 
 void MqttClient::start()
 {
-    SNTP::waitSynced();    // block wait time sync
+    // SNTP::waitSynced();    // block wait time sync
     _makeConnection();
     _pubSemaphore = xSemaphoreCreateMutex();
     _closeProcessSemaphore = xSemaphoreCreateMutex();
@@ -370,17 +371,21 @@ void MqttClient::publish(const char *topic, const void *data, size_t len, uint8_
             _msgPubPool.addMessage(msgId, topic, data, len, qos, retain);
         }
         xSemaphoreGive(_pubSemaphore);
+#ifdef LOG_MQTT_TX
+        APP_LOGC("[MqttClient]", "pub message (msg_id: %d, qos: %d) %s: %.*s", msgId, qos, topic,
+                 len, (const char*)data);
+#endif
     }
 }
 
 bool MqttClient::hasUnackPub()
 {
+    APP_LOGC("[MqttClient]", "pool message count: %d", _msgPubPool.poolMessageCount());
     return _msgPubPool.poolMessageCount() > 0;
 }
 
 void MqttClient::repubMessage(PoolMessage *message)
 {
-    APP_LOGE("[MqttClient]", "repub message of topic: %s", message->topic);
     if (!_connected) return;
     if (xSemaphoreTake(_pubSemaphore, MSG_PUB_SEMAPHORE_TAKE_WAIT_TICKS)) {
         int flag = MG_MQTT_DUP;
@@ -394,6 +399,10 @@ void MqttClient::repubMessage(PoolMessage *message)
                         message->length);
         message->pubCount++;
         xSemaphoreGive(_pubSemaphore);
+#ifdef LOG_MQTT_RETX
+        APP_LOGE("[MqttClient]", "repub message (msg_id: %d) %s: %.*s", message->msgId,
+                 message->topic, message->length, (const char*)message->data);
+#endif
     }
 }
 
@@ -466,9 +475,11 @@ void MqttClient::onUnsubAct(struct mg_mqtt_message *msg)
 
 void MqttClient::onRxPubMessage(struct mg_mqtt_message *msg)
 {
+#ifdef LOG_MQTT_RX
     printf("\n");
     APP_LOGC("[MqttClient]", "got incoming message (msg_id: %d) %.*s: %.*s", msg->message_id,
-           (int) msg->topic.len, msg->topic.p, (int) msg->payload.len, msg->payload.p);
+             (int) msg->topic.len, msg->topic.p, (int) msg->payload.len, msg->payload.p);
+#endif
     if (_msgInterpreter) {
         _msgInterpreter->interpreteMqttMsg(msg->topic.p, msg->topic.len, msg->payload.p, msg->payload.len);
     }

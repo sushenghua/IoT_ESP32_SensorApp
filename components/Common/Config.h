@@ -20,4 +20,10 @@
 // #define DEBUG_APP_OK
 #define DEBUG_APP_ERR
 
+// #define LOG_MQTT_TX
+// #define LOG_MQTT_RX
+// #define LOG_MQTT_RETX
+
+// #define LOG_APPUPDATER
+
 #endif // _CONF_H_INCLUDED

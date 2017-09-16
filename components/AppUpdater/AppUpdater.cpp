@@ -10,6 +10,7 @@
 #include "md5.h"
 #include "Wifi.h"
 #include "System.h"
+#include "Config.h"
 #include "AppLog.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -122,10 +123,15 @@ const char* AppUpdater::updateRxTopic()
 
 void AppUpdater::_retCode(int code, const char *msg, int value)
 {
+#ifdef LOG_APPUPDATER
   if (code == UPDATE_OK) APP_LOGC(TAG, "%s", msg);
   else if (code == DOWNLOAD_PROGRESS) APP_LOGI(TAG, "write data complete %d%%", value);
   else if (code == MD5_CHECK_OK) APP_LOGI(TAG, "downloaded data md5 check OK");
   else APP_LOGE(TAG, "%s, 0x%x", msg, value);
+#else
+  if (code != UPDATE_OK && code != DOWNLOAD_PROGRESS && code != MD5_CHECK_OK)
+    APP_LOGE(TAG, "%s, 0x%x", msg, value);
+#endif
 
   sprintf(_retBuf, "{\"ret\":\"%d\",\"msg\":\"%s\",\"val\":\"%d\"}", code, msg, value);
   _delegate->publish(_updateCrxCodeTopic, _retBuf, strlen(_retBuf), 1);
@@ -191,8 +197,8 @@ void AppUpdater::_onRxDataComplete()
   if (succeeded) {
     _retCode(UPDATE_OK, "update completed, prepare to restart system");
     // wait for all message pub ack
-    while (_delegate->hasUnackPub())
-      vTaskDelay(500 / portTICK_PERIOD_MS);
+    // while (_delegate->hasUnackPub())
+    //   vTaskDelay(500 / portTICK_PERIOD_MS);
     System::instance()->restart();
   }
 }
@@ -227,6 +233,8 @@ bool AppUpdater::_verifyData(const char *verifyBits, size_t length)
   // APP_LOGC(TAG, "verify bytes: %.*s", length, verifyBits);
   if (memcmp(verifyBits, _md5Result, MD5_LENGTH) == 0) {
     _retCode(MD5_CHECK_OK, "downloaded data verified OK");
+    // while (_delegate->hasUnackPub())
+    //   vTaskDelay(500 / portTICK_PERIOD_MS);
     return true;
   }
   else {
@@ -265,7 +273,9 @@ void AppUpdater::updateLoop(const char* data, size_t dataLen)
       }
       const void *dataBlock = data + sizeof(size_t);
       size_t blockSize = dataLen - sizeof(size_t);
+#ifdef LOG_APPUPDATER
       APP_LOGI(TAG, "rx data block index: %d, size: %d", dataIndex, blockSize);
+#endif
       if (_writeFlag.index + blockSize > _newVersionSize) {
         _retCode(RXDATA_SIZE_LARGER_THAN_EXPECTED, "received data size mismatched with the new version size");
         _state = UPDATE_STATE_IDLE;
