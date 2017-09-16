@@ -305,10 +305,10 @@ void orientation_sensor_task(void *p)
 #include "MqttClient.h"
 #include "CmdEngine.h"
 
+MqttClient mqtt;
 static void mqtt_task(void *pvParams)
 {
   CmdEngine cmdEngine;
-  MqttClient mqtt;
   mqtt.init();
   mqtt.start();
 
@@ -352,10 +352,10 @@ static void http_task(void *pvParams)
 //----------------------------------------------
 // daemon task
 //----------------------------------------------
+bool _hasRebootRequest = false;
 static void daemon_task(void *pvParams)
 {
   while (true) {
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
     // if (displayTaskHandle) vTaskResume(displayTaskHandle);
     // if (displayTaskHandle) vTaskSuspend(displayTaskHandle);
     if (displayTaskHandle) {
@@ -366,6 +366,8 @@ static void daemon_task(void *pvParams)
       // APP_LOGC("[daemon_task]", "display task priority %d", uxTaskPriorityGet(displayTaskHandle));
       // APP_LOGC("[daemon_task]", "display task state %d", eTaskGetState(displayTaskHandle));
     }
+    if (_hasRebootRequest && !mqtt.hasUnackPub()) System::instance()->restart();
+    vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 }
 
@@ -800,6 +802,11 @@ const char* System::model()
   sprintf(MODEL+strlen(MODEL), "-");
   sprintf(MODEL+strlen(MODEL), sensorTypeStr(_config.co2SensorType));
   return MODEL;
+}
+
+void System::setRestartRequest()
+{
+  _hasRebootRequest = true;
 }
 
 void System::restart()

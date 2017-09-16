@@ -126,11 +126,11 @@ void AppUpdater::_retCode(int code, const char *msg, int value)
 #ifdef LOG_APPUPDATER
   if (code == UPDATE_OK) APP_LOGC(TAG, "%s", msg);
   else if (code == DOWNLOAD_PROGRESS) APP_LOGI(TAG, "write data complete %d%%", value);
-  else if (code == MD5_CHECK_OK) APP_LOGI(TAG, "downloaded data md5 check OK");
+  else if (code == MD5_CHECK_OK) APP_LOGI(TAG, "%S", msg);
   else APP_LOGE(TAG, "%s, 0x%x", msg, value);
 #else
-  if (code != UPDATE_OK && code != DOWNLOAD_PROGRESS && code != MD5_CHECK_OK)
-    APP_LOGE(TAG, "%s, 0x%x", msg, value);
+  if (code == MD5_CHECK_OK) APP_LOGI(TAG, "%s", msg);
+  else if (code != UPDATE_OK && code != DOWNLOAD_PROGRESS) APP_LOGE(TAG, "%s, 0x%x", msg, value);
 #endif
 
   sprintf(_retBuf, "{\"ret\":\"%d\",\"msg\":\"%s\",\"val\":\"%d\"}", code, msg, value);
@@ -178,28 +178,27 @@ void AppUpdater::_onRxDataComplete()
   }
 
   bool succeeded = true;
-
-  if (ESP_OTA_END(_updateHandle) != ESP_OK) {
+  esp_err_t ret = ESP_OTA_END(_updateHandle);
+  if (ret == ESP_OK) APP_LOGI(TAG, "ota end succeeded");
+  else {
     _retCode(OTA_END_FAILED, "ota end failed!");
-    // task_fatal_error();
-    succeeded = false;
+    succeeded = false;    // task_fatal_error();
   }
 
-  esp_err_t err = ESP_OTA_SET_BOOT_PATITION(_updatePartition);
-  if (err != ESP_OK) {
-    _retCode(OTA_SET_BOOT_PATITION_FAILED, "ota set boot partition failed", err);
-    // task_fatal_error();
-    succeeded = false;
+  ret = ESP_OTA_SET_BOOT_PATITION(_updatePartition);
+  if (ret == ESP_OK) {
+    APP_LOGI(TAG, "ota set boot partition succeeded");
+  }
+  else {
+    _retCode(OTA_SET_BOOT_PATITION_FAILED, "ota set boot partition failed", ret);
+    succeeded = false;     // task_fatal_error();
   }
 
   _state = UPDATE_STATE_IDLE;
 
   if (succeeded) {
-    _retCode(UPDATE_OK, "update completed, prepare to restart system");
-    // wait for all message pub ack
-    // while (_delegate->hasUnackPub())
-    //   vTaskDelay(500 / portTICK_PERIOD_MS);
-    System::instance()->restart();
+    _retCode(UPDATE_OK, "update completed, restart ...");
+    System::instance()->setRestartRequest();
   }
 }
 
@@ -233,8 +232,6 @@ bool AppUpdater::_verifyData(const char *verifyBits, size_t length)
   // APP_LOGC(TAG, "verify bytes: %.*s", length, verifyBits);
   if (memcmp(verifyBits, _md5Result, MD5_LENGTH) == 0) {
     _retCode(MD5_CHECK_OK, "downloaded data verified OK");
-    // while (_delegate->hasUnackPub())
-    //   vTaskDelay(500 / portTICK_PERIOD_MS);
     return true;
   }
   else {
@@ -254,6 +251,7 @@ void AppUpdater::updateLoop(const char* data, size_t dataLen)
         // APP_LOGC(TAG, "version: %d, size: %d", newVersion, _newVersionSize);
         _prepareUpdate();
         md5_starts(&_md5Contex);
+        APP_LOGI(TAG, "begin downloading data ...");
         _delegate->publish(_updateDtxDataTopic, &_writeFlag, sizeof(_writeFlag), 1);
         _state = UPDATE_STATE_WAIT_DATA;
       }
@@ -293,6 +291,7 @@ void AppUpdater::updateLoop(const char* data, size_t dataLen)
           md5_finish(&_md5Contex, (unsigned char*)_md5Result);
           _writeFlag.index = REQUIRE_VERIFY_BIT_CMD;
           _writeFlag.amount = REQUIRE_VERIFY_BIT_CMD;
+          APP_LOGI(TAG, "downloading data completed");
           _delegate->publish(_updateDtxDataTopic, &_writeFlag, sizeof(_writeFlag), 1);
           _state = UPDATE_STATE_WAIT_VERIFY_BITS;
         }

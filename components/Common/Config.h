@@ -22,7 +22,7 @@
 
 // #define LOG_MQTT_TX
 // #define LOG_MQTT_RX
-// #define LOG_MQTT_RETX
+#define LOG_MQTT_RETX
 
 // #define LOG_APPUPDATER
 

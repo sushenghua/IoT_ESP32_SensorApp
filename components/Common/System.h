@@ -75,6 +75,7 @@ public:
   void toggleDeployMode();
   void setSensorType(SensorType pmType, SensorType co2Type);
   void setDevCapability(uint32_t cap);
+  void setRestartRequest();
   void restart();
   bool restarting();
 

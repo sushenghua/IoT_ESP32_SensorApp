@@ -55,7 +55,7 @@ inline bool MessagePubPool::_pushFreeSlot(int slot)
     return false;
 }
 
-#define MESSAGE_CHECK_DUE_DURATION_DEFAULT     20
+#define MESSAGE_CHECK_DUE_DURATION_DEFAULT     5
 
 MessagePubPool::MessagePubPool(TickType_t loopInterval)
 : _messageCheckDueDuration(MESSAGE_CHECK_DUE_DURATION_DEFAULT)
