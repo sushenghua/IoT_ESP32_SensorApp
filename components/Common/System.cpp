@@ -228,7 +228,7 @@ void pm_sensor_task(void *p)
   }
 }
 
-TaskHandle_t co2SensorTaskHandle;
+TaskHandle_t co2SensorTaskHandle = NULL;
 bool _co2SensorTaskPaused = false;
 void co2_sensor_task(void *p)
 {
@@ -517,9 +517,8 @@ void System::pausePeripherals()
   _enablePeripheralTaskLoop = false;
 
   while (!_displayTaskPaused || !_statusTaskPaused ||
-         !_pmSensorTaskPaused || !_co2SensorTaskPaused ||
-         !_orientationSensorTaskPaused || !_sht3xSensorTaskPaused ||
-         !_tsl2561SensorTaskPaused) {
+         !_pmSensorTaskPaused || (co2SensorTaskHandle && !_co2SensorTaskPaused) ||
+         !_orientationSensorTaskPaused || !_sht3xSensorTaskPaused || !_tsl2561SensorTaskPaused) {
     APP_LOGC("[System]", "pause dis: %d, sta: %d, pm: %d, co2: %d, ori: %d, sht: %d, tsl: %d",
       _displayTaskPaused, _statusTaskPaused, _pmSensorTaskPaused, _co2SensorTaskPaused, _orientationSensorTaskPaused,
       _statusTaskPaused, _tsl2561SensorTaskPaused);
