@@ -195,6 +195,14 @@ void PMSensor::sampleData(TickType_t waitTicks)
   if (rxLen == _protocolLen) {
     onRxComplete();
   }
+  else {
+    // init rx protocol length
+    _protocolLen = rxProtocolLengthForSensorType(System::instance()->pmSensorType());
+    // cache capability from System instance
+    _cap = System::instance()->devCapability();
+    // reset
+    reset();
+  }
 }
 
 void PMSensor::onTxComplete()
