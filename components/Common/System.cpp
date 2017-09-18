@@ -228,8 +228,7 @@ void pm_sensor_task(void *p)
   }
 }
 
-TaskHandle_t co2SensorTaskHandle;
-bool _hasCO2Task = true;
+TaskHandle_t co2SensorTaskHandle = NULL;
 bool _co2SensorTaskPaused = false;
 void co2_sensor_task(void *p)
 {
@@ -490,8 +489,6 @@ void System::_launchTasks()
     xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
   if (_config.devCapability & CO2_CAPABILITY_MASK)
     xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 4096, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
-  else
-    _hasCO2Task = false;
 
   xTaskCreatePinnedToCore(tsl2561_sensor_task, "tsl2561_sensor_task", 4096, NULL, TSL2561_TASK_PRIORITY, &tsl2561SensorTaskHandle, RUN_ON_CORE);
 
@@ -520,11 +517,11 @@ void System::pausePeripherals()
   _enablePeripheralTaskLoop = false;
 
   while (!_displayTaskPaused || !_statusTaskPaused ||
-         !_pmSensorTaskPaused || (_hasCO2Task && !_co2SensorTaskPaused) ||
+         !_pmSensorTaskPaused || (co2SensorTaskHandle && !_co2SensorTaskPaused) ||
          !_orientationSensorTaskPaused || !_sht3xSensorTaskPaused || !_tsl2561SensorTaskPaused) {
     APP_LOGC("[System]", "pause dis: %d, sta: %d, pm: %d, co2: %d, ori: %d, sht: %d, tsl: %d",
-      _displayTaskPaused, _statusTaskPaused, _pmSensorTaskPaused, _co2SensorTaskPaused, _orientationSensorTaskPaused,
-      _statusTaskPaused, _tsl2561SensorTaskPaused);
+      _displayTaskPaused, _statusTaskPaused, _pmSensorTaskPaused, !co2SensorTaskHandle || _co2SensorTaskPaused,
+      _orientationSensorTaskPaused, _statusTaskPaused, _tsl2561SensorTaskPaused);
     vTaskDelay(100 / portTICK_PERIOD_MS);
     APP_LOGC("[System]", "pause sync delay");
   }
