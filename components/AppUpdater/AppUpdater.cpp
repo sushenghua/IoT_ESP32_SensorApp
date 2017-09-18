@@ -213,7 +213,7 @@ void AppUpdater::_prepareUpdate()
     return;
   }
 
-  System::instance()->pausePeripherals();
+  System::instance()->pausePeripherals("updating ...");
 
   esp_err_t err = ESP_OTA_BEGIN(_updatePartition, OTA_SIZE_UNKNOWN, &_updateHandle);
   if (err == ESP_OK) {

@@ -29,6 +29,7 @@ public:
   void setHchoData(HchoData &hchoData, bool update = true);
   void setTempHumidData(TempHumidData &tempHumidData, bool update = true);
   void setCO2Data(CO2Data &co2Data, bool update = true);
+  void setScreenMessage(const char * msg);
 
 public:
   virtual void init();
@@ -49,6 +50,7 @@ public:
 
 protected:
   // content update flag
+  bool       _hasScreenMsg;
   bool       _staticContentNeedUpdate;
   bool       _dynamicContentNeedUpdate;
 

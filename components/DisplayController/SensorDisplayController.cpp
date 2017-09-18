@@ -13,6 +13,7 @@
 
 SensorDisplayController::SensorDisplayController(DisplayGFX *dev)
 : DisplayController(dev)
+, _hasScreenMsg(false)
 , _staticContentNeedUpdate(true)
 , _dynamicContentNeedUpdate(true)
 , _rotationNeedUpdate(false)
@@ -128,8 +129,31 @@ void SensorDisplayController::setCO2Data(CO2Data &co2Data, bool update)
   if (update) _dynamicContentNeedUpdate = true;
 }
 
+char _msg[256];
+
+void SensorDisplayController::setScreenMessage(const char * msg)
+{
+  if (msg) {
+    sprintf(_msg, "%s", msg);
+    _hasScreenMsg = true;
+  }
+  else {
+    _hasScreenMsg = false;
+    _staticContentNeedUpdate = true;
+    _dynamicContentNeedUpdate = true;
+  }
+}
+
 void SensorDisplayController::update()
 {
+  if (_hasScreenMsg) {
+    _dev->fillScreen(RGB565_BLACK);
+    _dev->setCursor(10, _dev->height()/2);
+    _dev->setTextColor(RGB565_YELLOW, RGB565_BLACK);
+    _dev->write(_msg);
+    return;
+  }
+
   // update rotation
   if (_rotationNeedUpdate) {
     // APP_LOGE("[SensorDC]", "rotation update");

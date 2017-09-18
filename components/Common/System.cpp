@@ -95,6 +95,7 @@ bool    _displayOn = true;
 static SensorDisplayController dc(&dev);
 TaskHandle_t displayTaskHandle = 0;
 bool _displayTaskPaused = false;
+bool _hasScreenMessage = false;
 void display_task(void *p)
 {
   dc.init();
@@ -103,6 +104,7 @@ void display_task(void *p)
     // APP_LOGC("[display_task]", "task schedule state %d", xTaskGetSchedulerState());
     xTaskGetSchedulerState();
     if (_enablePeripheralTaskLoop) dc.update();
+    else if (_hasScreenMessage) { dc.update(); _hasScreenMessage = false; }
     else _displayTaskPaused = true;
     vTaskDelay(DISPLAY_TASK_DELAY_UNIT / portTICK_RATE_MS);
   }
@@ -512,8 +514,13 @@ void System::_launchTasks()
   xTaskCreatePinnedToCore(daemon_task, "daemon_task", 2048, NULL, DAEMON_TASK_PRIORITY, NULL, RUN_ON_CORE);
 }
 
-void System::pausePeripherals()
+void System::pausePeripherals(const char *screenMsg)
 {
+  if (screenMsg) {
+    dc.setScreenMessage(screenMsg);
+    _hasScreenMessage = true;
+  }
+
   _enablePeripheralTaskLoop = false;
 
   while (!_displayTaskPaused || !_statusTaskPaused ||
@@ -814,7 +821,7 @@ void System::restart()
   if (_configNeedToSave) _saveConfig();
 
   // stop those need to stop ...
-  pausePeripherals();
+  pausePeripherals("prepare to reboot ...");
 
   _state = Restarting;
   esp_restart();

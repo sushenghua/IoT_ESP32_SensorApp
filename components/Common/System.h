@@ -79,7 +79,7 @@ public:
   void restart();
   bool restarting();
 
-  void pausePeripherals();
+  void pausePeripherals(const char *screenMsg = 0);
   void resumePeripherals();
 
   void powerOff();
