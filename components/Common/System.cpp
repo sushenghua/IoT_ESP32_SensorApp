@@ -519,11 +519,11 @@ void System::pausePeripherals()
   while (!_displayTaskPaused || !_statusTaskPaused ||
          !_pmSensorTaskPaused || (co2SensorTaskHandle && !_co2SensorTaskPaused) ||
          !_orientationSensorTaskPaused || !_sht3xSensorTaskPaused || !_tsl2561SensorTaskPaused) {
-    APP_LOGC("[System]", "pause dis: %d, sta: %d, pm: %d, co2: %d, ori: %d, sht: %d, tsl: %d",
-      _displayTaskPaused, _statusTaskPaused, _pmSensorTaskPaused, !co2SensorTaskHandle || _co2SensorTaskPaused,
-      _orientationSensorTaskPaused, _statusTaskPaused, _tsl2561SensorTaskPaused);
+    // APP_LOGC("[System]", "pause dis: %d, sta: %d, pm: %d, co2: %d, ori: %d, sht: %d, tsl: %d",
+    //   _displayTaskPaused, _statusTaskPaused, _pmSensorTaskPaused, !co2SensorTaskHandle || _co2SensorTaskPaused,
+    //   _orientationSensorTaskPaused, _statusTaskPaused, _tsl2561SensorTaskPaused);
     vTaskDelay(100 / portTICK_PERIOD_MS);
-    APP_LOGC("[System]", "pause sync delay");
+    // APP_LOGC("[System]", "pause sync delay");
   }
 }
 
