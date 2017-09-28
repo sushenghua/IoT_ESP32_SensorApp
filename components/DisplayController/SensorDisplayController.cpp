@@ -366,6 +366,7 @@ void SensorDisplayController::_targetData(SensorDataType t)
       _color = _humidColor;
       _level = _hchoLevel;
       break;
+    default: break;
   }
 }
 
@@ -434,6 +435,8 @@ void SensorDisplayController::_renderDetailScreenItem(SensorDataType type)
       _dev->setCursor(0, _contentOffsetY + DETAIL_LINE_HEIGHT * detailRowCount);
       _dev->write("Humid(%):");
       break;
+
+    default: break;
     }
   }
 
@@ -477,6 +480,8 @@ void SensorDisplayController::_renderDetailScreenItem(SensorDataType type)
       _dev->setCursor(DETAIL_LINE_VALUE_OFFSET, _contentOffsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
       sprintf(_valueStr, "%.1f", _humid); _dev->write(_valueStr);
       break;
+
+    default: break;
   }
 }
 

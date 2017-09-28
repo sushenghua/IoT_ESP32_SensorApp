@@ -8,6 +8,7 @@
 #define _SYSTEM_H_
 
 #include "SensorConfig.h"
+#include <string.h>
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // enum types
@@ -16,6 +17,7 @@
 extern "C" {
 #endif
 
+// ------ deploy and sensor type config
 enum DeployMode {
   HTTPServerMode,
   MQTTClientMode,
@@ -32,6 +34,71 @@ struct SysConfig {
   SensorType  pmSensorType;
   SensorType  co2SensorType;
   uint32_t    devCapability;
+};
+
+// ------ alert config
+enum MobileOS {
+  IOS       = 0,
+  Android   = 1
+};
+
+#define TOKEN_LEN   64
+#define TOKEN_COUNT 5
+
+struct MobileToken {
+  bool     on;
+  MobileOS os;
+  char     token[TOKEN_LEN+1]; // null terminate
+};
+
+struct MobileTokens {
+  uint8_t     head;
+  uint8_t     count;
+  MobileToken tokens[TOKEN_COUNT];
+  // functions
+  void init() {
+    head = 0; count = 0;
+    for (uint8_t i=0; i<TOKEN_COUNT; ++i)
+      tokens[i].token[TOKEN_LEN] = '\0';
+  }
+  void setToken(bool on, MobileOS os, const char *token) {
+    int8_t index = findToken(token);
+    if (index == -1) {
+      if (count < TOKEN_COUNT) { index = (head + count) % TOKEN_COUNT; ++count; }
+      else { index = head; head = (head + 1) % TOKEN_COUNT; }
+      tokens[index].os = os;
+      strncpy(tokens[index].token, token, TOKEN_LEN);
+    }
+    else { index = (head + index) % TOKEN_COUNT; }
+    tokens[index].on = on;
+  }
+  int8_t findToken(const char *token) {
+    for (int8_t index = 0; index < count; ++index) {
+      uint8_t realIndex = (head + index) % TOKEN_COUNT;
+      if (strncmp(token, tokens[realIndex].token, TOKEN_LEN) == 0) return index;
+    }
+    return -1;
+  }
+  MobileToken & token(uint8_t index) { return tokens[(head + index) % TOKEN_COUNT]; }
+};
+
+struct Alert {
+  bool  lEnabled;
+  bool  gEnabled;
+  float lValue;
+  float gValue;
+};
+
+struct Alerts {
+  bool  soundOn;
+  Alert sensors[SensorTypeMax];
+  void init() {
+    soundOn = false;
+    for (uint8_t i=0; i<SensorTypeMax; ++i) {
+      sensors[i].lEnabled = sensors[i].gEnabled = false;
+      sensors[i].lValue = sensors[i].gValue = 0;
+    }
+  }
 };
 
 #ifdef __cplusplus
@@ -75,6 +142,9 @@ public:
   void toggleDeployMode();
   void setSensorType(SensorType pmType, SensorType co2Type);
   void setDevCapability(uint32_t cap);
+  void setAlertSoundOn(bool on);
+  void setAlert(SensorType type, bool lEnabled, bool gEnabled, float lValue, float gValue);
+  void setPnToken(bool enabled, MobileOS os, const char *token);
   void setRestartRequest();
   void restart();
   bool restarting();
@@ -94,16 +164,29 @@ public:
   void markPowerEvent();
 
 private:
+  void _launchTasks();
   void _setDefaultConfig();
+  bool _loadStorageData(const char *STORAGE_TAG, void *out, size_t loadSize);
+  bool _saveStorageData(const char *STORAGE_TAG, const void *data, size_t saveSize);
   bool _loadConfig();
   bool _saveConfig();
+  bool _loadAlerts();
+  bool _saveAlerts();
+  bool _loadMobileTokens();
+  bool _saveMobileTokens();
+  void _saveMemoryData();
   void _updateConfig(bool saveImmediately = false);
-  void _launchTasks();
+  void _updateAlerts(bool saveImmedidately = false);
+  void _updateMobileTokens(bool saveImmedidately = false);
 
 private:
   State        _state;
   bool         _configNeedToSave;
+  bool         _alertsNeedToSave;
+  bool         _tokensNeedToSave;
   SysConfig    _config;
+  Alerts       _alerts;
+  MobileTokens _mobileTokens;
 };
 
 #endif // _SYSTEM_H_

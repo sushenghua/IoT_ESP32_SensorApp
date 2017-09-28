@@ -433,8 +433,12 @@ System * System::instance()
 System::System()
 : _state(Uninitialized)
 , _configNeedToSave(false)
+, _alertsNeedToSave(false)
+, _tokensNeedToSave(false)
 {
   _setDefaultConfig();
+  _alerts.init();
+  _mobileTokens.init();
 }
 
 void System::_setDefaultConfig()
@@ -447,6 +451,7 @@ void System::_setDefaultConfig()
   _config.devCapability = ( capabilityForSensorType(_config.pmSensorType) |
                             capabilityForSensorType(_config.co2SensorType) );
   _config.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
+  _config.devCapability |= ORIENTATION_CAPABILITY_MASK;
 }
 
 void System::init()
@@ -455,6 +460,8 @@ void System::init()
   NvsFlash::init();
   _initMacADDR();
   _loadConfig();
+  _loadAlerts();
+  _loadMobileTokens();
   _launchTasks();
   _state = Running;
 }
@@ -494,7 +501,8 @@ void System::_launchTasks()
 
   xTaskCreatePinnedToCore(tsl2561_sensor_task, "tsl2561_sensor_task", 4096, NULL, TSL2561_TASK_PRIORITY, &tsl2561SensorTaskHandle, RUN_ON_CORE);
 
-  xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
+  if (_config.devCapability & ORIENTATION_CAPABILITY_MASK)
+    xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
 
   xTaskCreatePinnedToCore(status_check_task, "status_check_task", 2048, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
@@ -525,10 +533,11 @@ void System::pausePeripherals(const char *screenMsg)
 
   while (!_displayTaskPaused || !_statusTaskPaused ||
          !_pmSensorTaskPaused || (co2SensorTaskHandle && !_co2SensorTaskPaused) ||
-         !_orientationSensorTaskPaused || !_sht3xSensorTaskPaused || !_tsl2561SensorTaskPaused) {
+         (orientationSensorTaskHandle && !_orientationSensorTaskPaused) ||
+         !_sht3xSensorTaskPaused || !_tsl2561SensorTaskPaused) {
     APP_LOGC("[System]", "pause dis: %d, sta: %d, pm: %d, co2: %d, ori: %d, sht: %d, tsl: %d",
       _displayTaskPaused, _statusTaskPaused, _pmSensorTaskPaused, !co2SensorTaskHandle || _co2SensorTaskPaused,
-      _orientationSensorTaskPaused, _statusTaskPaused, _tsl2561SensorTaskPaused);
+      !orientationSensorTaskHandle || _orientationSensorTaskPaused, _statusTaskPaused, _tsl2561SensorTaskPaused);
     vTaskDelay(100 / portTICK_PERIOD_MS);
     // APP_LOGC("[System]", "pause sync delay");
   }
@@ -550,7 +559,7 @@ void System::powerOff()
 {
   APP_LOGC("[System]", "power off");
   // save memory to data to flash before power off
-  if (_configNeedToSave) _saveConfig();
+  _saveMemoryData();
 
   // power off
   if (powerManager.powerOff()) {
@@ -574,7 +583,7 @@ void System::turnWifiOn(bool on)
 {
   if (_config.wifiOn != on) {
     _config.wifiOn = on;
-    _saveConfig();
+    _updateConfig(); // _saveConfig();
   }
 }
 
@@ -589,14 +598,14 @@ void System::turnDisplayAutoAdjustOn(bool on)
 {
   if (_config.displayAutoAdjustOn != on) {
     _config.displayAutoAdjustOn = on;
-    _saveConfig();
+    _updateConfig(); // _saveConfig();
   }
 }
 
 void System::toggleWifi()
 {
   _config.wifiOn = !_config.wifiOn;
-  _saveConfig();
+  _updateConfig(); // _saveConfig();
 }
 
 void System::toggleDisplay()
@@ -612,9 +621,8 @@ void System::markPowerEvent()
 
 #include "nvs.h"
 #define SYSTEM_STORAGE_NAMESPACE          "app"
-#define SYSTEM_CONFIG_TAG                 "appConf"
 
-bool System::_loadConfig()
+bool System::_loadStorageData(const char *STORAGE_TAG, void *out, size_t loadSize)
 {
   bool succeeded = false;
   bool nvsOpened = false;
@@ -637,24 +645,24 @@ bool System::_loadConfig()
 
     // read sys config
     size_t requiredSize = 0;  // value will default to 0, if not set yet in NVS
-    err = nvs_get_blob(nvsHandle, SYSTEM_CONFIG_TAG, NULL, &requiredSize);
+    err = nvs_get_blob(nvsHandle, STORAGE_TAG, NULL, &requiredSize);
     if (err == ESP_ERR_NVS_NOT_FOUND) {
       // _setDefaultConfig();  // already set default in constructor
       break;
     }
     if (err != ESP_OK) {
-      APP_LOGE("[System]", "loadConfig read \"sys-config-size\" failed %d", err);
+      APP_LOGE("[System]", "loadConfig read \"%s\" size failed %d", STORAGE_TAG, err);
       break;
     }
-    if (requiredSize != sizeof(_config)) {
-      APP_LOGE("[System]", "loadConfig read \"sys-config-size\" got unexpected value");
+    if (requiredSize != loadSize) {
+      APP_LOGE("[System]", "loadConfig read \"%s\" size got unexpected value", STORAGE_TAG);
       break;
     }
     // read previously saved config
-    err = nvs_get_blob(nvsHandle, SYSTEM_CONFIG_TAG, &_config, &requiredSize);
+    err = nvs_get_blob(nvsHandle, STORAGE_TAG, out, &requiredSize);
     if (err != ESP_OK) {
       // _setDefaultConfig();  // already set default in constructor
-      APP_LOGE("[System]", "loadConfig read \"sys-config-content\" failed %d", err);
+      APP_LOGE("[System]", "loadConfig read \"%s\" content failed %d", STORAGE_TAG, err);
       break;
     }
     succeeded = true;
@@ -667,7 +675,7 @@ bool System::_loadConfig()
   return succeeded;
 }
 
-bool System::_saveConfig()
+bool System::_saveStorageData(const char *STORAGE_TAG, const void *data, size_t saveSize)
 {
   bool succeeded = false;
   bool nvsOpened = false;
@@ -685,9 +693,9 @@ bool System::_saveConfig()
     nvsOpened = true;
 
     // write wifi config
-    err = nvs_set_blob(nvsHandle, SYSTEM_CONFIG_TAG, &_config, sizeof(_config));
+    err = nvs_set_blob(nvsHandle, STORAGE_TAG, data, saveSize);
     if (err != ESP_OK) {
-      APP_LOGE("[System]", "saveConfig write \"system-config\" failed %d", err);
+      APP_LOGE("[System]", "saveConfig write \"%s\" content failed %d", STORAGE_TAG, err);
       break;
     }
 
@@ -704,9 +712,55 @@ bool System::_saveConfig()
   // close nvs
   if (nvsOpened) nvs_close(nvsHandle);
 
-  _configNeedToSave = false; // ? or _configNeedToSave = !succeeded;
-
   return succeeded;
+}
+
+#define SYSTEM_CONFIG_TAG                 "appConf"
+#define ALERT_TAG                         "appAlerts"
+#define TOKEN_TAG                         "appTokens"
+
+bool System::_loadConfig()
+{
+  return _loadStorageData(SYSTEM_CONFIG_TAG, &_config, sizeof(_config));
+}
+
+bool System::_saveConfig()
+{
+  bool succeeded = _saveStorageData(SYSTEM_CONFIG_TAG, &_config, sizeof(_config));
+  _configNeedToSave = false; // ? or _configNeedToSave = !succeeded;
+  return succeeded;
+}
+
+bool System::_loadAlerts()
+{
+  return _loadStorageData(ALERT_TAG, &_alerts, sizeof(_alerts));
+}
+
+bool System::_saveAlerts()
+{
+  bool succeeded = _saveStorageData(ALERT_TAG, &_alerts, sizeof(_alerts));
+  _alertsNeedToSave = false;
+  return succeeded;
+}
+
+bool System::_loadMobileTokens()
+{
+  return _loadStorageData(TOKEN_TAG, &_mobileTokens, sizeof(_mobileTokens));
+}
+
+bool System::_saveMobileTokens()
+{
+  bool succeeded = _saveStorageData(TOKEN_TAG, &_mobileTokens, sizeof(_mobileTokens));
+  _tokensNeedToSave =  false;
+  return succeeded;
+}
+
+void System::_saveMemoryData()
+{
+  // save those need to save ...
+  if (_configNeedToSave) _saveConfig();
+  if (_alertsNeedToSave) _saveAlerts();
+  if (_tokensNeedToSave) _saveMobileTokens();
 }
 
 void System::_updateConfig(bool saveImmedidately)
@@ -717,11 +771,27 @@ void System::_updateConfig(bool saveImmedidately)
     _configNeedToSave = true; // save when reboot or power off
 }
 
+void System::_updateAlerts(bool saveImmedidately)
+{
+  if (saveImmedidately)
+    _saveAlerts();
+  else
+    _alertsNeedToSave = true; // save when reboot or power off
+}
+
+void System::_updateMobileTokens(bool saveImmedidately)
+{
+  if (saveImmedidately)
+    _saveMobileTokens();
+  else
+    _tokensNeedToSave = true; // save when reboot or power off
+}
+
 void System::setDeployMode(DeployMode mode)
 {
   if (_config.deployMode != mode) {
     _config.deployMode = mode;
-    _saveConfig();
+    _updateConfig(); // _saveConfig();
   }
 }
 
@@ -746,7 +816,8 @@ void System::setSensorType(SensorType pmType, SensorType co2Type)
     _config.devCapability = ( capabilityForSensorType(_config.pmSensorType) |
                               capabilityForSensorType(_config.co2SensorType) );
     _config.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
-    _saveConfig();
+    _config.devCapability |= ORIENTATION_CAPABILITY_MASK;
+    _updateConfig(); // _saveConfig();
   }
 }
 
@@ -754,8 +825,29 @@ void System::setDevCapability(uint32_t cap)
 {
   if (_config.devCapability != cap) {
     _config.devCapability = cap;
-    _saveConfig();
+    _updateConfig(); // _saveConfig();
   }
+}
+
+void System::setAlertSoundOn(bool on)
+{
+  _alerts.soundOn = on;
+  _alertsNeedToSave = true;
+}
+
+void System::setAlert(SensorType type, bool lEnabled, bool gEnabled, float lValue, float gValue)
+{
+  _alerts.sensors[type].lEnabled = lEnabled;
+  _alerts.sensors[type].gEnabled = gEnabled;
+  _alerts.sensors[type].lValue = lValue;
+  _alerts.sensors[type].gValue = gValue;
+  _alertsNeedToSave = true;
+}
+
+void System::setPnToken(bool enabled, MobileOS os, const char *token)
+{
+  _mobileTokens.setToken(enabled, os, token);
+  _tokensNeedToSave = true;
 }
 
 DeployMode System::deployMode()
@@ -817,8 +909,8 @@ void System::setRestartRequest()
 
 void System::restart()
 {
-  // save those need to save ...
-  if (_configNeedToSave) _saveConfig();
+  // save memory data
+  _saveMemoryData();
 
   // stop those need to stop ...
   pausePeripherals("prepare to reboot ...");

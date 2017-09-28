@@ -52,7 +52,8 @@ enum SensorDataType
   HCHO      = 1,
   CO2       = 2,
   TEMP      = 3,
-  HUMID     = 4
+  HUMID     = 4,
+  SensorTypeCount
 };
 
 #ifdef __cplusplus
