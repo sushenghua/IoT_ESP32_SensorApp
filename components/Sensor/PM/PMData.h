@@ -49,6 +49,11 @@ struct PMData {
         HS::calculateAQI(HS::PM10US_TABLE, pm10,  aqiPm10US,  levelPm10US);
         HS::calculateAQI(HS::PM25CN_TABLE, pm2d5, aqiPm2d5CN, levelPm2d5CN);
     }
+
+    // aqi (max of aqiPm2d5 aqiPm10)
+    float aqiPm() {
+        return (float)(aqiPm2d5US > aqiPm10US ? aqiPm2d5US : aqiPm10US);
+    }
 };
 
 #endif // _PMDATA_H

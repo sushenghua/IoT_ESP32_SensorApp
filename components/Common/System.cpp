@@ -199,6 +199,17 @@ void status_check_task(void *p)
 #include "TSL2561.h"
 #include "SensorDataPacker.h"
 
+uint32_t _lAlertMask = 0;
+uint32_t _gAlertMask = 0;
+
+void checkAlert(SensorDataType type, float value, uint32_t mask)
+{
+  TriggerAlert trigger = System::instance()->sensorValueTriggerAlert(type, value);
+  if (trigger == TriggerL) { _lAlertMask |= mask; _gAlertMask &= (~mask); }
+  else if (trigger == TriggerG) { _lAlertMask &= (~mask); _gAlertMask |= mask; }
+  else { _lAlertMask &= (~mask); _gAlertMask &= (~mask); }
+}
+
 TaskHandle_t sht3xSensorTaskHandle;
 bool _sht3xSensorTaskPaused = false;
 void sht3x_sensor_task(void *p)
@@ -208,7 +219,11 @@ void sht3x_sensor_task(void *p)
   sht3xSensor.setDisplayDelegate(&dc);
   SensorDataPacker::sharedInstance()->setTempHumidSensor(&sht3xSensor);
   while (true) {
-    if (_enablePeripheralTaskLoop) sht3xSensor.sampleData();
+    if (_enablePeripheralTaskLoop) {
+      sht3xSensor.sampleData();
+      checkAlert(TEMP, sht3xSensor.tempHumidData().temp, TEMP_ALERT_MASK);
+      checkAlert(HUMID, sht3xSensor.tempHumidData().temp, HUMID_ALERT_MASK);
+    }
     else _sht3xSensorTaskPaused = true;
     vTaskDelay(500/portTICK_RATE_MS);
   }
@@ -224,7 +239,12 @@ void pm_sensor_task(void *p)
   SensorDataPacker::sharedInstance()->init();
   SensorDataPacker::sharedInstance()->setPmSensor(&pmSensor);
   while (true) {
-    if (_enablePeripheralTaskLoop) pmSensor.sampleData(3000);
+    if (_enablePeripheralTaskLoop) {
+      pmSensor.sampleData(3000);
+      checkAlert(PM, pmSensor.pmData().aqiPm(), PM_ALERT_MASK);
+      if (System::instance()->devCapability() & HCHO_CAPABILITY_MASK)
+        checkAlert(HCHO, pmSensor.hchoData().hcho, HCHO_ALERT_MASK);
+    }
     else _pmSensorTaskPaused = true;
     vTaskDelay(500/portTICK_RATE_MS);
   }
@@ -241,7 +261,10 @@ void co2_sensor_task(void *p)
 
   vTaskDelay(3000/portTICK_RATE_MS); // delay 3 seconds
   while (true) {
-    if (_enablePeripheralTaskLoop) co2Sensor.sampleData(3000);
+    if (_enablePeripheralTaskLoop) {
+      co2Sensor.sampleData(3000);
+      checkAlert(CO2, co2Sensor.co2Data().co2, CO2_ALERT_MASK);
+    }
     else _co2SensorTaskPaused = true;
     vTaskDelay(1000/portTICK_RATE_MS);
   }
@@ -787,6 +810,26 @@ void System::_updateMobileTokens(bool saveImmedidately)
     _tokensNeedToSave = true; // save when reboot or power off
 }
 
+DeployMode System::deployMode()
+{
+  return _config.deployMode;
+}
+
+SensorType System::pmSensorType()
+{
+  return _config.pmSensorType;
+}
+
+SensorType System::co2SensorType()
+{
+  return _config.co2SensorType;
+}
+
+uint32_t System::devCapability()
+{
+  return _config.devCapability;
+}
+
 void System::setDeployMode(DeployMode mode)
 {
   if (_config.deployMode != mode) {
@@ -829,13 +872,30 @@ void System::setDevCapability(uint32_t cap)
   }
 }
 
+bool System::alertSoundOn()
+{
+  return _alerts.soundOn;
+}
+
+TriggerAlert System::sensorValueTriggerAlert(SensorDataType type, float value)
+{
+  if (_alerts.sensors[type].lEnabled && value < _alerts.sensors[type].lValue) return TriggerL;
+  else if (_alerts.sensors[type].gEnabled && value >= _alerts.sensors[type].gValue) return TriggerG;
+  else return TriggerNone;
+}
+
+MobileTokens & System::mobileTokens()
+{
+  return _mobileTokens;
+}
+
 void System::setAlertSoundOn(bool on)
 {
   _alerts.soundOn = on;
   _alertsNeedToSave = true;
 }
 
-void System::setAlert(SensorType type, bool lEnabled, bool gEnabled, float lValue, float gValue)
+void System::setAlert(SensorDataType type, bool lEnabled, bool gEnabled, float lValue, float gValue)
 {
   _alerts.sensors[type].lEnabled = lEnabled;
   _alerts.sensors[type].gEnabled = gEnabled;
@@ -848,26 +908,6 @@ void System::setPnToken(bool enabled, MobileOS os, const char *token)
 {
   _mobileTokens.setToken(enabled, os, token);
   _tokensNeedToSave = true;
-}
-
-DeployMode System::deployMode()
-{
-  return _config.deployMode;
-}
-
-SensorType System::pmSensorType()
-{
-  return _config.pmSensorType;
-}
-
-SensorType System::co2SensorType()
-{
-  return _config.co2SensorType;
-}
-
-uint32_t System::devCapability()
-{
-  return _config.devCapability;
 }
 
 const char* System::uid()

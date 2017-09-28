@@ -13,6 +13,15 @@ extern "C" {
 #endif
 
 /////////////////////////////////////////////////////////////////////////////////////////
+// Sensor alert mask
+/////////////////////////////////////////////////////////////////////////////////////////
+#define PM_ALERT_MASK                  0x00000001
+#define HCHO_ALERT_MASK                0x00000002
+#define TEMP_ALERT_MASK                0x00000004
+#define HUMID_ALERT_MASK               0x00000008
+#define CO2_ALERT_MASK                 0x00000010
+
+/////////////////////////////////////////////////////////////////////////////////////////
 // Sensor capability mask
 /////////////////////////////////////////////////////////////////////////////////////////
 #define PM_CAPABILITY_MASK             0x00000001
@@ -53,7 +62,7 @@ enum SensorDataType
   CO2       = 2,
   TEMP      = 3,
   HUMID     = 4,
-  SensorTypeCount
+  SensorDataTypeCount
 };
 
 #ifdef __cplusplus

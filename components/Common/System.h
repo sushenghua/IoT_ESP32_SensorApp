@@ -82,6 +82,12 @@ struct MobileTokens {
   MobileToken & token(uint8_t index) { return tokens[(head + index) % TOKEN_COUNT]; }
 };
 
+enum TriggerAlert {
+  TriggerNone,
+  TriggerL,
+  TriggerG
+};
+
 struct Alert {
   bool  lEnabled;
   bool  gEnabled;
@@ -91,10 +97,10 @@ struct Alert {
 
 struct Alerts {
   bool  soundOn;
-  Alert sensors[SensorTypeMax];
+  Alert sensors[SensorDataTypeCount];
   void init() {
     soundOn = false;
-    for (uint8_t i=0; i<SensorTypeMax; ++i) {
+    for (uint8_t i=0; i<SensorDataTypeCount; ++i) {
       sensors[i].lEnabled = sensors[i].gEnabled = false;
       sensors[i].lValue = sensors[i].gValue = 0;
     }
@@ -133,18 +139,23 @@ public:
   const char* idfVersion();
   const char* firmwareVersion();
   const char* model();
+
   DeployMode deployMode();
   SensorType pmSensorType();
   SensorType co2SensorType();
   uint32_t devCapability();
-
   void setDeployMode(DeployMode mode);
   void toggleDeployMode();
   void setSensorType(SensorType pmType, SensorType co2Type);
   void setDevCapability(uint32_t cap);
+
+  bool alertSoundOn();
+  TriggerAlert sensorValueTriggerAlert(SensorDataType type, float value);
+  MobileTokens & mobileTokens();
   void setAlertSoundOn(bool on);
-  void setAlert(SensorType type, bool lEnabled, bool gEnabled, float lValue, float gValue);
+  void setAlert(SensorDataType type, bool lEnabled, bool gEnabled, float lValue, float gValue);
   void setPnToken(bool enabled, MobileOS os, const char *token);
+
   void setRestartRequest();
   void restart();
   bool restarting();
