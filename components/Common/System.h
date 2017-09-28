@@ -36,19 +36,22 @@ struct SysConfig {
   uint32_t    devCapability;
 };
 
-// ------ alert config
+// ------ mobile os
 enum MobileOS {
   IOS       = 0,
   Android   = 1
 };
 
+const char* mobileOSStr(MobileOS);
+
+// ------ token
 #define TOKEN_LEN   64
 #define TOKEN_COUNT 5
 
 struct MobileToken {
   bool     on;
   MobileOS os;
-  char     token[TOKEN_LEN+1]; // null terminate
+  char     str[TOKEN_LEN+1]; // null terminate
 };
 
 struct MobileTokens {
@@ -59,7 +62,7 @@ struct MobileTokens {
   void init() {
     head = 0; count = 0;
     for (uint8_t i=0; i<TOKEN_COUNT; ++i)
-      tokens[i].token[TOKEN_LEN] = '\0';
+      tokens[i].str[TOKEN_LEN] = '\0';
   }
   void setToken(bool on, MobileOS os, const char *token) {
     int8_t index = findToken(token);
@@ -67,7 +70,7 @@ struct MobileTokens {
       if (count < TOKEN_COUNT) { index = (head + count) % TOKEN_COUNT; ++count; }
       else { index = head; head = (head + 1) % TOKEN_COUNT; }
       tokens[index].os = os;
-      strncpy(tokens[index].token, token, TOKEN_LEN);
+      strncpy(tokens[index].str, token, TOKEN_LEN);
     }
     else { index = (head + index) % TOKEN_COUNT; }
     tokens[index].on = on;
@@ -75,13 +78,14 @@ struct MobileTokens {
   int8_t findToken(const char *token) {
     for (int8_t index = 0; index < count; ++index) {
       uint8_t realIndex = (head + index) % TOKEN_COUNT;
-      if (strncmp(token, tokens[realIndex].token, TOKEN_LEN) == 0) return index;
+      if (strncmp(token, tokens[realIndex].str, TOKEN_LEN) == 0) return index;
     }
     return -1;
   }
   MobileToken & token(uint8_t index) { return tokens[(head + index) % TOKEN_COUNT]; }
 };
 
+// ------ alert
 enum TriggerAlert {
   TriggerNone,
   TriggerL,
@@ -151,7 +155,7 @@ public:
 
   bool alertSoundOn();
   TriggerAlert sensorValueTriggerAlert(SensorDataType type, float value);
-  MobileTokens & mobileTokens();
+  MobileTokens * mobileTokens();
   void setAlertSoundOn(bool on);
   void setAlert(SensorDataType type, bool lEnabled, bool gEnabled, float lValue, float gValue);
   void setPnToken(bool enabled, MobileOS os, const char *token);

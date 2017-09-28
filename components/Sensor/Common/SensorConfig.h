@@ -15,11 +15,19 @@ extern "C" {
 /////////////////////////////////////////////////////////////////////////////////////////
 // Sensor alert mask
 /////////////////////////////////////////////////////////////////////////////////////////
-#define PM_ALERT_MASK                  0x00000001
-#define HCHO_ALERT_MASK                0x00000002
-#define TEMP_ALERT_MASK                0x00000004
-#define HUMID_ALERT_MASK               0x00000008
-#define CO2_ALERT_MASK                 0x00000010
+// #define PM_ALERT_MASK                  0x00000001
+// #define HCHO_ALERT_MASK                0x00000002
+// #define TEMP_ALERT_MASK                0x00000004
+// #define HUMID_ALERT_MASK               0x00000008
+// #define CO2_ALERT_MASK                 0x00000010
+enum SensorAlertMask
+{
+  PM_ALERT_MASK        = 0x00000001,
+  HCHO_ALERT_MASK      = 0x00000002,
+  TEMP_ALERT_MASK      = 0x00000004,
+  HUMID_ALERT_MASK     = 0x00000008,
+  CO2_ALERT_MASK       = 0x00000010
+};
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Sensor capability mask
@@ -64,6 +72,9 @@ enum SensorDataType
   HUMID     = 4,
   SensorDataTypeCount
 };
+
+const char * sensorDataTypeStr(SensorDataType type);
+SensorAlertMask sensorAlertMask(SensorDataType type);
 
 #ifdef __cplusplus
 }

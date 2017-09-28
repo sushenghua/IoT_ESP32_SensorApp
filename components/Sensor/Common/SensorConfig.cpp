@@ -81,3 +81,25 @@ uint16_t tempHumidDataPosForSensorType(SensorType type)
       return 0xFFFF; // invalid
   }
 }
+
+static const char * const SensorDataTypeStr[] = {
+  "PM",      // 0
+  "HCHO",    // 1
+  "CO2",     // 2
+  "TEMP",    // 3
+  "HUMID",   // 4
+};
+
+const char * sensorDataTypeStr(SensorDataType type)
+{
+  return SensorDataTypeStr[type];
+}
+
+static SensorAlertMask const SENSOR_ALERT_MASKS[5] = {
+  PM_ALERT_MASK, HCHO_ALERT_MASK, CO2_ALERT_MASK, TEMP_ALERT_MASK, HUMID_ALERT_MASK
+};
+
+SensorAlertMask sensorAlertMask(SensorDataType type)
+{
+  return SENSOR_ALERT_MASKS[type];
+}

@@ -201,9 +201,12 @@ void status_check_task(void *p)
 
 uint32_t _lAlertMask = 0;
 uint32_t _gAlertMask = 0;
+float    _alertValue[SensorDataTypeCount];
 
-void checkAlert(SensorDataType type, float value, uint32_t mask)
+void checkAlert(SensorDataType type, float value)
 {
+  _alertValue[type] = value;
+  uint32_t mask = (uint32_t)sensorAlertMask(type);
   TriggerAlert trigger = System::instance()->sensorValueTriggerAlert(type, value);
   if (trigger == TriggerL) { _lAlertMask |= mask; _gAlertMask &= (~mask); }
   else if (trigger == TriggerG) { _lAlertMask &= (~mask); _gAlertMask |= mask; }
@@ -221,8 +224,8 @@ void sht3x_sensor_task(void *p)
   while (true) {
     if (_enablePeripheralTaskLoop) {
       sht3xSensor.sampleData();
-      checkAlert(TEMP, sht3xSensor.tempHumidData().temp, TEMP_ALERT_MASK);
-      checkAlert(HUMID, sht3xSensor.tempHumidData().temp, HUMID_ALERT_MASK);
+      checkAlert(TEMP, sht3xSensor.tempHumidData().temp);
+      checkAlert(HUMID, sht3xSensor.tempHumidData().temp);
     }
     else _sht3xSensorTaskPaused = true;
     vTaskDelay(500/portTICK_RATE_MS);
@@ -241,9 +244,9 @@ void pm_sensor_task(void *p)
   while (true) {
     if (_enablePeripheralTaskLoop) {
       pmSensor.sampleData(3000);
-      checkAlert(PM, pmSensor.pmData().aqiPm(), PM_ALERT_MASK);
+      checkAlert(PM, pmSensor.pmData().aqiPm());
       if (System::instance()->devCapability() & HCHO_CAPABILITY_MASK)
-        checkAlert(HCHO, pmSensor.hchoData().hcho, HCHO_ALERT_MASK);
+        checkAlert(HCHO, pmSensor.hchoData().hcho);
     }
     else _pmSensorTaskPaused = true;
     vTaskDelay(500/portTICK_RATE_MS);
@@ -263,7 +266,7 @@ void co2_sensor_task(void *p)
   while (true) {
     if (_enablePeripheralTaskLoop) {
       co2Sensor.sampleData(3000);
-      checkAlert(CO2, co2Sensor.co2Data().co2, CO2_ALERT_MASK);
+      checkAlert(CO2, co2Sensor.co2Data().co2);
     }
     else _co2SensorTaskPaused = true;
     vTaskDelay(1000/portTICK_RATE_MS);
@@ -331,6 +334,66 @@ void orientation_sensor_task(void *p)
 #include "CmdEngine.h"
 
 MqttClient mqtt;
+
+char _alertStringBuf[1024];
+
+size_t genAlertPushNotificationJsonString(uint32_t mask, const char* tag)
+{
+  MobileTokens *tokens = System::instance()->mobileTokens();
+
+  // return 0 on no alert or no token
+  if (mask == 0 || tokens->count == 0) return 0;
+
+  size_t packCount = 0;
+  // print tag, tokens key, tokens content list starting '['
+  sprintf(_alertStringBuf + packCount, "{\"tag\":\"%s\",\"tokens\":[", tag);
+  packCount += strlen(_alertStringBuf + packCount);
+
+  // print token list content
+  size_t onTokenCount = 0;
+  for (uint8_t i=0; i<tokens->count; ++i) {
+    MobileToken &token = tokens->token(i);
+    if (token.on) {
+      ++onTokenCount;
+      sprintf(_alertStringBuf + packCount,
+              "{\"token\":\"%s\",\"os\":\"%s\"},", token.str, mobileOSStr(token.os));
+      packCount += strlen(_alertStringBuf + packCount);
+    }
+  }
+
+  // no alert-active token
+  if (onTokenCount == 0) return 0;
+
+  // print tokens content list ending ']', val key, val content starting '{'
+  sprintf(_alertStringBuf + packCount, "],\"val\":{");
+  packCount += strlen(_alertStringBuf + packCount);
+
+  // print val content
+  for (uint8_t t=PM; t<SensorDataTypeCount; ++t) {
+    if (mask & sensorAlertMask((SensorDataType)t)) {
+      sprintf(_alertStringBuf + packCount, "\"%s\":%.1f,", sensorDataTypeStr((SensorDataType)t), _alertValue[t]);
+      packCount += strlen(_alertStringBuf + packCount);
+    }
+  }
+
+  // print val content ending '}', whole json ending '}'
+  sprintf(_alertStringBuf + packCount, "}}");
+  packCount += strlen(_alertStringBuf + packCount);
+
+  return packCount;
+}
+
+#define NPS_TOPIC   "api/nps"
+
+void sendAlertPushNotification()
+{
+  size_t jsonSize = genAlertPushNotificationJsonString(_lAlertMask, "l");
+  if (jsonSize > 0) mqtt.publish(NPS_TOPIC, _alertStringBuf, jsonSize, 0);
+
+  jsonSize = genAlertPushNotificationJsonString(_gAlertMask, "g");
+  if (jsonSize > 0) mqtt.publish(NPS_TOPIC, _alertStringBuf, jsonSize, 0);
+}
+
 static void mqtt_task(void *pvParams)
 {
   CmdEngine cmdEngine;
@@ -423,6 +486,15 @@ const char * deployModeStr(DeployMode mode)
   return DeployModeStr[mode];
 }
 
+static const char * const MobileOSStr[] = {
+  "ios",        // 0
+  "android"     // 1
+};
+
+const char* mobileOSStr(MobileOS os)
+{
+  return MobileOSStr[os];
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Sytem class
@@ -884,9 +956,9 @@ TriggerAlert System::sensorValueTriggerAlert(SensorDataType type, float value)
   else return TriggerNone;
 }
 
-MobileTokens & System::mobileTokens()
+MobileTokens * System::mobileTokens()
 {
-  return _mobileTokens;
+  return &_mobileTokens;
 }
 
 void System::setAlertSoundOn(bool on)
