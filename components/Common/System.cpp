@@ -714,138 +714,42 @@ void System::markPowerEvent()
   _hasPwrEvent = true;
 }
 
-#include "nvs.h"
-#define SYSTEM_STORAGE_NAMESPACE          "app"
-
-bool System::_loadStorageData(const char *STORAGE_TAG, void *out, size_t loadSize)
-{
-  bool succeeded = false;
-  bool nvsOpened = false;
-
-  nvs_handle nvsHandle;
-  esp_err_t err;
-
-  do {
-    // open nvs
-    err = nvs_open(SYSTEM_STORAGE_NAMESPACE, NVS_READONLY, &nvsHandle);
-    if (err == ESP_ERR_NVS_NOT_FOUND) {
-      APP_LOGE("[System]", "loadConfig open nvs: storage \"%s\" not found", SYSTEM_STORAGE_NAMESPACE);
-      break;
-    }
-    else if (err != ESP_OK) {
-      APP_LOGE("[System]", "loadConfig open nvs failed %d", err);
-      break;
-    }
-    nvsOpened = true;
-
-    // read sys config
-    size_t requiredSize = 0;  // value will default to 0, if not set yet in NVS
-    err = nvs_get_blob(nvsHandle, STORAGE_TAG, NULL, &requiredSize);
-    if (err == ESP_ERR_NVS_NOT_FOUND) {
-      // _setDefaultConfig();  // already set default in constructor
-      break;
-    }
-    if (err != ESP_OK) {
-      APP_LOGE("[System]", "loadConfig read \"%s\" size failed %d", STORAGE_TAG, err);
-      break;
-    }
-    if (requiredSize != loadSize) {
-      APP_LOGE("[System]", "loadConfig read \"%s\" size got unexpected value", STORAGE_TAG);
-      break;
-    }
-    // read previously saved config
-    err = nvs_get_blob(nvsHandle, STORAGE_TAG, out, &requiredSize);
-    if (err != ESP_OK) {
-      // _setDefaultConfig();  // already set default in constructor
-      APP_LOGE("[System]", "loadConfig read \"%s\" content failed %d", STORAGE_TAG, err);
-      break;
-    }
-    succeeded = true;
-
-  } while(false);
-
-  // close nvs
-  if (nvsOpened) nvs_close(nvsHandle);
-
-  return succeeded;
-}
-
-bool System::_saveStorageData(const char *STORAGE_TAG, const void *data, size_t saveSize)
-{
-  bool succeeded = false;
-  bool nvsOpened = false;
-
-  nvs_handle nvsHandle;
-  esp_err_t err;
-
-  do {
-    // open nvs
-    err = nvs_open(SYSTEM_STORAGE_NAMESPACE, NVS_READWRITE, &nvsHandle);
-    if (err != ESP_OK) {
-      APP_LOGE("[System]", "saveConfig open nvs failed %d", err);
-      break;
-    }
-    nvsOpened = true;
-
-    // write wifi config
-    err = nvs_set_blob(nvsHandle, STORAGE_TAG, data, saveSize);
-    if (err != ESP_OK) {
-      APP_LOGE("[System]", "saveConfig write \"%s\" content failed %d", STORAGE_TAG, err);
-      break;
-    }
-
-    // commit written value.
-    err = nvs_commit(nvsHandle);
-    if (err != ESP_OK) {
-      ESP_LOGE("[System]", "saveConfig commit failed %d", err);
-      break;
-    }
-    succeeded = true;
-
-  } while(false);
-
-  // close nvs
-  if (nvsOpened) nvs_close(nvsHandle);
-
-  return succeeded;
-}
-
 #define SYSTEM_CONFIG_TAG                 "appConf"
 #define ALERT_TAG                         "appAlerts"
 #define TOKEN_TAG                         "appTokens"
 
 bool System::_loadConfig()
 {
-  return _loadStorageData(SYSTEM_CONFIG_TAG, &_config, sizeof(_config));
+  return NvsFlash::loadData(SYSTEM_CONFIG_TAG, &_config, sizeof(_config));
 }
 
 bool System::_saveConfig()
 {
-  bool succeeded = _saveStorageData(SYSTEM_CONFIG_TAG, &_config, sizeof(_config));
+  bool succeeded = NvsFlash::saveData(SYSTEM_CONFIG_TAG, &_config, sizeof(_config));
   _configNeedToSave = false; // ? or _configNeedToSave = !succeeded;
   return succeeded;
 }
 
 bool System::_loadAlerts()
 {
-  return _loadStorageData(ALERT_TAG, &_alerts, sizeof(_alerts));
+  return NvsFlash::loadData(ALERT_TAG, &_alerts, sizeof(_alerts));
 }
 
 bool System::_saveAlerts()
 {
-  bool succeeded = _saveStorageData(ALERT_TAG, &_alerts, sizeof(_alerts));
+  bool succeeded = NvsFlash::saveData(ALERT_TAG, &_alerts, sizeof(_alerts));
   _alertsNeedToSave = false;
   return succeeded;
 }
 
 bool System::_loadMobileTokens()
 {
-  return _loadStorageData(TOKEN_TAG, &_mobileTokens, sizeof(_mobileTokens));
+  return NvsFlash::loadData(TOKEN_TAG, &_mobileTokens, sizeof(_mobileTokens));
 }
 
 bool System::_saveMobileTokens()
 {
-  bool succeeded = _saveStorageData(TOKEN_TAG, &_mobileTokens, sizeof(_mobileTokens));
+  bool succeeded = NvsFlash::saveData(TOKEN_TAG, &_mobileTokens, sizeof(_mobileTokens));
   _tokensNeedToSave =  false;
   return succeeded;
 }

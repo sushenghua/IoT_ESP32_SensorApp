@@ -181,8 +181,6 @@ public:
 private:
   void _launchTasks();
   void _setDefaultConfig();
-  bool _loadStorageData(const char *STORAGE_TAG, void *out, size_t loadSize);
-  bool _saveStorageData(const char *STORAGE_TAG, const void *data, size_t saveSize);
   bool _loadConfig();
   bool _saveConfig();
   bool _loadAlerts();
