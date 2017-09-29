@@ -12,6 +12,7 @@
 #include "System.h"
 #include "Config.h"
 #include "AppLog.h"
+#include "AppUpdaterConfig.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // debug purpose
@@ -54,8 +55,6 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 // communicated with updater service provider and client app
 /////////////////////////////////////////////////////////////////////////////////////////
-#define VERSION  100
-
 #define REQUIRE_VERIFY_BIT_CMD       SIZE_MAX
 #define UPDATE_RX_DATA_BLOCK_SIZE    4096
 
@@ -90,7 +89,7 @@ char        _md5Result[MD5_LENGTH];
 /////////////////////////////////////////////////////////////////////////////////////////
 AppUpdater::AppUpdater()
 : _state(UPDATE_STATE_IDLE)
-, _currentVersion(VERSION)
+, _currentVersion(FIRMWARE_VERSION)
 , _rxTopicLen(0)
 , _newVersionSize(0)
 , _updateHandle(0)

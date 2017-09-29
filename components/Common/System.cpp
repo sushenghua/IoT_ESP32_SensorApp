@@ -503,6 +503,7 @@ const char* mobileOSStr(MobileOS os)
 #include "esp_system.h"
 #include <string.h>
 #include "ProductConfig.h"
+#include "AppUpdaterConfig.h"
 
 static char MAC_ADDR[13] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF };
 
@@ -905,7 +906,7 @@ const char* System::idfVersion()
 
 const char* System::firmwareVersion()
 {
-  return "1.0";
+  return FIRMWARE_VERSION_STR;
 }
 
 static char MODEL[20];
