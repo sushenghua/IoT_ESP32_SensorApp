@@ -30,8 +30,11 @@ typedef enum CmdKey {
     SetSensorType           ,//= 18,
     TurnOnDisplay           ,//= 19,
     TurnOnAutoAdjustDisplay ,//= 20,
-    UpdateFirmware          ,//= 21,
-    Restart                 ,//= 22,
+    SetAlertEnableConfig    ,//= 21,
+    SetAlertValueConfig     ,//= 22,
+    SetPNToken              ,//= 23
+    UpdateFirmware          ,//= 24,
+    Restart                 ,//= 25,
     CmdKeyMaxValue
 
 } CmdKey;

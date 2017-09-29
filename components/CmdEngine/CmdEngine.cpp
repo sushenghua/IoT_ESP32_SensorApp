@@ -51,7 +51,21 @@ void CmdEngine::enableUpdate(bool enabled)
   }
 }
 
+static const char * const SensorTypeParseKeyStr[] = { "pm", "co2" };
+static const char * const AlertEnableParseKeyStr[] = { "enpn", "ensnd"};
+
+const size_t FloatLen = sizeof(float);
+union FloatBytes {
+  float v;
+  uint8_t bytes[FloatLen];
+};
+
 uint8_t  _cmdBuf[1024];
+
+inline bool strEqual(const char* str1, const char* str2)
+{
+  return strlen(str1) == strlen(str2) && strcmp(str1, str2) == 0;
+}
 
 CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_t &argsSize, CmdEngine::RetFormat &retFmt)
 {
@@ -67,13 +81,13 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
   else retFmt = CmdEngine::Binary;
 
   CmdKey cmdKeyRet = DoNothing;
+  args = _cmdBuf;
 
   switch (cmdKey) {
 
     case SetHostname: {
       cJSON *hostname = cJSON_GetObjectItem(root, "hostname");
       if (hostname) {
-        args = _cmdBuf;
         argsSize = strlen(hostname->valuestring);
         memcpy(args, hostname->valuestring, argsSize);
         cmdKeyRet = cmdKey;
@@ -87,7 +101,6 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
       cJSON *ssid = cJSON_GetObjectItem(root, "ssid");
       cJSON *pass = cJSON_GetObjectItem(root, "pass");
       if (ssid && pass) {
-        args = _cmdBuf;
         args[0] = strlen(ssid->valuestring);
         size_t passLen = strlen(pass->valuestring);
         memcpy(args + 1, ssid->valuestring, args[0]);
@@ -102,13 +115,10 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
     case SetSystemDeployMode: {
       cJSON *mode = cJSON_GetObjectItem(root, "mode");
       if (mode) {
-        args = _cmdBuf;
         argsSize = 1;
         for (int i=0; i<DeployModeMax; ++i) {
-          DeployMode m = (DeployMode)i;
-          const char* mstr = deployModeStr(m);
-          if (strlen(mode->valuestring) == strlen(mstr) && strcmp(mode->valuestring, mstr) == 0) {
-            args[0] = m;
+          if (strEqual(mode->valuestring, deployModeStr((DeployMode)i))) {
+            args[0] = i;
             cmdKeyRet = cmdKey;
             break;
           }
@@ -118,57 +128,96 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
     }
 
     case SetSensorType: {
-      args = _cmdBuf;
-      args[1] = args[0] = (uint8_t)NoneSensor;
-      argsSize = 2;
-      bool pmArgOK = false;
-      bool co2ArgOK = false;
-      cJSON *pm = cJSON_GetObjectItem(root, "pm");
-      if (pm) {
-        for (int i=0; i<SensorTypeMax; ++i) {
-          SensorType st = (SensorType)i;
-          const char* ststr = sensorTypeStr(st);
-          if (strlen(pm->valuestring) == strlen(ststr) && strcmp(pm->valuestring, ststr) == 0) {
-            args[0] = (uint8_t)st;
-            pmArgOK = true;
+      argsSize = 0;
+      for (int oi=0; oi<2; ++oi) {
+        cJSON *obj = cJSON_GetObjectItem(root, SensorTypeParseKeyStr[oi]);
+        if (!obj) break;
+        for (uint8_t i=0; i<SensorTypeMax; ++i) {
+          if (strEqual(obj->valuestring, sensorTypeStr((SensorType)i))) {
+            args[oi] = i;
+            ++argsSize;
             break;
           }
         }
       }
-      cJSON *co2 = cJSON_GetObjectItem(root, "co2");
-      if (co2) {
-        for (int i=0; i<SensorTypeMax; ++i) {
-          SensorType st = (SensorType)i;
-          const char* ststr = sensorTypeStr(st);
-          if (strlen(co2->valuestring) == strlen(ststr) && strcmp(co2->valuestring, ststr) == 0) {
-            args[1] = (uint8_t)st;
-            co2ArgOK = true;
-            break;
-          }
-        }
-      }
-      if (pmArgOK && co2ArgOK)
-        cmdKeyRet = cmdKey;
+      if (argsSize == 2) cmdKeyRet = cmdKey;
       break;
     }
 
     case TurnOnDisplay:
     case TurnOnAutoAdjustDisplay: {
       cJSON *on = cJSON_GetObjectItem(root, "on");
-      if (on) {
-        args = _cmdBuf;
-        if (strlen(on->valuestring) == strlen("on") &&
-            strcmp(on->valuestring, "on") == 0) {
-          args[0] = 1;
-          argsSize = 1;
-          cmdKeyRet = cmdKey;
+      if (!on) break;
+      if (strEqual(on->valuestring, "yes"))     args[0] = 1;
+      else if (strEqual(on->valuestring, "no")) args[0] = 0;
+      else break;
+
+      argsSize = 1;
+      cmdKeyRet = cmdKey;
+      break;
+    }
+
+    case SetAlertEnableConfig: {
+      argsSize = 2;
+      for (int oi=0; oi<2; ++oi) {
+        cJSON *obj = cJSON_GetObjectItem(root, AlertEnableParseKeyStr[oi]);
+        if (!obj) { argsSize = 0; break; }
+        if (strEqual(obj->valuestring, "yes"))     args[oi] = 1;
+        else if (strEqual(obj->valuestring, "no")) args[oi] = 0;
+        else { argsSize = 0; break; }
+      }
+      if (argsSize == 2) cmdKeyRet = cmdKey;
+      break;
+    }
+
+    case SetAlertValueConfig: {
+      argsSize = 0;
+      bool parseOK = true;
+      FloatBytes fb;
+      size_t bLen = FloatLen * 2 + 2;
+      cJSON *config = cJSON_GetObjectItem(root, "config");
+      if (config) {
+        for (int i=0; i<SensorDataTypeCount; ++i) {
+          SensorDataType sdt = (SensorDataType)i;
+          const char* sdtstr = sensorDataTypeStr(sdt);
+          cJSON *alerts = cJSON_GetObjectItem(config, sdtstr);
+          if (!alerts) { parseOK = false; break; }
+          cJSON *len = cJSON_GetObjectItem(alerts, "len");
+          cJSON *gen = cJSON_GetObjectItem(alerts, "gen");
+          cJSON *lval = cJSON_GetObjectItem(alerts, "lval");
+          cJSON *gval = cJSON_GetObjectItem(alerts, "gval");
+          // if (!len || !gen || !lval || !gval) { parseOK = false; break; }
+          args[i*bLen+0] = (len && strEqual(len->valuestring, "yes")) ? 1 : 0;
+          args[i*bLen+1] = (gen && strEqual(gen->valuestring, "yes")) ? 1 : 0;
+          fb.v = (lval) ? (float)lval->valuedouble : 0.0f;
+          memcpy(args+i*bLen+2, fb.bytes, FloatLen);
+          fb.v = (gval) ? (float)gval->valuedouble : 0.0f;
+          memcpy(args+i*bLen+2+FloatLen, fb.bytes, FloatLen);
+          argsSize += bLen;
         }
-        else if (strlen(on->valuestring) == strlen("off") &&
-                 strcmp(on->valuestring, "off") == 0) {
-          args[0] = 0;
-          argsSize = 1;
+      } else { parseOK = false; }
+      if (parseOK) cmdKeyRet = cmdKey;
+      break;
+    }
+
+    case SetPNToken: {
+      cJSON *en = cJSON_GetObjectItem(root, "en");
+      if (!en) break;
+      if (strEqual(en->valuestring, "yes"))     args[0] = 1;
+      else if (strEqual(en->valuestring, "no")) args[0] = 0;
+      else break;
+
+      cJSON *os = cJSON_GetObjectItem(root, "os");
+      if (!os) break;
+      if (strEqual(os->valuestring, "ios"))          args[1] = iOS;
+      else if (strEqual(os->valuestring, "android")) args[1] = Android;
+      else break;
+
+      cJSON *token = cJSON_GetObjectItem(root, "token");
+      if (token && TOKEN_LEN == strlen(token->valuestring)) {
+          memcpy(args + 2, token->valuestring, TOKEN_LEN);
+          argsSize = 2 + TOKEN_LEN;
           cmdKeyRet = cmdKey;
-        }
       }
       break;
     }

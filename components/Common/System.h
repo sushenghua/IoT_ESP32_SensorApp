@@ -38,7 +38,7 @@ struct SysConfig {
 
 // ------ mobile os
 enum MobileOS {
-  IOS       = 0,
+  iOS       = 0,
   Android   = 1
 };
 
@@ -100,13 +100,15 @@ struct Alert {
 };
 
 struct Alerts {
+  bool  pnOn;
   bool  soundOn;
   Alert sensors[SensorDataTypeCount];
   void init() {
+    pnOn = false;
     soundOn = false;
     for (uint8_t i=0; i<SensorDataTypeCount; ++i) {
       sensors[i].lEnabled = sensors[i].gEnabled = false;
-      sensors[i].lValue = sensors[i].gValue = 0;
+      sensors[i].lValue = sensors[i].gValue = 0.0f;
     }
   }
 };
@@ -153,9 +155,11 @@ public:
   void setSensorType(SensorType pmType, SensorType co2Type);
   void setDevCapability(uint32_t cap);
 
+  bool alertPnOn();
   bool alertSoundOn();
   TriggerAlert sensorValueTriggerAlert(SensorDataType type, float value);
   MobileTokens * mobileTokens();
+  void setAlertPnOn(bool on);
   void setAlertSoundOn(bool on);
   void setAlert(SensorDataType type, bool lEnabled, bool gEnabled, float lValue, float gValue);
   void setPnToken(bool enabled, MobileOS os, const char *token);

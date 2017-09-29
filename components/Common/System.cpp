@@ -387,11 +387,13 @@ size_t genAlertPushNotificationJsonString(uint32_t mask, const char* tag)
 
 void sendAlertPushNotification()
 {
-  size_t jsonSize = genAlertPushNotificationJsonString(_lAlertMask, "l");
-  if (jsonSize > 0) mqtt.publish(NPS_TOPIC, _alertStringBuf, jsonSize, 0);
+  if (System::instance()->alertPnOn()) {
+    size_t jsonSize = genAlertPushNotificationJsonString(_lAlertMask, "l");
+    if (jsonSize > 0) mqtt.publish(NPS_TOPIC, _alertStringBuf, jsonSize, 0);
 
-  jsonSize = genAlertPushNotificationJsonString(_gAlertMask, "g");
-  if (jsonSize > 0) mqtt.publish(NPS_TOPIC, _alertStringBuf, jsonSize, 0);
+    jsonSize = genAlertPushNotificationJsonString(_gAlertMask, "g");
+    if (jsonSize > 0) mqtt.publish(NPS_TOPIC, _alertStringBuf, jsonSize, 0);
+  }
 }
 
 static void mqtt_task(void *pvParams)
@@ -849,6 +851,11 @@ void System::setDevCapability(uint32_t cap)
   }
 }
 
+bool System::alertPnOn()
+{
+  return _alerts.pnOn;
+}
+
 bool System::alertSoundOn()
 {
   return _alerts.soundOn;
@@ -866,10 +873,20 @@ MobileTokens * System::mobileTokens()
   return &_mobileTokens;
 }
 
+void System::setAlertPnOn(bool on)
+{
+  if (_alerts.pnOn != on) {
+    _alerts.pnOn = on;
+    _alertsNeedToSave = true;
+  }
+}
+
 void System::setAlertSoundOn(bool on)
 {
-  _alerts.soundOn = on;
-  _alertsNeedToSave = true;
+  if (_alerts.soundOn != on) {
+    _alerts.soundOn = on;
+    _alertsNeedToSave = true;
+  }
 }
 
 void System::setAlert(SensorDataType type, bool lEnabled, bool gEnabled, float lValue, float gValue)
