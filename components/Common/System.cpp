@@ -502,7 +502,7 @@ const char* mobileOSStr(MobileOS os)
 #include "NvsFlash.h"
 #include "esp_system.h"
 #include <string.h>
-#include "SensorConfig.h"
+#include "ProductConfig.h"
 
 static char MAC_ADDR[13] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF };
 
@@ -541,8 +541,8 @@ void System::_setDefaultConfig()
   _config.wifiOn = true;
   _config.displayAutoAdjustOn = true;
   _config.deployMode = HTTPServerMode;
-  _config.pmSensorType = PMS5003ST;
-  _config.co2SensorType = DSCO220;
+  _config.pmSensorType =  PRODUCT_PM_SENSOR;
+  _config.co2SensorType = PRODUCT_CO2_SENSOR;
   _config.devCapability = ( capabilityForSensorType(_config.pmSensorType) |
                             capabilityForSensorType(_config.co2SensorType) );
   _config.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
