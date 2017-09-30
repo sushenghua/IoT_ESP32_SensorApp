@@ -396,6 +396,10 @@ void sendAlertPushNotification()
   }
 }
 
+#define REACTIVE_COUNT_FROM_BOOT 1000 // 1000 * 10ms = 10 seconds
+uint32_t _alertReactiveCount;
+uint32_t _alertReactiveCounter;
+
 static void mqtt_task(void *pvParams)
 {
   CmdEngine cmdEngine;
@@ -406,8 +410,15 @@ static void mqtt_task(void *pvParams)
   cmdEngine.init();
   cmdEngine.enableUpdate();
 
+  _alertReactiveCount = System::instance()->alerts()->reactiveTimeCount;
+  _alertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FROM_BOOT;
+
   while (true) {
     mqtt.poll();
+    if (++_alertReactiveCounter == _alertReactiveCount) {
+      sendAlertPushNotification();
+      _alertReactiveCounter = 0;
+    }
     vTaskDelay(10 / portTICK_PERIOD_MS);
     // APP_LOGE("[Task]", "task count: %d", uxTaskGetNumberOfTasks());
   }

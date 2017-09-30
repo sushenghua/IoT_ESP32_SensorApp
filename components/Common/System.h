@@ -105,13 +105,17 @@ struct Alert {
   float gValue;
 };
 
+#define ALERT_REACTIVE_COUNT   60000  // 60000 * 10ms(mqtt_task delay) = 10 min
+
 struct Alerts {
   bool  pnOn;
   bool  soundOn;
+  uint32_t reactiveTimeCount;
   Alert sensors[SensorDataTypeCount];
   void init() {
     pnOn = false;
     soundOn = false;
+    reactiveTimeCount = ALERT_REACTIVE_COUNT;
     for (uint8_t i=0; i<SensorDataTypeCount; ++i) {
       sensors[i].lEnabled = sensors[i].gEnabled = false;
       sensors[i].lValue = sensors[i].gValue = 0.0f;
