@@ -549,7 +549,7 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
       if (retFmt == JSON) {
         System *sys = System::instance();
         size_t packCount = 0;
-        sprintf(_strBuf, "{\"cmd\":\"%s\",\"enpn\":\"%s\",\"ensnd\":\"%s\",\"vals\":{",
+        sprintf(_strBuf + packCount, "{\"cmd\":\"%s\",\"enpn\":\"%s\",\"ensnd\":\"%s\",\"vals\":{",
                 cmdKeyToStr(cmdKey),
                 sys->alertPnOn() ? "yes" : "no",
                 sys->alertSoundOn() ? "yes" : "no");
@@ -557,15 +557,16 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
 
         Alerts *alerts = sys->alerts();
         for (int i=0; i<SensorDataTypeCount; ++i) {
-          sprintf(_strBuf, "\"%s\":{\"len\":\"%s\",\"gen\":\"%s\",\"lval\":%f,\"gval\":%f},",
+          sprintf(_strBuf + packCount, "\"%s\":{\"len\":\"%s\",\"gen\":\"%s\",\"lval\":%.2f,\"gval\":%.2f}%s",
                   sensorDataTypeStr((SensorDataType)i),
                   alerts->sensors[i].lEnabled ? "yes" : "no",
                   alerts->sensors[i].gEnabled ? "yes" : "no",
                   alerts->sensors[i].lValue,
-                  alerts->sensors[i].gValue);
+                  alerts->sensors[i].gValue,
+                  i < SensorDataTypeCount - 1 ? "," : "");
           packCount += strlen(_strBuf + packCount);
         }
-        sprintf(_strBuf, "}}");
+        sprintf(_strBuf + packCount, "}}");
         packCount += 2;
         _delegate->replyMessage(_strBuf, packCount, userdata);
       }

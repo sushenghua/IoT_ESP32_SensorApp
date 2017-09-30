@@ -355,8 +355,8 @@ size_t genAlertPushNotificationJsonString(uint32_t mask, const char* tag)
     MobileToken &token = tokens->token(i);
     if (token.on) {
       ++onTokenCount;
-      sprintf(_alertStringBuf + packCount,
-              "{\"token\":\"%s\",\"os\":\"%s\"},", token.str, mobileOSStr(token.os));
+      sprintf(_alertStringBuf + packCount, "{\"token\":\"%s\",\"os\":\"%s\"}%s",
+              token.str, mobileOSStr(token.os), (i < tokens->count - 1) ? "," : "");
       packCount += strlen(_alertStringBuf + packCount);
     }
   }
