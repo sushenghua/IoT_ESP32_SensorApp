@@ -149,8 +149,8 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
     case TurnOnAutoAdjustDisplay: {
       cJSON *on = cJSON_GetObjectItem(root, "on");
       if (!on) break;
-      if (strEqual(on->valuestring, "yes"))     args[0] = 1;
-      else if (strEqual(on->valuestring, "no")) args[0] = 0;
+      if (on->type == cJSON_True)       args[0] = 1;
+      else if (on->type == cJSON_False) args[0] = 0;
       else break;
 
       argsSize = 1;
@@ -163,8 +163,8 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
       for (int oi=0; oi<2; ++oi) {
         cJSON *obj = cJSON_GetObjectItem(root, AlertEnableParseKeyStr[oi]);
         if (!obj) { argsSize = 0; break; }
-        if (strEqual(obj->valuestring, "yes"))     args[oi] = 1;
-        else if (strEqual(obj->valuestring, "no")) args[oi] = 0;
+        if (obj->type == cJSON_True)       args[oi] = 1;
+        else if (obj->type == cJSON_False) args[oi] = 0;
         else { argsSize = 0; break; }
       }
       if (argsSize == 2) cmdKeyRet = cmdKey;
@@ -188,8 +188,8 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
           cJSON *lval = cJSON_GetObjectItem(alerts, "lval");
           cJSON *gval = cJSON_GetObjectItem(alerts, "gval");
           // if (!len || !gen || !lval || !gval) { parseOK = false; break; }
-          args[i*bLen+0] = (len && strEqual(len->valuestring, "yes")) ? 1 : 0;
-          args[i*bLen+1] = (gen && strEqual(gen->valuestring, "yes")) ? 1 : 0;
+          args[i*bLen+0] = (len && len->type == cJSON_True) ? 1 : 0;
+          args[i*bLen+1] = (gen && gen->type == cJSON_True) ? 1 : 0;
           fb.v = (lval) ? (float)lval->valuedouble : 0.0f;
           memcpy(args+i*bLen+2, fb.bytes, FloatLen);
           fb.v = (gval) ? (float)gval->valuedouble : 0.0f;
@@ -204,8 +204,8 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
     case SetPNToken: {
       cJSON *en = cJSON_GetObjectItem(root, "en");
       if (!en) break;
-      if (strEqual(en->valuestring, "yes"))     args[0] = 1;
-      else if (strEqual(en->valuestring, "no")) args[0] = 0;
+      if (en->type == cJSON_True)       args[0] = 1;
+      else if (en->type == cJSON_False) args[0] = 0;
       else break;
 
       cJSON *os = cJSON_GetObjectItem(root, "os");
@@ -341,13 +341,13 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
     case GetDeviceInfo:
       if (retFmt == JSON) {
         System *sys = System::instance();
-        sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\",\"model\":\"%s\",\"alcd\":\"%s\",\"deploy\":\"%s\",\"hostname\":\"%s\",\"devname\":\"%s\"}, \"cmd\":\"%s\"}",
+        sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\",\"model\":\"%s\",\"alcd\":%s,\"deploy\":\"%s\",\"hostname\":\"%s\",\"devname\":\"%s\"}, \"cmd\":\"%s\"}",
                 sys->uid(),
                 sys->devCapability(),
                 sys->idfVersion(),
                 sys->firmwareVersion(),
                 sys->model(),
-                sys->displayAutoAdjustOn()? "yes" : "no",
+                sys->displayAutoAdjustOn()? "true" : "false",
                 deployModeStr(sys->deployMode()),
                 Wifi::instance()->getHostName(),
                 sys->deviceName(),
@@ -549,33 +549,33 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
       if (retFmt == JSON) {
         System *sys = System::instance();
         size_t packCount = 0;
-        sprintf(_strBuf + packCount, "{\"cmd\":\"%s\",\"enpn\":\"%s\",\"ensnd\":\"%s\",\"vals\":{",
+        sprintf(_strBuf + packCount, "{\"cmd\":\"%s\",\"ret\":{\"enpn\":%s,\"ensnd\":%s,\"vals\":{",
                 cmdKeyToStr(cmdKey),
-                sys->alertPnOn() ? "yes" : "no",
-                sys->alertSoundOn() ? "yes" : "no");
+                sys->alertPnOn() ? "true" : "false",
+                sys->alertSoundOn() ? "true" : "false");
         packCount += strlen(_strBuf + packCount);
 
         Alerts *alerts = sys->alerts();
         for (int i=0; i<SensorDataTypeCount; ++i) {
-          sprintf(_strBuf + packCount, "\"%s\":{\"len\":\"%s\",\"gen\":\"%s\",\"lval\":%.2f,\"gval\":%.2f}%s",
+          sprintf(_strBuf + packCount, "\"%s\":{\"len\":%s,\"gen\":%s,\"lval\":%.2f,\"gval\":%.2f}%s",
                   sensorDataTypeStr((SensorDataType)i),
-                  alerts->sensors[i].lEnabled ? "yes" : "no",
-                  alerts->sensors[i].gEnabled ? "yes" : "no",
+                  alerts->sensors[i].lEnabled ? "true" : "false",
+                  alerts->sensors[i].gEnabled ? "true" : "false",
                   alerts->sensors[i].lValue,
                   alerts->sensors[i].gValue,
                   i < SensorDataTypeCount - 1 ? "," : "");
           packCount += strlen(_strBuf + packCount);
         }
-        sprintf(_strBuf + packCount, "}}");
-        packCount += 2;
+        sprintf(_strBuf + packCount, "}}}");
+        packCount += strlen(_strBuf + packCount);
         _delegate->replyMessage(_strBuf, packCount, userdata);
       }
       break;
 
     case CheckPNTokenEnabled:
       if (retFmt == JSON) {
-        sprintf(_strBuf, "{\"ret\":{\"en\":\"%s\"}, \"cmd\":\"%s\"}",
-                System::instance()->tokenEnabled((MobileOS)args[0], (const char*)(args+1)) ? "yes" : "no",
+        sprintf(_strBuf, "{\"ret\":{\"en\":%s}, \"cmd\":\"%s\"}",
+                System::instance()->tokenEnabled((MobileOS)args[0], (const char*)(args+1)) ? "true" : "false",
                 cmdKeyToStr(cmdKey));
         _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
       }
