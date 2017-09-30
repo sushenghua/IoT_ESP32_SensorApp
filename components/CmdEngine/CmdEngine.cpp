@@ -85,11 +85,12 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
 
   switch (cmdKey) {
 
-    case SetHostname: {
-      cJSON *hostname = cJSON_GetObjectItem(root, "hostname");
-      if (hostname) {
-        argsSize = strlen(hostname->valuestring);
-        memcpy(args, hostname->valuestring, argsSize);
+    case SetHostname:
+    case SetDeviceName: {
+      cJSON *name = cJSON_GetObjectItem(root, "name");
+      if (name) {
+        argsSize = strlen(name->valuestring);
+        memcpy(args, name->valuestring, argsSize);
         cmdKeyRet = cmdKey;
       }
       break;
@@ -215,9 +216,27 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
 
       cJSON *token = cJSON_GetObjectItem(root, "token");
       if (token && TOKEN_LEN == strlen(token->valuestring)) {
-          memcpy(args + 2, token->valuestring, TOKEN_LEN);
-          argsSize = 2 + TOKEN_LEN;
-          cmdKeyRet = cmdKey;
+        memcpy(args+2, token->valuestring, TOKEN_LEN);
+        args[2+TOKEN_LEN] = '\0'; // null terminated
+        argsSize = 3 + TOKEN_LEN;
+        cmdKeyRet = cmdKey;
+      }
+      break;
+    }
+
+    case CheckPNTokenEnabled: {
+      cJSON *os = cJSON_GetObjectItem(root, "os");
+      if (!os) break;
+      if (strEqual(os->valuestring, "ios"))          args[0] = iOS;
+      else if (strEqual(os->valuestring, "android")) args[0] = Android;
+      else break;
+
+      cJSON *token = cJSON_GetObjectItem(root, "token");
+      if (token && TOKEN_LEN == strlen(token->valuestring)) {
+        memcpy(args + 1, token->valuestring, TOKEN_LEN);
+        args[1+TOKEN_LEN] = '\0'; // null terminated
+        argsSize = 2 + TOKEN_LEN;
+        cmdKeyRet = cmdKey;
       }
       break;
     }
@@ -321,15 +340,17 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
 
     case GetDeviceInfo:
       if (retFmt == JSON) {
-        sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\",\"model\":\"%s\",\"alcd\":\"%s\",\"deploy\":\"%s\",\"hostname\":\"%s\"}, \"cmd\":\"%s\"}",
-                System::instance()->uid(),
-                System::instance()->devCapability(),
-                System::instance()->idfVersion(),
-                System::instance()->firmwareVersion(),
-                System::instance()->model(),
-                System::instance()->displayAutoAdjustOn()? "on" : "off",
-                deployModeStr(System::instance()->deployMode()),
+        System *sys = System::instance();
+        sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\",\"model\":\"%s\",\"alcd\":\"%s\",\"deploy\":\"%s\",\"hostname\":\"%s\",\"devname\":\"%s\"}, \"cmd\":\"%s\"}",
+                sys->uid(),
+                sys->devCapability(),
+                sys->idfVersion(),
+                sys->firmwareVersion(),
+                sys->model(),
+                sys->displayAutoAdjustOn()? "yes" : "no",
+                deployModeStr(sys->deployMode()),
                 Wifi::instance()->getHostName(),
+                sys->deviceName(),
                 cmdKeyToStr(cmdKey));
         _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
       }
@@ -377,13 +398,16 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
       }
       break;
 
-    case GetHostname: {
-      const char *hostname = Wifi::instance()->getHostName();
+    case GetHostname:
+    case GetDeviceName: {
+      const char *name = NULL;
+      if (cmdKey == GetHostname) name = Wifi::instance()->getHostName();
+      else if (cmdKey == GetDeviceName) name = System::instance()->deviceName();
       if (retFmt == JSON) {
-        replyJsonResult(_delegate, hostname, cmdKey, userdata);
+        replyJsonResult(_delegate, name, cmdKey, userdata);
       }
       else {
-        _delegate->replyMessage(hostname, strlen(hostname), userdata);
+        _delegate->replyMessage(name, strlen(name), userdata);
       }
       break;
     }
@@ -392,6 +416,10 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
       sprintf(_strBuf, "%.*s", argsSize, (const char*)args);
       Wifi::instance()->setHostName(_strBuf);
       Wifi::instance()->saveConfig();
+      break;
+
+    case SetDeviceName:
+      System::instance()->setDeviceName((const char*)args, argsSize);
       break;
 
     case TurnOnDisplay:
@@ -497,6 +525,63 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
 
     case SetSensorType:
       System::instance()->setSensorType((SensorType)args[0], (SensorType)args[1]);
+      break;
+
+    case SetAlertEnableConfig:
+      System::instance()->setAlertPnOn(args[0] == 1);
+      System::instance()->setAlertSoundOn(args[1] == 1);
+      break;
+
+    case SetAlertValueConfig: {
+      FloatBytes fbl, fbg;
+      size_t bLen = FloatLen * 2 + 2;
+      System *sys = System::instance();
+      for (int i=0; i<SensorDataTypeCount; ++i) {
+        SensorDataType sdt = (SensorDataType)i;
+        memcpy(fbl.bytes, args+i*bLen+2,          FloatLen);
+        memcpy(fbg.bytes, args+i*bLen+2+FloatLen, FloatLen);
+        sys->setAlert(sdt, args[i*bLen+0]==1, args[i*bLen+1]==1, fbl.v, fbg.v);
+      }
+      break;
+    }
+
+    case GetAlertConfig:
+      if (retFmt == JSON) {
+        System *sys = System::instance();
+        size_t packCount = 0;
+        sprintf(_strBuf, "{\"cmd\":\"%s\",\"enpn\":\"%s\",\"ensnd\":\"%s\",\"vals\":{",
+                cmdKeyToStr(cmdKey),
+                sys->alertPnOn() ? "yes" : "no",
+                sys->alertSoundOn() ? "yes" : "no");
+        packCount += strlen(_strBuf + packCount);
+
+        Alerts *alerts = sys->alerts();
+        for (int i=0; i<SensorDataTypeCount; ++i) {
+          sprintf(_strBuf, "\"%s\":{\"len\":\"%s\",\"gen\":\"%s\",\"lval\":%f,\"gval\":%f},",
+                  sensorDataTypeStr((SensorDataType)i),
+                  alerts->sensors[i].lEnabled ? "yes" : "no",
+                  alerts->sensors[i].gEnabled ? "yes" : "no",
+                  alerts->sensors[i].lValue,
+                  alerts->sensors[i].gValue);
+          packCount += strlen(_strBuf + packCount);
+        }
+        sprintf(_strBuf, "}}");
+        packCount += 2;
+        _delegate->replyMessage(_strBuf, packCount, userdata);
+      }
+      break;
+
+    case CheckPNTokenEnabled:
+      if (retFmt == JSON) {
+        sprintf(_strBuf, "{\"ret\":{\"en\":\"%s\"}, \"cmd\":\"%s\"}",
+                System::instance()->tokenEnabled((MobileOS)args[0], (const char*)(args+1)) ? "yes" : "no",
+                cmdKeyToStr(cmdKey));
+        _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
+      }
+      break;
+
+    case SetPNToken:
+      System::instance()->setPnToken(args[0]==1, (MobileOS)args[1], (const char*)(args+2));
       break;
 
     default:

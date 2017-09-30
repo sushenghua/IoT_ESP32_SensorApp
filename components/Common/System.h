@@ -27,13 +27,19 @@ enum DeployMode {
 
 const char * deployModeStr(DeployMode type);
 
-struct SysConfig {
+#define DEV_NAME_MAX_LEN 64
+
+struct SysConfig1 {
   bool        wifiOn;
   bool        displayAutoAdjustOn;
   DeployMode  deployMode;
+};
+
+struct SysConfig2 {
   SensorType  pmSensorType;
   SensorType  co2SensorType;
   uint32_t    devCapability;
+  char        devName[DEV_NAME_MAX_LEN+1];
 };
 
 // ------ mobile os
@@ -150,15 +156,19 @@ public:
   SensorType pmSensorType();
   SensorType co2SensorType();
   uint32_t devCapability();
+  const char* deviceName();
   void setDeployMode(DeployMode mode);
   void toggleDeployMode();
   void setSensorType(SensorType pmType, SensorType co2Type);
   void setDevCapability(uint32_t cap);
+  void setDeviceName(const char* name, size_t len = 0);
 
   bool alertPnOn();
   bool alertSoundOn();
+  Alerts * alerts();
   TriggerAlert sensorValueTriggerAlert(SensorDataType type, float value);
   MobileTokens * mobileTokens();
+  bool tokenEnabled(MobileOS os, const char* token);
   void setAlertPnOn(bool on);
   void setAlertSoundOn(bool on);
   void setAlert(SensorDataType type, bool lEnabled, bool gEnabled, float lValue, float gValue);
@@ -172,9 +182,9 @@ public:
   void resumePeripherals();
 
   void powerOff();
-  bool wifiOn() { return _config.wifiOn; }
+  bool wifiOn() { return _config1.wifiOn; }
   bool displayOn();
-  bool displayAutoAdjustOn() { return _config.displayAutoAdjustOn; }
+  bool displayAutoAdjustOn() { return _config1.displayAutoAdjustOn; }
   void turnWifiOn(bool on = true);
   void turnDisplayOn(bool on = true);
   void turnDisplayAutoAdjustOn(bool on = true);
@@ -185,23 +195,28 @@ public:
 private:
   void _launchTasks();
   void _setDefaultConfig();
-  bool _loadConfig();
-  bool _saveConfig();
+  bool _loadConfig1();
+  bool _saveConfig1();
+  bool _loadConfig2();
+  bool _saveConfig2();
   bool _loadAlerts();
   bool _saveAlerts();
   bool _loadMobileTokens();
   bool _saveMobileTokens();
   void _saveMemoryData();
-  void _updateConfig(bool saveImmediately = false);
+  void _updateConfig1(bool saveImmediately = false);
+  void _updateConfig2(bool saveImmediately = false);
   void _updateAlerts(bool saveImmedidately = false);
   void _updateMobileTokens(bool saveImmedidately = false);
 
 private:
   State        _state;
-  bool         _configNeedToSave;
+  bool         _config1NeedToSave;
+  bool         _config2NeedToSave;
   bool         _alertsNeedToSave;
   bool         _tokensNeedToSave;
-  SysConfig    _config;
+  SysConfig1   _config1;
+  SysConfig2   _config2;
   Alerts       _alerts;
   MobileTokens _mobileTokens;
 };

@@ -18,23 +18,27 @@ static const char * const CmdKeyStr[] = {
     "GetIdfVersion",            // 6
     "GetHostname",              // 7
     "SetHostname",              // 8
-    "GetStaSsidPass",           // 9
-    "SetStaSsidPass",           // 10
-    "GetApSsidPass",            // 11
-    "SetApSsidPass",            // 12
-    "GetAltApSsidPassList",     // 13
-    "AppendAltApSsidPass",      // 14
-    "ClearAltApSsidPassList",   // 15
-    "GetSystemDeployMode",      // 16
-    "SetSystemDeployMode",      // 17
-    "SetSensorType",            // 18
-    "TurnOnDisplay",            // 19
-    "TurnOnAutoAdjustDisplay",  // 20
-    "SetAlertEnableConfig",     // 21
-    "SetAlertValueConfig",      // 22
-    "SetPNToken",               // 23
-    "UpdateFirmware",           // 24
-    "Restart"                   // 25
+    "GetDeviceName",            // 9
+    "SetDeviceName",            // 10
+    "GetStaSsidPass",           // 11
+    "SetStaSsidPass",           // 12
+    "GetApSsidPass",            // 13
+    "SetApSsidPass",            // 14
+    "GetAltApSsidPassList",     // 15
+    "AppendAltApSsidPass",      // 16
+    "ClearAltApSsidPassList",   // 17
+    "GetSystemDeployMode",      // 18
+    "SetSystemDeployMode",      // 19
+    "SetSensorType",            // 20
+    "TurnOnDisplay",            // 21
+    "TurnOnAutoAdjustDisplay",  // 22
+    "GetAlertConfig",           // 23
+    "CheckPNTokenEnabled",      // 24
+    "SetAlertEnableConfig",     // 25
+    "SetAlertValueConfig",      // 26
+    "SetPNToken",               // 27
+    "UpdateFirmware",           // 28
+    "Restart"                   // 29
 };
 
 CmdKey strToCmdKey(const char *str)

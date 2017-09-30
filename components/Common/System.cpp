@@ -530,7 +530,8 @@ System * System::instance()
 
 System::System()
 : _state(Uninitialized)
-, _configNeedToSave(false)
+, _config1NeedToSave(false)
+, _config2NeedToSave(false)
 , _alertsNeedToSave(false)
 , _tokensNeedToSave(false)
 {
@@ -541,15 +542,17 @@ System::System()
 
 void System::_setDefaultConfig()
 {
-  _config.wifiOn = true;
-  _config.displayAutoAdjustOn = true;
-  _config.deployMode = HTTPServerMode;
-  _config.pmSensorType =  PRODUCT_PM_SENSOR;
-  _config.co2SensorType = PRODUCT_CO2_SENSOR;
-  _config.devCapability = ( capabilityForSensorType(_config.pmSensorType) |
-                            capabilityForSensorType(_config.co2SensorType) );
-  _config.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
-  _config.devCapability |= ORIENTATION_CAPABILITY_MASK;
+  _config1.wifiOn = true;
+  _config1.displayAutoAdjustOn = true;
+  _config1.deployMode = HTTPServerMode;
+  _config2.pmSensorType =  PRODUCT_PM_SENSOR;
+  _config2.co2SensorType = PRODUCT_CO2_SENSOR;
+  _config2.devCapability = ( capabilityForSensorType(_config2.pmSensorType) |
+                             capabilityForSensorType(_config2.co2SensorType) );
+  _config2.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
+  _config2.devCapability |= ORIENTATION_CAPABILITY_MASK;
+  _config2.devName[DEV_NAME_MAX_LEN] = '\0'; // null terminated
+  sprintf(_config2.devName, "%s_%.*s", "AQStation", 8, System::instance()->uid());
 }
 
 void System::init()
@@ -557,7 +560,8 @@ void System::init()
   _state = Initializing;
   NvsFlash::init();
   _initMacADDR();
-  _loadConfig();
+  _loadConfig1();
+  _loadConfig2();
   _loadAlerts();
   _loadMobileTokens();
   _launchTasks();
@@ -592,14 +596,14 @@ void System::_launchTasks()
 
   xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 4096, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
 
-  if (_config.devCapability & PM_CAPABILITY_MASK)
+  if (_config2.devCapability & PM_CAPABILITY_MASK)
     xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
-  if (_config.devCapability & CO2_CAPABILITY_MASK)
+  if (_config2.devCapability & CO2_CAPABILITY_MASK)
     xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 4096, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
 
   xTaskCreatePinnedToCore(tsl2561_sensor_task, "tsl2561_sensor_task", 4096, NULL, TSL2561_TASK_PRIORITY, &tsl2561SensorTaskHandle, RUN_ON_CORE);
 
-  if (_config.devCapability & ORIENTATION_CAPABILITY_MASK)
+  if (_config2.devCapability & ORIENTATION_CAPABILITY_MASK)
     xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
 
   xTaskCreatePinnedToCore(status_check_task, "status_check_task", 2048, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
@@ -610,9 +614,9 @@ void System::_launchTasks()
   xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, SNTP_TASK_PRIORITY, &sntpTaskHandle);
   vTaskDelay(100 / portTICK_PERIOD_MS);
 
-  if (_config.deployMode == MQTTClientMode || _config.deployMode == MQTTClientAndHTTPServerMode)
+  if (_config1.deployMode == MQTTClientMode || _config1.deployMode == MQTTClientAndHTTPServerMode)
     xTaskCreatePinnedToCore(mqtt_task, "mqtt_task", 8192, NULL, MQTTCLIENT_TASK_PRIORITY, NULL, RUN_ON_CORE);
-  else if (_config.deployMode == HTTPServerMode || _config.deployMode == MQTTClientAndHTTPServerMode)
+  else if (_config1.deployMode == HTTPServerMode || _config1.deployMode == MQTTClientAndHTTPServerMode)
     xTaskCreatePinnedToCore(http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
   // xTaskCreatePinnedToCore(touch_pad_task, "touch_pad_task", 2048, NULL, TOUCH_PAD_TASK_PRIORITY, NULL, RUN_ON_CORE);
@@ -679,9 +683,9 @@ bool System::displayOn()
 
 void System::turnWifiOn(bool on)
 {
-  if (_config.wifiOn != on) {
-    _config.wifiOn = on;
-    _updateConfig(); // _saveConfig();
+  if (_config1.wifiOn != on) {
+    _config1.wifiOn = on;
+    _updateConfig1(); // _saveConfig1();
   }
 }
 
@@ -694,16 +698,16 @@ void System::turnDisplayOn(bool on)
 
 void System::turnDisplayAutoAdjustOn(bool on)
 {
-  if (_config.displayAutoAdjustOn != on) {
-    _config.displayAutoAdjustOn = on;
-    _updateConfig(); // _saveConfig();
+  if (_config1.displayAutoAdjustOn != on) {
+    _config1.displayAutoAdjustOn = on;
+    _updateConfig1(); // _saveConfig1();
   }
 }
 
 void System::toggleWifi()
 {
-  _config.wifiOn = !_config.wifiOn;
-  _updateConfig(); // _saveConfig();
+  _config1.wifiOn = !_config1.wifiOn;
+  _updateConfig1(); // _saveConfig1();
 }
 
 void System::toggleDisplay()
@@ -717,19 +721,32 @@ void System::markPowerEvent()
   _hasPwrEvent = true;
 }
 
-#define SYSTEM_CONFIG_TAG                 "appConf"
+#define SYSTEM_CONFIG1_TAG                "appConf1"
+#define SYSTEM_CONFIG2_TAG                "appConf2"
 #define ALERT_TAG                         "appAlerts"
 #define TOKEN_TAG                         "appTokens"
 
-bool System::_loadConfig()
+bool System::_loadConfig1()
 {
-  return NvsFlash::loadData(SYSTEM_CONFIG_TAG, &_config, sizeof(_config));
+  return NvsFlash::loadData(SYSTEM_CONFIG1_TAG, &_config1, sizeof(_config1));
 }
 
-bool System::_saveConfig()
+bool System::_saveConfig1()
 {
-  bool succeeded = NvsFlash::saveData(SYSTEM_CONFIG_TAG, &_config, sizeof(_config));
-  _configNeedToSave = false; // ? or _configNeedToSave = !succeeded;
+  bool succeeded = NvsFlash::saveData(SYSTEM_CONFIG1_TAG, &_config1, sizeof(_config1));
+  _config1NeedToSave = false; // ? or _config1NeedToSave = !succeeded;
+  return succeeded;
+}
+
+bool System::_loadConfig2()
+{
+  return NvsFlash::loadData(SYSTEM_CONFIG2_TAG, &_config2, sizeof(_config2));
+}
+
+bool System::_saveConfig2()
+{
+  bool succeeded = NvsFlash::saveData(SYSTEM_CONFIG2_TAG, &_config2, sizeof(_config2));
+  _config2NeedToSave = false; // ? or _config2NeedToSave = !succeeded;
   return succeeded;
 }
 
@@ -760,17 +777,26 @@ bool System::_saveMobileTokens()
 void System::_saveMemoryData()
 {
   // save those need to save ...
-  if (_configNeedToSave) _saveConfig();
-  if (_alertsNeedToSave) _saveAlerts();
-  if (_tokensNeedToSave) _saveMobileTokens();
+  if (_config1NeedToSave) _saveConfig1();
+  if (_config2NeedToSave) _saveConfig2();
+  if (_alertsNeedToSave)  _saveAlerts();
+  if (_tokensNeedToSave)  _saveMobileTokens();
 }
 
-void System::_updateConfig(bool saveImmedidately)
+void System::_updateConfig1(bool saveImmedidately)
 {
   if (saveImmedidately)
-    _saveConfig();
+    _saveConfig1();
   else
-    _configNeedToSave = true; // save when reboot or power off
+    _config1NeedToSave = true; // save when reboot or power off
+}
+
+void System::_updateConfig2(bool saveImmedidately)
+{
+  if (saveImmedidately)
+    _saveConfig2();
+  else
+    _config2NeedToSave = true; // save when reboot or power off
 }
 
 void System::_updateAlerts(bool saveImmedidately)
@@ -791,64 +817,78 @@ void System::_updateMobileTokens(bool saveImmedidately)
 
 DeployMode System::deployMode()
 {
-  return _config.deployMode;
+  return _config1.deployMode;
 }
 
 SensorType System::pmSensorType()
 {
-  return _config.pmSensorType;
+  return _config2.pmSensorType;
 }
 
 SensorType System::co2SensorType()
 {
-  return _config.co2SensorType;
+  return _config2.co2SensorType;
 }
 
 uint32_t System::devCapability()
 {
-  return _config.devCapability;
+  return _config2.devCapability;
 }
 
 void System::setDeployMode(DeployMode mode)
 {
-  if (_config.deployMode != mode) {
-    _config.deployMode = mode;
-    _updateConfig(); // _saveConfig();
+  if (_config1.deployMode != mode) {
+    _config1.deployMode = mode;
+    _updateConfig1(); // _saveConfig1();
   }
 }
 
 void System::toggleDeployMode()
 {
-  if (_config.deployMode == HTTPServerMode) {
-    _config.deployMode = MQTTClientMode;
+  if (_config1.deployMode == HTTPServerMode) {
+    _config1.deployMode = MQTTClientMode;
   }
   else {
-    _config.deployMode = HTTPServerMode;
+    _config1.deployMode = HTTPServerMode;
   }
-  _config.wifiOn = true; // when deploy mode changed, always turn on wifi
-  _saveConfig();
+  _config1.wifiOn = true; // when deploy mode changed, always turn on wifi
+  _saveConfig1();
   restart();
 }
 
 void System::setSensorType(SensorType pmType, SensorType co2Type)
 {
-  if (_config.pmSensorType != pmType || _config.co2SensorType != co2Type) {
-    _config.pmSensorType = pmType;
-    _config.co2SensorType = co2Type;
-    _config.devCapability = ( capabilityForSensorType(_config.pmSensorType) |
-                              capabilityForSensorType(_config.co2SensorType) );
-    _config.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
-    _config.devCapability |= ORIENTATION_CAPABILITY_MASK;
-    _updateConfig(); // _saveConfig();
+  if (_config2.pmSensorType != pmType || _config2.co2SensorType != co2Type) {
+    _config2.pmSensorType = pmType;
+    _config2.co2SensorType = co2Type;
+    _config2.devCapability = ( capabilityForSensorType(_config2.pmSensorType) |
+                               capabilityForSensorType(_config2.co2SensorType) );
+    _config2.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
+    _config2.devCapability |= ORIENTATION_CAPABILITY_MASK;
+    _updateConfig2(); // _saveConfig2();
   }
 }
 
 void System::setDevCapability(uint32_t cap)
 {
-  if (_config.devCapability != cap) {
-    _config.devCapability = cap;
-    _updateConfig(); // _saveConfig();
+  if (_config2.devCapability != cap) {
+    _config2.devCapability = cap;
+    _updateConfig2(); // _saveConfig2();
   }
+}
+
+const char* System::deviceName()
+{
+  return _config2.devName;
+}
+
+void System::setDeviceName(const char* name, size_t len)
+{
+  if (len > 0)
+    memcpy(_config2.devName, name, len < DEV_NAME_MAX_LEN ? len : DEV_NAME_MAX_LEN);
+  else
+    strncpy(_config2.devName, name, DEV_NAME_MAX_LEN);
+  _updateConfig2(); // _saveConfig2();
 }
 
 bool System::alertPnOn()
@@ -861,6 +901,11 @@ bool System::alertSoundOn()
   return _alerts.soundOn;
 }
 
+Alerts * System::alerts()
+{
+  return &_alerts;
+}
+
 TriggerAlert System::sensorValueTriggerAlert(SensorDataType type, float value)
 {
   if (_alerts.sensors[type].lEnabled && value < _alerts.sensors[type].lValue) return TriggerL;
@@ -871,6 +916,12 @@ TriggerAlert System::sensorValueTriggerAlert(SensorDataType type, float value)
 MobileTokens * System::mobileTokens()
 {
   return &_mobileTokens;
+}
+
+bool System::tokenEnabled(MobileOS os, const char* token)
+{
+  int8_t index = _mobileTokens.findToken(token);
+  return (index != -1 && _mobileTokens.token(index).os == os);
 }
 
 void System::setAlertPnOn(bool on)
@@ -930,9 +981,9 @@ static char MODEL[20];
 
 const char* System::model()
 {
-  sprintf(MODEL, sensorTypeStr(_config.pmSensorType));
+  sprintf(MODEL, sensorTypeStr(_config2.pmSensorType));
   sprintf(MODEL+strlen(MODEL), "-");
-  sprintf(MODEL+strlen(MODEL), sensorTypeStr(_config.co2SensorType));
+  sprintf(MODEL+strlen(MODEL), sensorTypeStr(_config2.co2SensorType));
   return MODEL;
 }
 
