@@ -171,7 +171,7 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
       break;
     }
 
-    case SetAlertValueConfig: {
+    case SetSensorAlertConfig: {
       argsSize = 0;
       bool parseOK = true;
       FloatBytes fb;
@@ -532,7 +532,7 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
       System::instance()->setAlertSoundOn(args[1] == 1);
       break;
 
-    case SetAlertValueConfig: {
+    case SetSensorAlertConfig: {
       FloatBytes fbl, fbg;
       size_t bLen = FloatLen * 2 + 2;
       System *sys = System::instance();

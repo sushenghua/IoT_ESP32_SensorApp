@@ -35,7 +35,7 @@ typedef enum CmdKey {
     GetAlertConfig          ,//= 23,
     CheckPNTokenEnabled     ,//= 24,
     SetAlertEnableConfig    ,//= 25,
-    SetAlertValueConfig     ,//= 26,
+    SetSensorAlertConfig    ,//= 26,
     SetPNToken              ,//= 27,
     UpdateFirmware          ,//= 28,
     Restart                 ,//= 29,
