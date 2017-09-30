@@ -263,8 +263,9 @@ void MqttClient::setLastWill(const char* topic, uint8_t qos, const char* msg, bo
 void MqttClient::init()
 {
     if (!_inited) {
-        APP_LOGI("[MqttClient]", "init client (Mongoose version: %s, Free RAM: %d bytes)",
-                                  MG_VERSION, esp_get_free_heap_size());
+        // APP_LOGI("[MqttClient]", "init client (Mongoose version: %s, Free RAM: %d bytes)",
+        //                           MG_VERSION, esp_get_free_heap_size());
+        APP_LOGI("[MqttClient]", "init, free RAM: %d bytes", esp_get_free_heap_size());
         mg_mgr_init(&_manager, NULL);
         _inited = true;
     }
