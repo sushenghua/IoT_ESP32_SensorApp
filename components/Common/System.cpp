@@ -345,38 +345,42 @@ size_t genAlertPushNotificationJsonString(uint32_t mask, const char* tag)
   if (mask == 0 || tokens->count == 0) return 0;
 
   size_t packCount = 0;
-  // print tag, tokens key, tokens content list starting '['
+  // print: tag, tokens key, tokens content list starting '['
   sprintf(_alertStringBuf + packCount, "{\"tag\":\"%s\",\"tokens\":[", tag);
   packCount += strlen(_alertStringBuf + packCount);
 
-  // print token list content
+  // print: token list content
   size_t onTokenCount = 0;
   for (uint8_t i=0; i<tokens->count; ++i) {
     MobileToken &token = tokens->token(i);
     if (token.on) {
-      ++onTokenCount;
-      sprintf(_alertStringBuf + packCount, "{\"token\":\"%s\",\"os\":\"%s\"}%s",
-              token.str, mobileOSStr(token.os), (i < tokens->count - 1) ? "," : "");
+      sprintf(_alertStringBuf + packCount, "%s{\"token\":\"%s\",\"os\":\"%s\"}",
+              onTokenCount > 0 ? "," : "", token.str, mobileOSStr(token.os));
       packCount += strlen(_alertStringBuf + packCount);
+      ++onTokenCount;
     }
   }
 
   // no alert-active token
   if (onTokenCount == 0) return 0;
 
-  // print tokens content list ending ']', val key, val content starting '{'
+  // print: tokens content list ending ']', val key, val content starting '{'
   sprintf(_alertStringBuf + packCount, "],\"val\":{");
   packCount += strlen(_alertStringBuf + packCount);
 
-  // print val content
+  // print: val content
+  uint8_t sensorItemCount = 0;
   for (uint8_t t=PM; t<SensorDataTypeCount; ++t) {
     if (mask & sensorAlertMask((SensorDataType)t)) {
-      sprintf(_alertStringBuf + packCount, "\"%s\":%.1f,", sensorDataTypeStr((SensorDataType)t), _alertValue[t]);
+      sprintf(_alertStringBuf + packCount, "%s\"%s\":%.1f",
+              sensorItemCount == 0 ? "" : ",",
+              sensorDataTypeStr((SensorDataType)t), _alertValue[t]);
       packCount += strlen(_alertStringBuf + packCount);
+      ++sensorItemCount;
     }
   }
 
-  // print val content ending '}', whole json ending '}'
+  // print: val content ending '}', whole json ending '}'
   sprintf(_alertStringBuf + packCount, "}}");
   packCount += strlen(_alertStringBuf + packCount);
 
