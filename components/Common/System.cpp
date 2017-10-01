@@ -932,7 +932,7 @@ MobileTokens * System::mobileTokens()
 bool System::tokenEnabled(MobileOS os, const char* token)
 {
   int8_t index = _mobileTokens.findToken(token);
-  return (index != -1 && _mobileTokens.token(index).os == os);
+  return (index != -1 && _mobileTokens.token(index).os == os && _mobileTokens.token(index).on);
 }
 
 void System::setAlertPnOn(bool on)

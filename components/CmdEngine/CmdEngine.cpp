@@ -160,13 +160,16 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
 
     case SetAlertEnableConfig: {
       argsSize = 2;
-      for (int oi=0; oi<2; ++oi) {
-        cJSON *obj = cJSON_GetObjectItem(root, AlertEnableParseKeyStr[oi]);
-        if (!obj) { argsSize = 0; break; }
-        if (obj->type == cJSON_True)       args[oi] = 1;
-        else if (obj->type == cJSON_False) args[oi] = 0;
-        else { argsSize = 0; break; }
-      }
+      cJSON *config = cJSON_GetObjectItem(root, "config");
+      if (config) {
+        for (int oi=0; oi<2; ++oi) {
+          cJSON *obj = cJSON_GetObjectItem(config, AlertEnableParseKeyStr[oi]);
+          if (!obj) { argsSize = 0; break; }
+          if (obj->type == cJSON_True)       args[oi] = 1;
+          else if (obj->type == cJSON_False) args[oi] = 0;
+          else { argsSize = 0; break; }
+        }
+      } else { argsSize = 0; }
       if (argsSize == 2) cmdKeyRet = cmdKey;
       break;
     }
