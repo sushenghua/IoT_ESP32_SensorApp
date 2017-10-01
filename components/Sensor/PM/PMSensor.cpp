@@ -220,12 +220,12 @@ void PMSensor::onRxComplete()
         _pmData.pm2d5 = _parser.valueAt(PM_2_D_5_POS);
         _pmData.pm10 = _parser.valueAt(PM_10_POS);
         _pmData.calculateAQIandLevel();
-        if (_dc) _dc->setPmData(_pmData);
+        if (_dc) _dc->setPmData(&_pmData);
       }
       if (_cap & HCHO_CAPABILITY_MASK) {
         _hchoData.hcho = _parser.valueAt(HCHO_POS) / 1000.0f;
         _hchoData.calculateLevel();
-        if (_dc) _dc->setHchoData(_hchoData, false);
+        if (_dc) _dc->setHchoData(&_hchoData, false);
       }
 #ifdef DEBUG_APP_OK
       APP_LOGI("[PMSensor]", "--->pm1.0: %2.2f  pm2.5: %2.2f  pm10: %2.2f  hcho: %2.2f\n",
@@ -236,7 +236,7 @@ void PMSensor::onRxComplete()
         _tempHumidData.temp = _parser.valueAt(_tempHumidDataPos) / 10.0f;
         _tempHumidData.humid = _parser.valueAt(_tempHumidDataPos + 1) / 10.0f;
         _tempHumidData.calculateLevel();
-        if (_dc) _dc->setTempHumidData(_tempHumidData, false);
+        if (_dc) _dc->setTempHumidData(&_tempHumidData, false);
       }
 #endif
     }

@@ -72,59 +72,59 @@ void SensorDisplayController::setMpu6050(float r, float p, float y)
   _dynamicContentNeedUpdate = true;
 }
 
-void SensorDisplayController::setPmData(PMData &pmData, bool update)
+void SensorDisplayController::setPmData(const PMData *pmData, bool update)
 {
   // value update
-  _pm1d0 = pmData.pm1d0;
-  _pm2d5 = pmData.pm2d5;
-  _pm10 = pmData.pm10;
-  _aqiPm2d5US = pmData.aqiPm2d5US;
-  _aqiPm10US = pmData.aqiPm10US;
-  _pm2d5Level = pmData.levelPm2d5US;
-  _pm10Level = pmData.levelPm10US;
+  _pm1d0 = pmData->pm1d0;
+  _pm2d5 = pmData->pm2d5;
+  _pm10 = pmData->pm10;
+  _aqiPm2d5US = pmData->aqiPm2d5US;
+  _aqiPm10US = pmData->aqiPm10US;
+  _pm2d5Level = pmData->levelPm2d5US;
+  _pm10Level = pmData->levelPm10US;
 
   // color update
-  _pm2d5Color = HS::colorForAirLevel(pmData.levelPm2d5US);
-  _pm10Color = HS::colorForAirLevel(pmData.levelPm10US);
+  _pm2d5Color = HS::colorForAirLevel(pmData->levelPm2d5US);
+  _pm10Color = HS::colorForAirLevel(pmData->levelPm10US);
 
   if (update) _dynamicContentNeedUpdate = true;
 }
 
-void SensorDisplayController::setHchoData(HchoData &hchoData, bool update)
+void SensorDisplayController::setHchoData(const HchoData *hchoData, bool update)
 {
   // value update
-  _hcho = hchoData.hcho;
-  _hchoLevel = hchoData.level;
+  _hcho = hchoData->hcho;
+  _hchoLevel = hchoData->level;
 
   // color update
-  _hchoColor = HS::colorForHchoLevel(hchoData.level);
+  _hchoColor = HS::colorForHchoLevel(hchoData->level);
 
   if (update) _dynamicContentNeedUpdate = true;
 }
 
-void SensorDisplayController::setTempHumidData(TempHumidData &tempHumidData, bool update)
+void SensorDisplayController::setTempHumidData(const TempHumidData *tempHumidData, bool update)
 {
   // value update
-  _temp = tempHumidData.temp;
-  _humid = tempHumidData.humid;
-  _tempLevel = tempHumidData.levelTemp;
-  _humidLevel = tempHumidData.levelHumid;
+  _temp = tempHumidData->temp;
+  _humid = tempHumidData->humid;
+  _tempLevel = tempHumidData->levelTemp;
+  _humidLevel = tempHumidData->levelHumid;
 
   // color update
-  _tempColor = HS::colorForTempLevel(tempHumidData.levelTemp);
-  _humidColor = HS::colorForHumidLevel(tempHumidData.levelHumid);
+  _tempColor = HS::colorForTempLevel(tempHumidData->levelTemp);
+  _humidColor = HS::colorForHumidLevel(tempHumidData->levelHumid);
 
   if (update) _dynamicContentNeedUpdate = true;
 }
 
-void SensorDisplayController::setCO2Data(CO2Data &co2Data, bool update)
+void SensorDisplayController::setCO2Data(const CO2Data *co2Data, bool update)
 {
   // value update
-  _co2 = co2Data.co2;
-  _co2Level = co2Data.level;
+  _co2 = co2Data->co2;
+  _co2Level = co2Data->level;
 
   // color update
-  _co2Color = HS::colorForCO2Level(co2Data.level);
+  _co2Color = HS::colorForCO2Level(co2Data->level);
 
   if (update) _dynamicContentNeedUpdate = true;
 }

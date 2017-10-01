@@ -125,7 +125,7 @@ void CO2Sensor::onRxComplete()
     if (_parser.frameState() == FRAME_READY) {
       _co2Data.co2 = _parser.valueAt(CO2_VALUE_POS);
       _co2Data.calculateLevel();
-      if (_dc) _dc->setCO2Data(_co2Data, true);
+      if (_dc) _dc->setCO2Data(&_co2Data, true);
       // APP_LOGC("[CO2Sensor]", "sample value %f", _co2Data.co2);
     }
   }

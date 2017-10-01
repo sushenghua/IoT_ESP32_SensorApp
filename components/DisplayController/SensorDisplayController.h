@@ -25,10 +25,10 @@ public:
   uint8_t rotation() { return _rotation; }
   void setRotation(uint8_t rotation);
 
-  void setPmData(PMData &pmData, bool update = true);
-  void setHchoData(HchoData &hchoData, bool update = true);
-  void setTempHumidData(TempHumidData &tempHumidData, bool update = true);
-  void setCO2Data(CO2Data &co2Data, bool update = true);
+  void setPmData(const PMData *pmData, bool update = true);
+  void setHchoData(const HchoData *hchoData, bool update = true);
+  void setTempHumidData(const TempHumidData *tempHumidData, bool update = true);
+  void setCO2Data(const CO2Data *co2Data, bool update = true);
   void setScreenMessage(const char * msg);
 
 public:
