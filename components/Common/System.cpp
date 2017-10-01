@@ -400,6 +400,12 @@ void sendAlertPushNotification()
 uint32_t _alertReactiveCount;
 uint32_t _alertReactiveCounter;
 
+void _resetReactiveCounter()
+{
+  _alertReactiveCount = System::instance()->alerts()->reactiveTimeCount;
+  _alertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FROM_BOOT;
+}
+
 static void mqtt_task(void *pvParams)
 {
   CmdEngine cmdEngine;
@@ -410,8 +416,7 @@ static void mqtt_task(void *pvParams)
   cmdEngine.init();
   cmdEngine.enableUpdate();
 
-  _alertReactiveCount = System::instance()->alerts()->reactiveTimeCount;
-  _alertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FROM_BOOT;
+  _resetReactiveCounter();
 
   while (true) {
     mqtt.poll();
@@ -940,6 +945,7 @@ void System::setAlertPnOn(bool on)
   if (_alerts.pnOn != on) {
     _alerts.pnOn = on;
     _alertsNeedToSave = true;
+    if (on) _resetReactiveCounter();
   }
 }
 
