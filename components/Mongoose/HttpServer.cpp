@@ -117,7 +117,9 @@ void HttpServer::onAccept(struct mg_connection *nc)
 {
     mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr),
                         MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
+#ifdef LOG_HTTP
     APP_LOGI("[HttpServer]", "new http connection from %s ((nc: %p)", addr, nc);
+#endif
 }
 
 void HttpServer::onHttpRequest(struct mg_connection *nc, struct http_message *hm)
@@ -130,27 +132,35 @@ void HttpServer::onHttpRequest(struct mg_connection *nc, struct http_message *hm
         "Sensor %s\n";
     mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr),
                         MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
+#ifdef LOG_HTTP
     APP_LOGI("[HttpServer]", "http request from %s: %.*s %.*s", addr, (int) hm->method.len,
                               hm->method.p, (int) hm->uri.len, hm->uri.p);
+#endif
     mg_printf(nc, reply_fmt, addr);
     nc->flags |= MG_F_SEND_AND_CLOSE;
 }
 
 void HttpServer::onWebsocketHandshakeRequest(struct mg_connection *nc)
 {
+#ifdef LOG_WEBSOCKET
     APP_LOGI("[HttpServer]", "new websocket connection request (nc: %p)", nc);
+#endif
 }
 
 void HttpServer::onWebsocketHandshakeDone(struct mg_connection *nc)
 {
+#ifdef LOG_WEBSOCKET
     APP_LOGI("[HttpServer]", "websocket connection opened");
+#endif
     _websocketConnected = true;
 }
 
 void HttpServer::onWebsocketFrame(struct mg_connection *nc, struct websocket_message *wm)
 {
     // struct mg_str d = {(char *) wm->data, wm->size};
+#ifdef LOG_WEBSOCKET_MSG
     APP_LOGI("[HttpServer]", "got message: %.*s (nc: %p)", wm->size, wm->data, nc);
+#endif
     if (_msgInterpreter) {
         _msgInterpreter->interpreteSocketMsg(wm->data, wm->size, nc);
     }
@@ -159,10 +169,14 @@ void HttpServer::onWebsocketFrame(struct mg_connection *nc, struct websocket_mes
 void HttpServer::onClose(struct mg_connection *nc)
 {
     if (nc->flags & MG_F_IS_WEBSOCKET) {
+#ifdef LOG_WEBSOCKET
         APP_LOGI("[HttpServer]", "websocket connection closed (nc: %p)", nc);
+#endif
         _websocketConnected = false;
     }
     else {
+#ifdef LOG_HTTP
         APP_LOGI("[HttpServer]", "http connection closed (nc: %p)", nc);
+#endif
     }
 }

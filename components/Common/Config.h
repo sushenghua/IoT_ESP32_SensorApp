@@ -24,6 +24,10 @@
 // #define LOG_MQTT_RX
 #define LOG_MQTT_RETX
 
+// #define LOG_HTTP
+// #define LOG_WEBSOCKET
+// #define LOG_WEBSOCKET_MSG
+
 // #define LOG_APPUPDATER
 
 #endif // _CONF_H_INCLUDED
