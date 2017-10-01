@@ -545,6 +545,7 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
         memcpy(fbg.bytes, args+i*bLen+2+FloatLen, FloatLen);
         sys->setAlert(sdt, args[i*bLen+0]==1, args[i*bLen+1]==1, fbl.v, fbg.v);
       }
+      sys->resetAlertReactiveCounter();
       break;
     }
 

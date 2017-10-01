@@ -404,7 +404,7 @@ void sendAlertPushNotification()
 uint32_t _alertReactiveCount;
 uint32_t _alertReactiveCounter;
 
-void _resetReactiveCounter()
+void _resetAlertReactiveCounter()
 {
   _alertReactiveCount = System::instance()->alerts()->reactiveTimeCount;
   _alertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FROM_BOOT;
@@ -420,7 +420,7 @@ static void mqtt_task(void *pvParams)
   cmdEngine.init();
   cmdEngine.enableUpdate();
 
-  _resetReactiveCounter();
+  _resetAlertReactiveCounter();
 
   while (true) {
     mqtt.poll();
@@ -949,7 +949,7 @@ void System::setAlertPnOn(bool on)
   if (_alerts.pnOn != on) {
     _alerts.pnOn = on;
     _alertsNeedToSave = true;
-    if (on) _resetReactiveCounter();
+    if (on) _resetAlertReactiveCounter();
   }
 }
 
@@ -974,6 +974,11 @@ void System::setPnToken(bool enabled, MobileOS os, const char *token)
 {
   _mobileTokens.setToken(enabled, os, token);
   _tokensNeedToSave = true;
+}
+
+void System::resetAlertReactiveCounter()
+{
+  _resetAlertReactiveCounter();
 }
 
 const char* System::uid()

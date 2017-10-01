@@ -177,6 +177,7 @@ public:
   void setAlertSoundOn(bool on);
   void setAlert(SensorDataType type, bool lEnabled, bool gEnabled, float lValue, float gValue);
   void setPnToken(bool enabled, MobileOS os, const char *token);
+  void resetAlertReactiveCounter();
 
   void setRestartRequest();
   void restart();
