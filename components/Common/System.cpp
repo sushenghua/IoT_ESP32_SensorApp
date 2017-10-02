@@ -500,7 +500,7 @@ static void http_task(void *pvParams)
 // daemon task
 //----------------------------------------------
 #define DAEMON_TASK_DELAY_UNIT                  100
-#define DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS 4
+#define DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS 30
 void _launchDisplayTask();
 bool _hasRebootRequest = false;
 static void daemon_task(void *pvParams = NULL)
