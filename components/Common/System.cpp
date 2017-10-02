@@ -423,6 +423,9 @@ void _sendLAlertPushNotification()
   if (System::instance()->alertPnOn()) {
     size_t jsonSize = genAlertPushNotificationJsonString(_lAlertMask, "l");
     if (jsonSize > 0) {
+#ifdef LOG_ALERT
+      APP_LOGC("[mqtt_task]", "push L alert PN request");
+#endif
       mqtt.publish(NPS_TOPIC, _alertStringBuf, jsonSize, 0);
       _lAlertReactiveCounter = 0;
     }
@@ -436,6 +439,9 @@ void _sendGAlertPushNotification()
   if (System::instance()->alertPnOn()) {
     size_t jsonSize = genAlertPushNotificationJsonString(_gAlertMask, "g");
     if (jsonSize > 0) {
+#ifdef LOG_ALERT
+      APP_LOGC("[mqtt_task]", "push G alert PN request");
+#endif
       mqtt.publish(NPS_TOPIC, _alertStringBuf, jsonSize, 0);
       _gAlertReactiveCounter = 0;
     }

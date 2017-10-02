@@ -28,6 +28,8 @@
 // #define LOG_WEBSOCKET
 // #define LOG_WEBSOCKET_MSG
 
+#define LOG_ALERT
+
 // #define LOG_APPUPDATER
 
 #endif // _CONF_H_INCLUDED
