@@ -49,6 +49,9 @@ public:
   void _renderDetailScreenItem(SensorDataType type);
 
 protected:
+  // init
+  bool       _inited;
+
   // content update flag
   bool       _hasScreenMsg;
   bool       _staticContentNeedUpdate;

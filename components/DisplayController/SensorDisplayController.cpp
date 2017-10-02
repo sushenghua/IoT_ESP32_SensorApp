@@ -13,6 +13,7 @@
 
 SensorDisplayController::SensorDisplayController(DisplayGFX *dev)
 : DisplayController(dev)
+, _inited(false)
 , _hasScreenMsg(false)
 , _staticContentNeedUpdate(true)
 , _dynamicContentNeedUpdate(true)
@@ -24,23 +25,27 @@ SensorDisplayController::SensorDisplayController(DisplayGFX *dev)
 
 void SensorDisplayController::init()
 {
-  DisplayController::init();
+  if (!_inited) {
+    DisplayController::init();
 
-  APP_LOGI("[SensorDC]", "init");
+    APP_LOGI("[SensorDC]", "init");
 
-  // cache capability from System instance
-  _devCap = System::instance()->devCapability();
+    // cache capability from System instance
+    _devCap = System::instance()->devCapability();
 
-  // device init and screen preparation
-  _dev->init();
-  _dev->fillScreen(RGB565_BLACK);
+    // device init and screen preparation
+    _dev->init();
+    _dev->fillScreen(RGB565_BLACK);
 
-  _dev->setTextSize(2);
+    _dev->setTextSize(2);
 
-  _rotation = _dev->rotation();
-  _lastRotation = _rotation;
-  _initDisplayItems();
-  _layoutScreen();
+    _rotation = _dev->rotation();
+    _lastRotation = _rotation;
+    _initDisplayItems();
+    _layoutScreen();
+
+    _inited = true;
+  }
 }
 
 void SensorDisplayController::tick()
