@@ -17,7 +17,12 @@
 // peripheral task loop control
 //----------------------------------------------
 bool     _enablePeripheralTaskLoop = true;
-uint8_t  _peripheralsStopCount = 0;
+enum TaskState {
+  TaskEmpty    = 0,
+  TaskRunning  = 1,
+  TaskPaused   = 2,
+  TaskKilled   = 3
+};
 
 // watch dog
 // #include "esp_task_wdt.h"
@@ -93,19 +98,22 @@ static void sntp_task(void *pvParams)
 ILI9341 dev;
 bool    _displayOn = true;
 static SensorDisplayController dc(&dev);
+uint16_t _displayInactiveTicks = 0;
 TaskHandle_t displayTaskHandle = 0;
-bool _displayTaskPaused = false;
+TaskState _displayTaskState = TaskEmpty;
 bool _hasScreenMessage = false;
 void display_task(void *p)
 {
   dc.init();
+  _displayTaskState = TaskRunning;
+  APP_LOGC("[display_task]", "start running ...");
   while (true) {
     // APP_LOGI("[display_task]", "update");
     // APP_LOGC("[display_task]", "task schedule state %d", xTaskGetSchedulerState());
     xTaskGetSchedulerState();
-    if (_enablePeripheralTaskLoop) dc.update();
-    else if (_hasScreenMessage) { dc.update(); _hasScreenMessage = false; }
-    else _displayTaskPaused = true;
+    if (_enablePeripheralTaskLoop) { dc.update(); _displayInactiveTicks = 0; }
+    else if (_hasScreenMessage) { dc.update(); _hasScreenMessage = false; _displayInactiveTicks = 0; }
+    else _displayTaskState = TaskPaused;
     vTaskDelay(DISPLAY_TASK_DELAY_UNIT / portTICK_RATE_MS);
   }
 }
@@ -128,12 +136,12 @@ uint8_t _timeWifiUpdateCount = 0;
 PowerManager powerManager;
 bool _hasPwrEvent = true;
 
-bool _statusTaskPaused = false;
+TaskState _statusTaskState = TaskEmpty;
 void status_check_task(void *p)
 {
   InputMonitor::instance()->init();   // this will launch another task
   powerManager.init();
-
+  _statusTaskState = TaskRunning;
   while (true) {
     if (_enablePeripheralTaskLoop) {
       // update time and wifi status every 0.5 second
@@ -164,7 +172,7 @@ void status_check_task(void *p)
       }
     }
     else {
-      _statusTaskPaused = true;
+      _statusTaskState = TaskPaused;
     }
     vTaskDelay(STATUS_TASK_DELAY_UNIT / portTICK_RATE_MS);
   }
@@ -214,26 +222,27 @@ void checkAlert(SensorDataType type, float value)
 }
 
 TaskHandle_t sht3xSensorTaskHandle;
-bool _sht3xSensorTaskPaused = false;
+TaskState _sht3xSensorTaskState = TaskEmpty;
 void sht3x_sensor_task(void *p)
 {
   SHT3xSensor sht3xSensor;
   sht3xSensor.init();
   sht3xSensor.setDisplayDelegate(&dc);
   SensorDataPacker::sharedInstance()->setTempHumidSensor(&sht3xSensor);
+  _sht3xSensorTaskState = TaskRunning;
   while (true) {
     if (_enablePeripheralTaskLoop) {
       sht3xSensor.sampleData();
       checkAlert(TEMP, sht3xSensor.tempHumidData().temp);
       checkAlert(HUMID, sht3xSensor.tempHumidData().temp);
     }
-    else _sht3xSensorTaskPaused = true;
+    else _sht3xSensorTaskState = TaskPaused;
     vTaskDelay(500/portTICK_RATE_MS);
   }
 }
 
 TaskHandle_t pmSensorTaskHandle;
-bool _pmSensorTaskPaused = false;
+TaskState _pmSensorTaskState = TaskEmpty;
 void pm_sensor_task(void *p)
 {
   PMSensor pmSensor;
@@ -241,6 +250,7 @@ void pm_sensor_task(void *p)
   pmSensor.setDisplayDelegate(&dc);
   SensorDataPacker::sharedInstance()->init();
   SensorDataPacker::sharedInstance()->setPmSensor(&pmSensor);
+  _pmSensorTaskState = TaskRunning;
   while (true) {
     if (_enablePeripheralTaskLoop) {
       pmSensor.sampleData(3000);
@@ -248,38 +258,39 @@ void pm_sensor_task(void *p)
       if (System::instance()->devCapability() & HCHO_CAPABILITY_MASK)
         checkAlert(HCHO, pmSensor.hchoData().hcho);
     }
-    else _pmSensorTaskPaused = true;
+    else _pmSensorTaskState = TaskPaused;
     vTaskDelay(500/portTICK_RATE_MS);
   }
 }
 
 TaskHandle_t co2SensorTaskHandle = NULL;
-bool _co2SensorTaskPaused = false;
+TaskState _co2SensorTaskState = TaskEmpty;
 void co2_sensor_task(void *p)
 {
   CO2Sensor co2Sensor;
   co2Sensor.init();
   co2Sensor.setDisplayDelegate(&dc);
   SensorDataPacker::sharedInstance()->setCO2Sensor(&co2Sensor);
-
+  _co2SensorTaskState = TaskRunning;
   vTaskDelay(3000/portTICK_RATE_MS); // delay 3 seconds
   while (true) {
     if (_enablePeripheralTaskLoop) {
       co2Sensor.sampleData(3000);
       checkAlert(CO2, co2Sensor.co2Data().co2);
     }
-    else _co2SensorTaskPaused = true;
+    else _co2SensorTaskState = TaskPaused;
     vTaskDelay(1000/portTICK_RATE_MS);
   }
 }
 
 TaskHandle_t tsl2561SensorTaskHandle;
-bool _tsl2561SensorTaskPaused = false;
+TaskState _tsl2561SensorTaskState = TaskEmpty;
 uint32_t _luminsity = 0;
 void tsl2561_sensor_task(void *p)
 {
   TSL2561 tsl2561Sensor;
   tsl2561Sensor.init();
+  _tsl2561SensorTaskState = TaskRunning;
   while (true) {
     if (_enablePeripheralTaskLoop) {
       if (System::instance()->displayAutoAdjustOn()) {
@@ -295,7 +306,7 @@ void tsl2561_sensor_task(void *p)
         dc.fadeBrightness(100);
       }
     }
-    else _tsl2561SensorTaskPaused = true;
+    else _tsl2561SensorTaskState = TaskPaused;
     vTaskDelay(1000/portTICK_RATE_MS);
   }
 }
@@ -304,12 +315,13 @@ void tsl2561_sensor_task(void *p)
 TaskHandle_t orientationSensorTaskHandle;
 uint16_t _oriSensorTempReadCount = 0;
 float _oriSensorTemperature = 0;
-bool _orientationSensorTaskPaused = false;
+TaskState _orientationSensorTaskState = TaskEmpty;
 void orientation_sensor_task(void *p)
 {
   OrientationSensor orientationSensor;
   orientationSensor.init();
   orientationSensor.setDisplayDelegate(&dc);
+  _orientationSensorTaskState = TaskRunning;
   while (true) {
     if (_enablePeripheralTaskLoop) {
       orientationSensor.sampleData();
@@ -319,7 +331,7 @@ void orientation_sensor_task(void *p)
         _oriSensorTempReadCount = 0;
       }
     }
-    else _orientationSensorTaskPaused = true;
+    else _orientationSensorTaskState = TaskPaused;
     vTaskDelay(100/portTICK_RATE_MS);
   }
 }
@@ -335,6 +347,7 @@ void orientation_sensor_task(void *p)
 
 MqttClient mqtt;
 
+// ------ generate alert push notification request string
 char _alertStringBuf[1024];
 
 size_t genAlertPushNotificationJsonString(uint32_t mask, const char* tag)
@@ -387,29 +400,49 @@ size_t genAlertPushNotificationJsonString(uint32_t mask, const char* tag)
   return packCount;
 }
 
-#define NPS_TOPIC   "api/nps"
-
-void sendAlertPushNotification()
-{
-  if (System::instance()->alertPnOn()) {
-    size_t jsonSize = genAlertPushNotificationJsonString(_lAlertMask, "l");
-    if (jsonSize > 0) mqtt.publish(NPS_TOPIC, _alertStringBuf, jsonSize, 0);
-
-    jsonSize = genAlertPushNotificationJsonString(_gAlertMask, "g");
-    if (jsonSize > 0) mqtt.publish(NPS_TOPIC, _alertStringBuf, jsonSize, 0);
-  }
-}
-
-#define REACTIVE_COUNT_FROM_BOOT 1000 // 1000 * 10ms = 10 seconds
+// ------ use counter to check and publish alert push notification request
+#define REACTIVE_COUNT_FOR_BOOT               1000 // 1000 * 10ms = 10 seconds
+#define REACTIVE_COUNT_FOR_NO_RECENT_PUB      6000 // 1000 * 10ms = 60 seconds
 uint32_t _alertReactiveCount;
-uint32_t _alertReactiveCounter;
+uint32_t _lAlertReactiveCounter;
+uint32_t _gAlertReactiveCounter;
 
 void _resetAlertReactiveCounter()
 {
   _alertReactiveCount = System::instance()->alerts()->reactiveTimeCount;
-  _alertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FROM_BOOT;
+  _lAlertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FOR_BOOT;
+  _gAlertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FOR_BOOT;
 }
 
+#define NPS_TOPIC           "api/nps"
+
+void _sendLAlertPushNotification()
+{
+  // assume no recent publish; if recent publish occurs, wait longer for next check
+  _lAlertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FOR_NO_RECENT_PUB;
+  if (System::instance()->alertPnOn()) {
+    size_t jsonSize = genAlertPushNotificationJsonString(_lAlertMask, "l");
+    if (jsonSize > 0) {
+      mqtt.publish(NPS_TOPIC, _alertStringBuf, jsonSize, 0);
+      _lAlertReactiveCounter = 0;
+    }
+  }
+}
+
+void _sendGAlertPushNotification()
+{
+  // assume no recent publish; if recent publish occurs, wait longer for next check
+  _gAlertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FOR_NO_RECENT_PUB;
+  if (System::instance()->alertPnOn()) {
+    size_t jsonSize = genAlertPushNotificationJsonString(_gAlertMask, "g");
+    if (jsonSize > 0) {
+      mqtt.publish(NPS_TOPIC, _alertStringBuf, jsonSize, 0);
+      _gAlertReactiveCounter = 0;
+    }
+  }
+}
+
+// ------ mqtt task
 static void mqtt_task(void *pvParams)
 {
   CmdEngine cmdEngine;
@@ -424,12 +457,9 @@ static void mqtt_task(void *pvParams)
 
   while (true) {
     mqtt.poll();
-    if (++_alertReactiveCounter == _alertReactiveCount) {
-      sendAlertPushNotification();
-      _alertReactiveCounter = 0;
-    }
+    if (++_lAlertReactiveCounter == _alertReactiveCount) _sendLAlertPushNotification();
+    if (++_gAlertReactiveCounter == _alertReactiveCount) _sendGAlertPushNotification();
     vTaskDelay(10 / portTICK_PERIOD_MS);
-    // APP_LOGE("[Task]", "task count: %d", uxTaskGetNumberOfTasks());
   }
 }
 
@@ -462,22 +492,24 @@ static void http_task(void *pvParams)
 //----------------------------------------------
 // daemon task
 //----------------------------------------------
+#define DAEMON_TASK_DELAY_UNIT                  100
+#define DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS 4
+void _launchDisplayTask();
 bool _hasRebootRequest = false;
-static void daemon_task(void *pvParams)
+static void daemon_task(void *pvParams = NULL)
 {
   while (true) {
-    // if (displayTaskHandle) vTaskResume(displayTaskHandle);
-    // if (displayTaskHandle) vTaskSuspend(displayTaskHandle);
-    if (displayTaskHandle) {
-      // uxTaskPriorityGet(displayTaskHandle);
-      // APP_LOGC("[daemon_task]", "task schedule state %d", xTaskGetSchedulerState());
-
-      // vTaskGetRunTimeStats(pcWriteBuf);
-      // APP_LOGC("[daemon_task]", "display task priority %d", uxTaskPriorityGet(displayTaskHandle));
-      // APP_LOGC("[daemon_task]", "display task state %d", eTaskGetState(displayTaskHandle));
+    if (_displayTaskState == TaskRunning) {
+      ++_displayInactiveTicks;
+      // to prevent display from non-responding(unknown reason, bug?)
+      if (_displayInactiveTicks > DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS) {
+        vTaskDelete(displayTaskHandle);
+        vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
+        _launchDisplayTask();
+      }
     }
     if (_hasRebootRequest && !mqtt.hasUnackPub()) System::instance()->restart();
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
   }
 }
 
@@ -608,11 +640,16 @@ void System::init()
 
 #define RUN_ON_CORE APP_CORE
 
+inline void _launchDisplayTask()
+{
+  xTaskCreatePinnedToCore(display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, &displayTaskHandle, PRO_CORE);
+}
+
 void System::_launchTasks()
 {
   beforeCreateTasks();
 
-  xTaskCreatePinnedToCore(display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, &displayTaskHandle, PRO_CORE);
+  _launchDisplayTask();
 
   xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 4096, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
 
@@ -641,7 +678,8 @@ void System::_launchTasks()
 
   // xTaskCreatePinnedToCore(touch_pad_task, "touch_pad_task", 2048, NULL, TOUCH_PAD_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
-  xTaskCreatePinnedToCore(daemon_task, "daemon_task", 2048, NULL, DAEMON_TASK_PRIORITY, NULL, RUN_ON_CORE);
+  // xTaskCreatePinnedToCore(daemon_task, "daemon_task", 2048, NULL, DAEMON_TASK_PRIORITY, NULL, RUN_ON_CORE);
+  daemon_task();
 }
 
 void System::pausePeripherals(const char *screenMsg)
@@ -653,13 +691,13 @@ void System::pausePeripherals(const char *screenMsg)
 
   _enablePeripheralTaskLoop = false;
 
-  while (!_displayTaskPaused || !_statusTaskPaused ||
-         !_pmSensorTaskPaused || (co2SensorTaskHandle && !_co2SensorTaskPaused) ||
-         (orientationSensorTaskHandle && !_orientationSensorTaskPaused) ||
-         !_sht3xSensorTaskPaused || !_tsl2561SensorTaskPaused) {
-    APP_LOGC("[System]", "pause dis: %d, sta: %d, pm: %d, co2: %d, ori: %d, sht: %d, tsl: %d",
-      _displayTaskPaused, _statusTaskPaused, _pmSensorTaskPaused, !co2SensorTaskHandle || _co2SensorTaskPaused,
-      !orientationSensorTaskHandle || _orientationSensorTaskPaused, _statusTaskPaused, _tsl2561SensorTaskPaused);
+  while (_displayTaskState == TaskRunning || _statusTaskState == TaskRunning ||
+         _pmSensorTaskState == TaskRunning || _co2SensorTaskState == TaskRunning ||
+         _orientationSensorTaskState == TaskRunning || _sht3xSensorTaskState == TaskRunning ||
+         _tsl2561SensorTaskState == TaskRunning) {
+    APP_LOGC("[System]", "dis: %d, sts: %d, pm: %d, co2: %d, ori: %d, sht: %d, tsl: %d",
+      _displayTaskState, _statusTaskState, _pmSensorTaskState, _co2SensorTaskState,
+      _orientationSensorTaskState, _sht3xSensorTaskState, _tsl2561SensorTaskState);
     vTaskDelay(100 / portTICK_PERIOD_MS);
     // APP_LOGC("[System]", "pause sync delay");
   }
@@ -667,13 +705,13 @@ void System::pausePeripherals(const char *screenMsg)
 
 void System::resumePeripherals()
 {
-  _displayTaskPaused = false;
-  _statusTaskPaused = false;
-  _pmSensorTaskPaused = false;
-  _co2SensorTaskPaused = false;
-  _sht3xSensorTaskPaused = false;
-  _tsl2561SensorTaskPaused = false;
-  _orientationSensorTaskPaused = false;
+  if (_displayTaskState == TaskPaused)           _displayTaskState = TaskRunning;
+  if (_statusTaskState == TaskPaused)            _statusTaskState = TaskRunning;
+  if (_pmSensorTaskState == TaskPaused)          _pmSensorTaskState = TaskRunning;
+  if (_co2SensorTaskState == TaskPaused)         _co2SensorTaskState = TaskRunning;
+  if (_sht3xSensorTaskState == TaskPaused)       _sht3xSensorTaskState = TaskRunning;
+  if (_tsl2561SensorTaskState == TaskPaused)     _tsl2561SensorTaskState = TaskRunning;
+  if (_orientationSensorTaskState == TaskPaused) _orientationSensorTaskState = TaskRunning;
   _enablePeripheralTaskLoop = true;
 }
 
