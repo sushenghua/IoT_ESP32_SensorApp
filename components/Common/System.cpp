@@ -105,8 +105,9 @@ bool _hasScreenMessage = false;
 void display_task(void *p)
 {
   dc.init();
-  _displayTaskState = TaskRunning;
   APP_LOGC("[display_task]", "start running ...");
+  _displayTaskState = TaskRunning;
+  _displayInactiveTicks = 0;
   while (true) {
     // APP_LOGI("[display_task]", "update");
     // APP_LOGC("[display_task]", "task schedule state %d", xTaskGetSchedulerState());
