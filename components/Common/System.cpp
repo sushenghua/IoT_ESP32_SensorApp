@@ -111,9 +111,9 @@ void display_task(void *p)
   while (true) {
     // APP_LOGI("[display_task]", "update");
     // APP_LOGC("[display_task]", "task schedule state %d", xTaskGetSchedulerState());
-    xTaskGetSchedulerState();
-    if (_enablePeripheralTaskLoop) { dc.update(); _displayInactiveTicks = 0; }
-    else if (_hasScreenMessage) { dc.update(); _hasScreenMessage = false; _displayInactiveTicks = 0; }
+    // xTaskGetSchedulerState();
+    if (_enablePeripheralTaskLoop) { dc.update(); _displayInactiveTicks = 1; }
+    else if (_hasScreenMessage) { dc.update(); _hasScreenMessage = false; _displayInactiveTicks = 1; }
     else _displayTaskState = TaskPaused;
     vTaskDelay(DISPLAY_TASK_DELAY_UNIT / portTICK_RATE_MS);
   }
@@ -499,14 +499,14 @@ static void http_task(void *pvParams)
 // daemon task
 //----------------------------------------------
 #define DAEMON_TASK_DELAY_UNIT                  100
-#define DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS 30
+#define DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS 60
 void _launchDisplayTask();
 bool _hasRebootRequest = false;
 static void daemon_task(void *pvParams = NULL)
 {
   while (true) {
     if (_displayTaskState == TaskRunning) {
-      ++_displayInactiveTicks;
+      if (_displayInactiveTicks > 0) ++_displayInactiveTicks;
       // to prevent display from non-responding(unknown reason, bug?)
       if (_displayInactiveTicks > DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS) {
         vTaskDelete(displayTaskHandle);
