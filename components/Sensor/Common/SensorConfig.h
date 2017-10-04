@@ -74,6 +74,7 @@ enum SensorDataType
 };
 
 const char * sensorDataTypeStr(SensorDataType type);
+const char * sensorDataValueStrFormat(SensorDataType type);
 SensorAlertMask sensorAlertMask(SensorDataType type);
 
 #ifdef __cplusplus

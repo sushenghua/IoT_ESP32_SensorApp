@@ -386,9 +386,8 @@ size_t genAlertPushNotificationJsonString(uint32_t mask, const char* tag)
   uint8_t sensorItemCount = 0;
   for (uint8_t t=PM; t<SensorDataTypeCount; ++t) {
     if (mask & sensorAlertMask((SensorDataType)t)) {
-      sprintf(_alertStringBuf + packCount, "%s\"%s\":%.1f",
-              sensorItemCount == 0 ? "" : ",",
-              sensorDataTypeStr((SensorDataType)t), _alertValue[t]);
+      sprintf(_alertStringBuf + packCount, sensorDataValueStrFormat((SensorDataType)t),
+              sensorItemCount == 0 ? "" : ",", _alertValue[t]);
       packCount += strlen(_alertStringBuf + packCount);
       ++sensorItemCount;
     }
