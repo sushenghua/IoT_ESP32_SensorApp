@@ -512,11 +512,11 @@ static void daemon_task(void *pvParams = NULL)
       if (_displayInactiveTicks > 0) ++_displayInactiveTicks;
       // to prevent display from non-responding(unknown reason, bug?)
       if (_displayInactiveTicks > DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS) {
-        // vTaskDelete(displayTaskHandle);
-        // vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
+        vTaskDelete(displayTaskHandle);
+        vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
         APP_LOGC("[daemon_task]", "relaunch display task");
         _displayInactiveTicks = 0;
-        // _launchDisplayTask();
+        _launchDisplayTask();
       }
     }
     if (_hasRebootRequest && !mqtt.hasUnackPub()) System::instance()->restart();

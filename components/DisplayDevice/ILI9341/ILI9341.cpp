@@ -42,7 +42,9 @@
 #define PIN_NUM_BCKL 5
 
 #define ILI9341_CHANNEL_CLK_SPEED   10000000
-#define ILI9341_CHANNEL_QUEQUE_SIZE 5
+#define ILI9341_CHANNEL_QUEQUE_SIZE 1
+#define ILI9341_SPI_TRANS_MAX       1
+static spi_transaction_t _ili9341SpiTrans[ILI9341_SPI_TRANS_MAX];
 
 // back light led controller
 #define USING_LED_CONTROLLER
@@ -54,9 +56,6 @@ uint16_t ILI9341::color565(uint8_t r, uint8_t g, uint8_t b)
 {
   return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3);
 }
-
-#define ILI9341_SPI_TRANS_MAX 1
-static spi_transaction_t _ili9341SpiTrans[ILI9341_SPI_TRANS_MAX];
 
 ILI9341::ILI9341()
 : DisplayGFX(ILI9341_TFTHEIGHT, ILI9341_TFTWIDTH)
