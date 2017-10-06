@@ -13,6 +13,7 @@
 #include "Config.h"
 #include "AppLog.h"
 #include "AppUpdaterConfig.h"
+#include "SharedBuffer.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // debug purpose
@@ -78,7 +79,7 @@ enum UpdateRetCode {
   DOWNLOAD_PROGRESS
 };
 
-char        _retBuf[512];
+char       *_retBuf = NULL;
 
 #define      MD5_LENGTH 16
 md5_context _md5Contex;
@@ -101,6 +102,7 @@ AppUpdater::AppUpdater()
 
 void AppUpdater::init()
 {
+  _retBuf = SharedBuffer::msgBuffer();
   sprintf(_updateDrxDataTopic, "%s/%s/drx", APP_UPDATE_TOPIC, System::instance()->uid());
   sprintf(_updateDtxDataTopic, "%s/%s/dtx", APP_UPDATE_TOPIC, System::instance()->uid());
   _rxTopicLen = strlen(_updateDrxDataTopic);
