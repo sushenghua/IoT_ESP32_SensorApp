@@ -102,12 +102,13 @@ uint16_t _displayInactiveTicks = 0;
 TaskHandle_t displayTaskHandle = 0;
 TaskState _displayTaskState = TaskEmpty;
 bool _hasScreenMessage = false;
+
 void display_task(void *p)
 {
   dc.init();
   APP_LOGC("[display_task]", "start running ...");
   _displayTaskState = TaskRunning;
-  _displayInactiveTicks = 0;
+  // _displayInactiveTicks = 0;
   while (true) {
     // APP_LOGI("[display_task]", "update");
     // APP_LOGC("[display_task]", "task schedule state %d", xTaskGetSchedulerState());
@@ -235,7 +236,7 @@ void sht3x_sensor_task(void *p)
     if (_enablePeripheralTaskLoop) {
       sht3xSensor.sampleData();
       checkAlert(TEMP, sht3xSensor.tempHumidData().temp);
-      checkAlert(HUMID, sht3xSensor.tempHumidData().temp);
+      checkAlert(HUMID, sht3xSensor.tempHumidData().humid);
     }
     else _sht3xSensorTaskState = TaskPaused;
     vTaskDelay(500/portTICK_RATE_MS);
@@ -345,11 +346,12 @@ void orientation_sensor_task(void *p)
 // as mongoose.h has macro write (s, b, l)
 #include "MqttClient.h"
 #include "CmdEngine.h"
+#include "SharedBuffer.h"
 
 MqttClient mqtt;
 
 // ------ generate alert push notification request string
-char _alertStringBuf[1024];
+char *_alertStringBuf = NULL;
 
 size_t genAlertPushNotificationJsonString(uint32_t mask, const char* tag)
 {
@@ -460,6 +462,7 @@ static void mqtt_task(void *pvParams)
   cmdEngine.enableUpdate();
 
   _resetAlertReactiveCounter();
+  _alertStringBuf = SharedBuffer::msgBuffer();
 
   while (true) {
     mqtt.poll();
@@ -509,9 +512,11 @@ static void daemon_task(void *pvParams = NULL)
       if (_displayInactiveTicks > 0) ++_displayInactiveTicks;
       // to prevent display from non-responding(unknown reason, bug?)
       if (_displayInactiveTicks > DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS) {
-        vTaskDelete(displayTaskHandle);
-        vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
-        _launchDisplayTask();
+        // vTaskDelete(displayTaskHandle);
+        // vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
+        APP_LOGC("[daemon_task]", "relaunch display task");
+        _displayInactiveTicks = 0;
+        // _launchDisplayTask();
       }
     }
     if (_hasRebootRequest && !mqtt.hasUnackPub()) System::instance()->restart();
@@ -627,7 +632,7 @@ void System::init()
 }
 
 // configMAX_PRIORITIES defined in "FreeRTOSConfig.h"
-#define DISPLAY_TASK_PRIORITY               4
+#define DISPLAY_TASK_PRIORITY               3
 #define WIFI_TASK_PRIORITY                  3
 #define SNTP_TASK_PRIORITY                  3
 #define MQTTCLIENT_TASK_PRIORITY            3
@@ -648,7 +653,7 @@ void System::init()
 
 inline void _launchDisplayTask()
 {
-  xTaskCreatePinnedToCore(display_task, "display_task", 8192, NULL, DISPLAY_TASK_PRIORITY, &displayTaskHandle, PRO_CORE);
+  xTaskCreatePinnedToCore(display_task, "display_task", 4096, NULL, DISPLAY_TASK_PRIORITY, &displayTaskHandle, PRO_CORE);
 }
 
 void System::_launchTasks()
@@ -657,17 +662,17 @@ void System::_launchTasks()
 
   _launchDisplayTask();
 
-  xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 4096, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
+  xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 2048, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
 
   if (_config2.devCapability & PM_CAPABILITY_MASK)
-    xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 2048, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
   if (_config2.devCapability & CO2_CAPABILITY_MASK)
-    xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 4096, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 2048, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
 
-  xTaskCreatePinnedToCore(tsl2561_sensor_task, "tsl2561_sensor_task", 4096, NULL, TSL2561_TASK_PRIORITY, &tsl2561SensorTaskHandle, RUN_ON_CORE);
+  xTaskCreatePinnedToCore(tsl2561_sensor_task, "tsl2561_sensor_task", 2048, NULL, TSL2561_TASK_PRIORITY, &tsl2561SensorTaskHandle, RUN_ON_CORE);
 
   if (_config2.devCapability & ORIENTATION_CAPABILITY_MASK)
-    xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 2048, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
 
   xTaskCreatePinnedToCore(status_check_task, "status_check_task", 2048, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
