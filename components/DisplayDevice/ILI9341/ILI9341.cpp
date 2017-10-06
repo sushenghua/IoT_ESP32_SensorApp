@@ -41,6 +41,7 @@
 #define PIN_NUM_RST  18
 #define PIN_NUM_BCKL 5
 
+#define ILI9341_CHANNEL_WAIT_TICKS  1000
 #define ILI9341_CHANNEL_CLK_SPEED   10000000
 #define ILI9341_CHANNEL_QUEQUE_SIZE 1
 #define ILI9341_SPI_TRANS_MAX       1
@@ -144,20 +145,20 @@ void ILI9341::_fireResetSignal()
 void ILI9341::writeCommand(uint8_t cmd)
 {
   gpio_set_level((gpio_num_t)PIN_NUM_DC, ILI9341_DC_CMD_MODE);
-  _spiChannel.tx(cmd);
+  _spiChannel.tx(cmd, ILI9341_CHANNEL_WAIT_TICKS);
   gpio_set_level((gpio_num_t)PIN_NUM_DC, ILI9341_DC_DATA_MODE);
 }
 
 void ILI9341::writeData(uint8_t data)
 {
   gpio_set_level((gpio_num_t)PIN_NUM_DC, ILI9341_DC_DATA_MODE);
-  _spiChannel.tx(data);
+  _spiChannel.tx(data, ILI9341_CHANNEL_WAIT_TICKS);
 }
 
 void ILI9341::writeData(const uint8_t *data, uint16_t count)
 {
   gpio_set_level((gpio_num_t)PIN_NUM_DC, ILI9341_DC_DATA_MODE);
-  _spiChannel.tx(data, count);
+  _spiChannel.tx(data, count, ILI9341_CHANNEL_WAIT_TICKS);
 }
 
 typedef struct {
@@ -286,7 +287,7 @@ void ILI9341::setRotation(uint8_t m)
       break;
   }
   writeCommand(ILI9341_MADCTL);
-  _spiChannel.tx(m);
+  _spiChannel.tx(m, ILI9341_CHANNEL_WAIT_TICKS);
 }
 
 void ILI9341::invertDisplay(bool i)
@@ -332,7 +333,7 @@ void ILI9341::writePixels(uint16_t *colors, uint32_t len)
       _ili9431ColorTxBuf[i] = (colors[colorIndex] << 8) | (colors[colorIndex] >> 8);
       ++colorIndex;
     }
-    _spiChannel.tx((uint8_t*)_ili9431ColorTxBuf , txLen * 2);
+    _spiChannel.tx((uint8_t*)_ili9431ColorTxBuf , txLen * 2, ILI9341_CHANNEL_WAIT_TICKS);
     len -= txLen;
   }
 }
@@ -347,7 +348,7 @@ void ILI9341::writeColor(uint16_t color, uint32_t len)
 
   while(len) {
     tlen = (len > blen)? blen : len;
-    _spiChannel.tx((uint8_t*)_ili9431ColorTxBuf, tlen * 2);
+    _spiChannel.tx((uint8_t*)_ili9431ColorTxBuf, tlen * 2, ILI9341_CHANNEL_WAIT_TICKS);
     len -= tlen;
   }
 }
@@ -355,7 +356,7 @@ void ILI9341::writeColor(uint16_t color, uint32_t len)
 uint8_t ILI9341::readcommand8(uint8_t c, uint8_t index)
 {
   writeCommand(0xD9);  // woo sekret command?
-  _spiChannel.tx(0x10 + index);
+  _spiChannel.tx(0x10 + index, ILI9341_CHANNEL_WAIT_TICKS);
   writeCommand(c);
 
   uint8_t r = 0;
@@ -434,7 +435,7 @@ void ILI9341::drawBitmap(int16_t x, int16_t y, int16_t w, int16_t h, const uint1
 
   setViewPort(x, y, w, h); // Clipped area
   while(h--) { // For each (clipped) scanline...
-    _spiChannel.tx((uint8_t*)pcolors, w * 2); // Push one (clipped) row
+    _spiChannel.tx((uint8_t*)pcolors, w * 2, ILI9341_CHANNEL_WAIT_TICKS); // Push one (clipped) row
     pcolors += saveW; // Advance pointer by one full (unclipped) line
   }
 }
@@ -447,27 +448,8 @@ void ILI9341::test()
   //this->scrollTo(100);
   this->setCursor(0, 100);
   this->setTextSize(2);
-  this->write("oooooooppppp");
+  this->write("hello");
   // for (int i=0; i<100; ++i)
   //   this->writeColor(RGB565_GREEN, 240);
   drawCircle(120, 160, 50, RGB565_WHITE);
-//   int     n, i, i2,
-//         cx = _width  / 2,
-//         cy = _height / 2;
-//   n   = 240;//_width < _height? _width : _height;
-// //  for(i=2; i<n; i+=6) {
-// //  i2 = i / 2;
-// //  fillRect(cx-i2, cy-i2, i, i, ILI9341_GREEN);
-// //  }
-//   i2 = n / 2;
-
-// //  for(int j=0; j<10; ++j) {
-// //  fillRect(cx-i2, cy-i2, n, n, ILI9341_RED);
-// //  drawFastHLine(15, 50, 30, ILI9341_CYAN);
-// //  drawCircle(120, 160, 50, ILI9341_YELLOW);
-
-  // setCursor(0, 100);
-  // setTextSize(2);
-  // write("fffffff\n");
-  //}
 }

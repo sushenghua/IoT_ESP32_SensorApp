@@ -66,42 +66,42 @@ public:
     void enableCallback(bool preCbEnabled = true, bool postCbEnabled = true);
 
     // tx and rx
-    bool tx(const uint8_t *data, uint16_t size) {
+    bool tx(const uint8_t *data, uint16_t size, TickType_t waitTicks = portMAX_DELAY) {
         _clearTrans(&_trans[0]);
         _trans[0].length = size * 8;
         _trans[0].tx_buffer = data;
         _trans[0].rx_buffer = NULL;
-        return _transmit() == ESP_OK;
+        return _transmit(waitTicks) == ESP_OK;
     }
 
-    bool rx(uint8_t *data, uint16_t size) {
+    bool rx(uint8_t *data, uint16_t size, TickType_t waitTicks = portMAX_DELAY) {
         _clearTrans(&_trans[0]);
         _trans[0].length = size;
         _trans[0].tx_buffer = NULL;
         _trans[0].rx_buffer = data;
-        return _transmit() == ESP_OK;
+        return _transmit(waitTicks) == ESP_OK;
     }
 
-    bool tx(uint8_t byte) {
+    bool tx(uint8_t byte, TickType_t waitTicks = portMAX_DELAY) {
         _clearTrans(&_trans[0]);
         _trans[0].length = 1 * 8;
         _trans[0].tx_data[0] = byte;
         _trans[0].flags = SPI_TRANS_USE_TXDATA;
         _trans[0].rx_buffer = NULL;
-        return _transmit() == ESP_OK;
+        return _transmit(waitTicks) == ESP_OK;
     }
 
-    bool tx16(uint16_t halfword) {
+    bool tx16(uint16_t halfword, TickType_t waitTicks = portMAX_DELAY) {
         _clearTrans(&_trans[0]);
         _trans[0].length = 2 * 8;
         _trans[0].tx_data[0] = (halfword >> 8) & 0xFF;
         _trans[0].tx_data[1] = halfword & 0xFF;
         _trans[0].flags = SPI_TRANS_USE_TXDATA;
         _trans[0].rx_buffer = NULL;
-        return _transmit() == ESP_OK;
+        return _transmit(waitTicks) == ESP_OK;
     }
 
-    bool tx32(uint32_t word) {
+    bool tx32(uint32_t word, TickType_t waitTicks = portMAX_DELAY) {
         _clearTrans(&_trans[0]);
         _trans[0].length = 4 * 8;
         _trans[0].tx_data[0] = (word >> 24) & 0xFF;
@@ -110,7 +110,7 @@ public:
         _trans[0].tx_data[3] = word & 0xFF;
         _trans[0].flags = SPI_TRANS_USE_TXDATA;
         _trans[0].rx_buffer = NULL;
-        return _transmit() == ESP_OK;
+        return _transmit(waitTicks) == ESP_OK;
     }
 
 public:
@@ -120,9 +120,11 @@ public:
 
 protected:
     // helper
-    esp_err_t _transmit(TickType_t ticks_to_wait = portMAX_DELAY) {
-        spi_device_queue_trans(_handle, _trans, ticks_to_wait);
-        return spi_device_get_trans_result(_handle, &_rtrans, ticks_to_wait);
+    esp_err_t _transmit(TickType_t waitTicks = portMAX_DELAY) {
+        // return spi_device_transmit(_handle, _trans);
+        esp_err_t ret = spi_device_queue_trans(_handle, _trans, waitTicks);
+        if (ret != ESP_OK) return ret;
+        return spi_device_get_trans_result(_handle, &_rtrans, waitTicks);
     }
     void _clearTrans(spi_transaction_t *trans) {
         //memset(trans, 0, sizeof(spi_transaction_t)); // also clear the trans->user -> may cause callback crash
