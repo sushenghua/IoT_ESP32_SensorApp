@@ -404,7 +404,7 @@ uint8_t detailRowCount = 0;
 void SensorDisplayController::_renderDetailScreenItem(SensorDataType type)
 {
   if (_staticContentNeedUpdate) {
-     _dev->setTextSize(2);
+    _dev->setTextSize(2);
     _dev->setTextColor(RGB565_WEAKWHITE, RGB565_BLACK);
     switch (type) {
     case PM:
