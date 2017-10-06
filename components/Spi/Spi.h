@@ -71,8 +71,7 @@ public:
         _trans[0].length = size * 8;
         _trans[0].tx_buffer = data;
         _trans[0].rx_buffer = NULL;
-        // return spi_device_queue_trans(_handle, &_trans[0], portMAX_DELAY) == ESP_OK;
-        return spi_device_transmit(_handle, &_trans[0]);
+        return _transmit() == ESP_OK;
     }
 
     bool rx(uint8_t *data, uint16_t size) {
@@ -80,8 +79,7 @@ public:
         _trans[0].length = size;
         _trans[0].tx_buffer = NULL;
         _trans[0].rx_buffer = data;
-        // return spi_device_queue_trans(_handle, &_trans[0], portMAX_DELAY) == ESP_OK;
-        return spi_device_transmit(_handle, &_trans[0]);
+        return _transmit() == ESP_OK;
     }
 
     bool tx(uint8_t byte) {
@@ -90,8 +88,7 @@ public:
         _trans[0].tx_data[0] = byte;
         _trans[0].flags = SPI_TRANS_USE_TXDATA;
         _trans[0].rx_buffer = NULL;
-        // return spi_device_queue_trans(_handle, &_trans[0], portMAX_DELAY) == ESP_OK;
-        return spi_device_transmit(_handle, &_trans[0]);
+        return _transmit() == ESP_OK;
     }
 
     bool tx16(uint16_t halfword) {
@@ -101,8 +98,7 @@ public:
         _trans[0].tx_data[1] = halfword & 0xFF;
         _trans[0].flags = SPI_TRANS_USE_TXDATA;
         _trans[0].rx_buffer = NULL;
-        // return spi_device_queue_trans(_handle, &_trans[0], portMAX_DELAY) == ESP_OK;
-        return spi_device_transmit(_handle, &_trans[0]);
+        return _transmit() == ESP_OK;
     }
 
     bool tx32(uint32_t word) {
@@ -114,8 +110,7 @@ public:
         _trans[0].tx_data[3] = word & 0xFF;
         _trans[0].flags = SPI_TRANS_USE_TXDATA;
         _trans[0].rx_buffer = NULL;
-        // return spi_device_queue_trans(_handle, &_trans[0], portMAX_DELAY) == ESP_OK;
-        return spi_device_transmit(_handle, &_trans[0]);
+        return _transmit() == ESP_OK;
     }
 
 public:
@@ -125,6 +120,10 @@ public:
 
 protected:
     // helper
+    esp_err_t _transmit(TickType_t ticks_to_wait = portMAX_DELAY) {
+        spi_device_queue_trans(_handle, _trans, ticks_to_wait);
+        return spi_device_get_trans_result(_handle, &_rtrans, ticks_to_wait);
+    }
     void _clearTrans(spi_transaction_t *trans) {
         //memset(trans, 0, sizeof(spi_transaction_t)); // also clear the trans->user -> may cause callback crash
         trans->flags = 0;
@@ -137,6 +136,8 @@ protected:
     spi_device_handle_t           _handle;
     // spi config
     spi_device_interface_config_t _config;
+    // for getting trans result
+    spi_transaction_t            *_rtrans;
     // following two variable must be initialized in subclass or by calling bindTransactionCache    
     spi_transaction_t            *_trans;
     int                           _transCount;

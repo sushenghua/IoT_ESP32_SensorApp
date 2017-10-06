@@ -7,6 +7,7 @@
 #include "ILI9341.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+// #include "esp_heap_alloc_caps.h"
 #include "LedController.h"
 
 // delay definition
@@ -54,15 +55,14 @@ uint16_t ILI9341::color565(uint8_t r, uint8_t g, uint8_t b)
   return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3);
 }
 
+#define ILI9341_SPI_TRANS_MAX 1
+static spi_transaction_t _ili9341SpiTrans[ILI9341_SPI_TRANS_MAX];
+
 ILI9341::ILI9341()
 : DisplayGFX(ILI9341_TFTHEIGHT, ILI9341_TFTWIDTH)
 , _on(true)
 , _backLedDuty(0)
-{
-}
-
-#define ILI9341_SPI_TRANS_MAX 5
-static spi_transaction_t _ili9341SpiTrans[ILI9341_SPI_TRANS_MAX];
+{}
 
 void ILI9341::_initBus()
 {
@@ -101,11 +101,8 @@ void ILI9341::init()
 void ILI9341::reset()
 {
   turnOn(false);      // turn off led
-
   _fireResetSignal(); // reset
-
   _init();            // init self
-
   turnOn(true);       // turn on led
 }
 

@@ -81,7 +81,7 @@
 class ILI9341 : public DisplayGFX
 {
 public:
-    ILI9341();
+  ILI9341();
 
 public:
   // virtual methods

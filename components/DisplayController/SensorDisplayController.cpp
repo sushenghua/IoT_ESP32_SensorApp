@@ -46,6 +46,9 @@ void SensorDisplayController::init()
 
     _inited = true;
   }
+  else {
+    _dev->reset();
+  }
 }
 
 void SensorDisplayController::tick()
@@ -178,7 +181,7 @@ void SensorDisplayController::update()
 
   // update content
   if (_dynamicContentNeedUpdate && !_devUpdateRotationInProgress) {
-    // APP_LOGE("[SensorDC]", "content update");
+    // APP_LOGI("[SensorDC]", "content update");
     switch(_dev->rotation()) {
       case DISPLAY_ROTATION_CW_0:
         _renderMainScreen();

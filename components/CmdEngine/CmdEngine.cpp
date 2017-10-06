@@ -12,6 +12,7 @@
 #include "System.h"
 #include "SensorDataPacker.h"
 #include "DisplayController.h"
+#include "SharedBuffer.h"
 #include "AppUpdater.h"
 #include "MqttClientDelegate.h"
 #include "Wifi.h"
@@ -19,6 +20,8 @@
 #include "cJSON.h"
 
 AppUpdater _appUpdater;
+char    *_strBuf = NULL;
+uint8_t *_cmdBuf = NULL;
 
 CmdEngine::CmdEngine()
 : _delegate(NULL)
@@ -37,6 +40,8 @@ bool CmdEngine::init()
     _delegate->setup();
     succeeded = true;
   }
+  _strBuf = SharedBuffer::msgBuffer();
+  _cmdBuf = SharedBuffer::cmdBuffer();
   return succeeded;
 }
 
@@ -59,8 +64,6 @@ union FloatBytes {
   float v;
   uint8_t bytes[FloatLen];
 };
-
-uint8_t  _cmdBuf[1024];
 
 inline bool strEqual(const char* str1, const char* str2)
 {
@@ -315,8 +318,6 @@ void CmdEngine::interpreteSocketMsg(const void* msg, size_t msgLen, void *userda
 
   if (exec) execCmd(cmdKey, retFmt, data, size, userdata);
 }
-
-char _strBuf[1024];
 
 void replyJsonResult(ProtocolDelegate *delegate, const char *str, CmdKey cmdKey, void *userdata)
 {

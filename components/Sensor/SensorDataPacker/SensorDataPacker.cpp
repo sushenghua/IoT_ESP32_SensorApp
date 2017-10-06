@@ -7,6 +7,7 @@
 #include "SensorDataPacker.h"
 #include <string.h>
 #include "System.h"
+#include "SharedBuffer.h"
 
 static SensorDataPacker _sharedSensorDataPacker;
 
@@ -15,13 +16,16 @@ SensorDataPacker * SensorDataPacker::sharedInstance()
   return &_sharedSensorDataPacker;
 }
 
+char  *_dataStringBuf = NULL;
+
 SensorDataPacker::SensorDataPacker()
 : _pmSensor(NULL)
 {}
 
 void SensorDataPacker::init()
 {
-    _sensorCapability = System::instance()->devCapability();
+  _dataStringBuf = SharedBuffer::msgBuffer();
+  _sensorCapability = System::instance()->devCapability();
 }
 
 void SensorDataPacker::setTempHumidSensor(SHT3xSensor *sensor)
@@ -78,8 +82,6 @@ const uint8_t* SensorDataPacker::dataBlock(size_t &size)
   size = packCount;
   return _dataBlockBuf;
 }
-
-char _dataStringBuf[1024];
 
 const char* SensorDataPacker::dataJsonString(size_t &size)
 {
