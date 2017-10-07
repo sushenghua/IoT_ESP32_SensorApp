@@ -119,8 +119,9 @@ public:
 protected:
   void _initBus();
   void _initBackLed();
-  void _init();
+  void _initIli9341WithCmd();
   void _fireResetSignal();
+  void _initIli9341();
 
   void writeCommand(uint8_t cmd);
   void writeData(uint8_t data);

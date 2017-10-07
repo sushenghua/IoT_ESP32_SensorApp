@@ -89,21 +89,29 @@ void ILI9341::_initBackLed()
 #endif
 }
 
+void ILI9341::_initIli9341()
+{
+  turnOn(false);          // turn off led
+  _fireResetSignal();     // hard wire reset
+  _initIli9341WithCmd();  // send init cmd sequence to device
+  turnOn(true);           // turn on led
+}
+
 void ILI9341::init()
 {
   _initBus();
-
   _initBackLed();
-
-  reset();
+  _initIli9341();
 }
 
 void ILI9341::reset()
 {
-  turnOn(false);      // turn off led
-  _fireResetSignal(); // reset
-  _init();            // init self
-  turnOn(true);       // turn on led
+  SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
+  bus->removeChannel(_spiChannel);
+  bus->deinit();
+
+  bus->init(PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK);
+  bus->addChannel(_spiChannel);
 }
 
 void ILI9341::turnOn(bool on)
@@ -245,7 +253,7 @@ DRAM_ATTR static const ILI9341InitCmd ili9341InitCmd[] = {
   {0, {0}, 0xFF}
 };
 
-void ILI9341::_init()
+void ILI9341::_initIli9341WithCmd()
 {
   int i = 0;
   // send all the commands and data
