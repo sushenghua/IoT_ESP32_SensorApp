@@ -426,7 +426,7 @@ void _sendLAlertPushNotification()
     size_t jsonSize = genAlertPushNotificationJsonString(_lAlertMask, "l");
     if (jsonSize > 0) {
 #ifdef LOG_ALERT
-      APP_LOGC("[mqtt_task]", "push L alert PN request");
+      APP_LOGC("[mqtt_task]", "push L alert PN request, free RAM: %d bytes", esp_get_free_heap_size());
 #endif
       mqtt.publish(NPS_TOPIC, _alertStringBuf, jsonSize, 0);
       _lAlertReactiveCounter = 0;
@@ -442,7 +442,7 @@ void _sendGAlertPushNotification()
     size_t jsonSize = genAlertPushNotificationJsonString(_gAlertMask, "g");
     if (jsonSize > 0) {
 #ifdef LOG_ALERT
-      APP_LOGC("[mqtt_task]", "push G alert PN request");
+      APP_LOGC("[mqtt_task]", "push G alert PN request, free RAM: %d bytes", esp_get_free_heap_size());
 #endif
       mqtt.publish(NPS_TOPIC, _alertStringBuf, jsonSize, 0);
       _gAlertReactiveCounter = 0;
@@ -514,7 +514,7 @@ static void daemon_task(void *pvParams = NULL)
       if (_displayInactiveTicks > DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS) {
         vTaskDelete(displayTaskHandle);
         vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
-        APP_LOGC("[daemon_task]", "--->relaunch display task");
+        APP_LOGC("[daemon_task]", "--->relaunch display task, free RAM: %d bytes", esp_get_free_heap_size());
         _displayInactiveTicks = 0;
         _launchDisplayTask();
       }
@@ -662,17 +662,17 @@ void System::_launchTasks()
 
   _launchDisplayTask();
 
-  xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 2048, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
+  xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 4096, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
 
   if (_config2.devCapability & PM_CAPABILITY_MASK)
-    xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 2048, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
   if (_config2.devCapability & CO2_CAPABILITY_MASK)
-    xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 2048, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 4096, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
 
-  xTaskCreatePinnedToCore(tsl2561_sensor_task, "tsl2561_sensor_task", 2048, NULL, TSL2561_TASK_PRIORITY, &tsl2561SensorTaskHandle, RUN_ON_CORE);
+  xTaskCreatePinnedToCore(tsl2561_sensor_task, "tsl2561_sensor_task", 4096, NULL, TSL2561_TASK_PRIORITY, &tsl2561SensorTaskHandle, RUN_ON_CORE);
 
   if (_config2.devCapability & ORIENTATION_CAPABILITY_MASK)
-    xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 2048, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
+    xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
 
   xTaskCreatePinnedToCore(status_check_task, "status_check_task", 2048, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
