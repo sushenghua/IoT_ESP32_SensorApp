@@ -37,11 +37,18 @@
 #define PIN_NUM_CLK  19
 #define PIN_NUM_CS   22
 
+#define USE_CS_CONTROL
+#ifdef  USE_CS_CONTROL
+#define ILI9341_PIN_CS   PIN_NUM_CS
+#else
+#define ILI9341_PIN_CS   PIN_NOT_USED
+#endif
+
 #define PIN_NUM_DC   21
 #define PIN_NUM_RST  18
 #define PIN_NUM_BCKL 5
 
-#define ILI9341_CHANNEL_WAIT_TICKS  1000
+#define ILI9341_CHANNEL_WAIT_TICKS  portMAX_DELAY
 #define ILI9341_CHANNEL_CLK_SPEED   10000000
 #define ILI9341_CHANNEL_QUEQUE_SIZE 1
 #define ILI9341_SPI_TRANS_MAX       1
@@ -69,11 +76,14 @@ void ILI9341::_initBus()
   // initialize non-SPI GPIOs
   gpio_set_direction((gpio_num_t)PIN_NUM_DC, GPIO_MODE_OUTPUT);
   gpio_set_direction((gpio_num_t)PIN_NUM_RST, GPIO_MODE_OUTPUT);
+#ifndef USE_CS_CONTROL
+  gpio_set_direction((gpio_num_t)PIN_NUM_CS, GPIO_MODE_OUTPUT);
+#endif
 
   // spi bus init
   SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
   bus->init(PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK);
-  _spiChannel.setParams(0, PIN_NUM_CS, ILI9341_CHANNEL_QUEQUE_SIZE, ILI9341_CHANNEL_CLK_SPEED);
+  _spiChannel.setParams(0, ILI9341_PIN_CS, ILI9341_CHANNEL_QUEQUE_SIZE, ILI9341_CHANNEL_CLK_SPEED);
   _spiChannel.bindTransactionCache(_ili9341SpiTrans, ILI9341_SPI_TRANS_MAX);
   bus->addChannel(_spiChannel);
 }
@@ -112,6 +122,9 @@ void ILI9341::reset()
 
   bus->init(PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK);
   bus->addChannel(_spiChannel);
+
+  // _fireResetSignal();
+  _initIli9341WithCmd();
 }
 
 void ILI9341::turnOn(bool on)
@@ -144,6 +157,9 @@ void ILI9341::fadeBrightness(uint8_t b, int duration)
 
 void ILI9341::_fireResetSignal()
 {
+#ifndef USE_CS_CONTROL
+  gpio_set_level((gpio_num_t)PIN_NUM_CS, 0);
+#endif
   gpio_set_level((gpio_num_t)PIN_NUM_RST, 0);
   delay(RESET_DELAY_TIME);
   gpio_set_level((gpio_num_t)PIN_NUM_RST, 1);
