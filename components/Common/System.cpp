@@ -379,8 +379,8 @@ size_t genAlertPushNotificationJsonString(uint32_t mask, const char* tag)
   for (uint8_t i=0; i<tokens->count; ++i) {
     MobileToken &token = tokens->token(i);
     if (token.on) {
-      sprintf(_alertStringBuf + packCount, "%s{\"token\":\"%s\",\"os\":\"%s\"}",
-              onTokenCount > 0 ? "," : "", token.str, mobileOSStr(token.os));
+      sprintf(_alertStringBuf + packCount, "%s{\"token\":\"%s\",\"os\":\"%s\",\"grp\":\"%s\"}",
+              onTokenCount > 0 ? "," : "", token.str, mobileOSStr(token.os), token.groupLen > 0 ? token.group : "");
       packCount += strlen(_alertStringBuf + packCount);
       ++onTokenCount;
     }
@@ -404,8 +404,8 @@ size_t genAlertPushNotificationJsonString(uint32_t mask, const char* tag)
     }
   }
 
-  // print: val content ending '}', whole json ending '}'
-  sprintf(_alertStringBuf + packCount, "}}");
+  // print: val content ending '}', dev name, whole json ending '}'
+  sprintf(_alertStringBuf + packCount, "},\"dev\":\"%s\"}", System::instance()->deviceName());
   packCount += strlen(_alertStringBuf + packCount);
 
   return packCount;
@@ -479,9 +479,8 @@ void _genDebugMsgPN(const char* tag, const char* msg)
   for (uint8_t i=0; i<tokens->count; ++i) {
     MobileToken &token = tokens->token(i);
     if (token.os == iOS) {
-      sprintf(_debugMsg + packCount, "%s{\"token\":\"%s\",\"os\":\"%s\",\"dev\":\"%s%s%s%s\"}",
-              iosTokenCount > 0 ? "," : "", token.str, mobileOSStr(token.os), System::instance()->deviceName(),
-              token.groupLen > 0 ? "(" : "", token.groupLen > 0 ? token.group : "", token.groupLen > 0 ? ")" : "");
+      sprintf(_debugMsg + packCount, "%s{\"token\":\"%s\",\"os\":\"%s\",\"grp\":\"%s\"}",
+              iosTokenCount > 0 ? "," : "", token.str, mobileOSStr(token.os), token.groupLen > 0 ? token.group : "");
       packCount += strlen(_debugMsg + packCount);
       ++iosTokenCount;
       break;
@@ -489,7 +488,7 @@ void _genDebugMsgPN(const char* tag, const char* msg)
   }
   if (iosTokenCount == 0) return;
 
-  sprintf(_debugMsg + packCount, "],\"msg\":\"%s\"}", msg);
+  sprintf(_debugMsg + packCount, "],\"msg\":\"%s\",\"dev\":\"%s\"}", msg, System::instance()->deviceName());
   packCount += strlen(_debugMsg + packCount);
 
   _hasDebugMsg = true;
