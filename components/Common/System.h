@@ -72,6 +72,7 @@ struct MobileTokens {
     head = 0; count = 0;
     for (uint8_t i=0; i<TOKEN_COUNT; ++i) {
       tokens[i].str[TOKEN_LEN] = '\0';
+      tokens[i].groupLen = 0;
       tokens[i].group[GROUP_LEN] = '\0';
     }
   }
