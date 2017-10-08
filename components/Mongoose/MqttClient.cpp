@@ -489,7 +489,9 @@ void MqttClient::onRxPubMessage(struct mg_mqtt_message *msg)
 
 void MqttClient::onPingResp(struct mg_mqtt_message *msg)
 {
+#ifdef LOG_MQTT_PING_PONG
     APP_LOGI("[MqttClient]", "got ping response");
+#endif
     _recentActiveTime = time(NULL);
 }
 
@@ -539,7 +541,9 @@ void MqttClient::aliveGuardCheck()
             }
         }
         else if (_connected && timeNow - _recentActiveTime > _aliveGuardInterval) {
+#ifdef LOG_MQTT_PING_PONG
             APP_LOGI("[MqttClient]", "no activity recently, ping to server");
+#endif
             mg_mqtt_ping(_manager.active_connections);
         }
     }
