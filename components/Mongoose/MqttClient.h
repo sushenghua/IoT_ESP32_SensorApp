@@ -151,8 +151,9 @@ public:
     void init();
     void deinit();
 
-    // communication
+    // connection
     void start();
+    bool connected() { return _connected; }
 
     const SubTopics & topicsSubscribed();
 

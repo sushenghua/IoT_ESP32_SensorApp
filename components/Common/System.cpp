@@ -450,6 +450,51 @@ void _sendGAlertPushNotification()
   }
 }
 
+// ------ debug message push notification
+#ifdef DEBUG_PN
+
+bool _hasDebugMsg = false;
+char _debugMsg[256];
+
+void _genDebugMsgPN(const char* tag, const char* msg)
+{
+  MobileTokens *tokens = System::instance()->mobileTokens();
+  if (tokens->count == 0) return;
+
+  size_t packCount = 0;
+
+  sprintf(_debugMsg + packCount, "{\"tag\":\"%s\",\"tokens\":[", tag);
+  packCount += strlen(_debugMsg + packCount);
+
+  size_t iosTokenCount = 0;
+  for (uint8_t i=0; i<tokens->count; ++i) {
+    MobileToken &token = tokens->token(i);
+    if (token.os == iOS) {
+      sprintf(_debugMsg + packCount, "%s{\"token\":\"%s\",\"os\":\"%s\"}",
+              iosTokenCount > 0 ? "," : "", token.str, mobileOSStr(token.os));
+      packCount += strlen(_debugMsg + packCount);
+      ++iosTokenCount;
+      break;
+    }
+  }
+  if (iosTokenCount == 0) return;
+
+  sprintf(_debugMsg + packCount, "],\"msg\":\"%s\"}", msg);
+  packCount += strlen(_debugMsg + packCount);
+
+  _hasDebugMsg = true;
+}
+
+void _sendDebugMsgPN()
+{
+  if (mqtt.connected() && _hasDebugMsg) {
+    mqtt.publish(NPS_TOPIC, _debugMsg, strlen(_debugMsg), 0);
+    _hasDebugMsg = false;
+  }
+}
+
+#endif
+
 // ------ mqtt task
 static void mqtt_task(void *pvParams)
 {
@@ -466,6 +511,9 @@ static void mqtt_task(void *pvParams)
 
   while (true) {
     mqtt.poll();
+#ifdef DEBUG_PN
+    _sendDebugMsgPN();
+#endif
     if (++_lAlertReactiveCounter == _alertReactiveCount) _sendLAlertPushNotification();
     if (++_gAlertReactiveCounter == _alertReactiveCount) _sendGAlertPushNotification();
     vTaskDelay(10 / portTICK_PERIOD_MS);
@@ -507,11 +555,17 @@ void _launchDisplayTask();
 bool _hasRebootRequest = false;
 static void daemon_task(void *pvParams = NULL)
 {
+#ifdef DEBUG_PN
+  _genDebugMsgPN("d", "daemon task enabled");
+#endif
   while (true) {
     if (_displayTaskState == TaskRunning) {
       if (_displayInactiveTicks > 0) ++_displayInactiveTicks;
       // to prevent display from non-responding(unknown reason, bug?)
       if (_displayInactiveTicks > DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS) {
+#ifdef DEBUG_PN
+        _genDebugMsgPN("d", "display task inactive");
+#endif
         vTaskDelete(displayTaskHandle);
         vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
         APP_LOGC("[daemon_task]", "--->relaunch display task, free RAM: %d bytes", esp_get_free_heap_size());

@@ -29,6 +29,7 @@
 // #define LOG_WEBSOCKET_MSG
 
 #define LOG_ALERT
+#define DEBUG_PN
 
 // #define LOG_APPUPDATER
 
