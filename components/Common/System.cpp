@@ -479,8 +479,9 @@ void _genDebugMsgPN(const char* tag, const char* msg)
   for (uint8_t i=0; i<tokens->count; ++i) {
     MobileToken &token = tokens->token(i);
     if (token.os == iOS) {
-      sprintf(_debugMsg + packCount, "%s{\"token\":\"%s\",\"os\":\"%s\"}",
-              iosTokenCount > 0 ? "," : "", token.str, mobileOSStr(token.os));
+      sprintf(_debugMsg + packCount, "%s{\"token\":\"%s\",\"os\":\"%s\",\"dev\":\"%s%s%s%s\"}",
+              iosTokenCount > 0 ? "," : "", token.str, mobileOSStr(token.os), System::instance()->deviceName(),
+              token.groupLen > 0 ? "(" : "", token.groupLen > 0 ? token.group : "", token.groupLen > 0 ? ")" : "");
       packCount += strlen(_debugMsg + packCount);
       ++iosTokenCount;
       break;
@@ -1079,9 +1080,9 @@ void System::setAlert(SensorDataType type, bool lEnabled, bool gEnabled, float l
   _alertsNeedToSave = true;
 }
 
-void System::setPnToken(bool enabled, MobileOS os, const char *token)
+void System::setPnToken(bool enabled, MobileOS os, const char *token, size_t groupLen, const char *group)
 {
-  _mobileTokens.setToken(enabled, os, token);
+  _mobileTokens.setToken(enabled, os, token, groupLen, group);
   _tokensNeedToSave = true;
 }
 

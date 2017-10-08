@@ -51,13 +51,16 @@ enum MobileOS {
 const char* mobileOSStr(MobileOS);
 
 // ------ token
+#define GROUP_LEN   64
 #define TOKEN_LEN   64
 #define TOKEN_COUNT 5
 
 struct MobileToken {
   bool     on;
   MobileOS os;
-  char     str[TOKEN_LEN+1]; // null terminate
+  char     str[TOKEN_LEN+1];   // null terminated
+  uint8_t  groupLen;
+  char     group[GROUP_LEN+1]; // null terminated
 };
 
 struct MobileTokens {
@@ -67,16 +70,23 @@ struct MobileTokens {
   // functions
   void init() {
     head = 0; count = 0;
-    for (uint8_t i=0; i<TOKEN_COUNT; ++i)
+    for (uint8_t i=0; i<TOKEN_COUNT; ++i) {
       tokens[i].str[TOKEN_LEN] = '\0';
+      tokens[i].group[GROUP_LEN] = '\0';
+    }
   }
-  void setToken(bool on, MobileOS os, const char *token) {
+  void setToken(bool on, MobileOS os, const char *token, size_t groupLen=0, const char *group=NULL) {
     int8_t index = findToken(token);
     if (index == -1) {
       if (count < TOKEN_COUNT) { index = (head + count) % TOKEN_COUNT; ++count; }
       else { index = head; head = (head + 1) % TOKEN_COUNT; }
       tokens[index].os = os;
       strncpy(tokens[index].str, token, TOKEN_LEN);
+      if (groupLen > 0) {
+        tokens[index].groupLen = groupLen < GROUP_LEN ? groupLen : GROUP_LEN;
+        memcpy(tokens[index].group, group, tokens[index].groupLen);
+        tokens[index].group[tokens[index].groupLen] = '\0';
+      }
     }
     else { index = (head + index) % TOKEN_COUNT; }
     tokens[index].on = on;
@@ -176,7 +186,7 @@ public:
   void setAlertPnOn(bool on);
   void setAlertSoundOn(bool on);
   void setAlert(SensorDataType type, bool lEnabled, bool gEnabled, float lValue, float gValue);
-  void setPnToken(bool enabled, MobileOS os, const char *token);
+  void setPnToken(bool enabled, MobileOS os, const char *token, size_t groupLen=0, const char *group=NULL);
   void resetAlertReactiveCounter();
 
   void setRestartRequest();
