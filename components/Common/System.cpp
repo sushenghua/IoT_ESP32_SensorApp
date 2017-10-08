@@ -18,10 +18,11 @@
 //----------------------------------------------
 bool     _enablePeripheralTaskLoop = true;
 enum TaskState {
-  TaskEmpty    = 0,
-  TaskRunning  = 1,
-  TaskPaused   = 2,
-  TaskKilled   = 3
+  TaskEmpty       = 0,
+  TaskRunning     = 1,
+  TaskPaused      = 2,
+  TaskNoResponse  = 3,
+  TaskKilled      = 4
 };
 
 // watch dog
@@ -120,6 +121,14 @@ void display_task(void *p)
   }
 }
 
+void _launchTasks();
+void _resetDisplay()
+{
+  // vTaskDelete(displayTaskHandle);
+  // vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
+  _displayInactiveTicks = 0;
+  // _launchDisplayTask();
+}
 
 //----------------------------------------------
 // status check tasks
@@ -551,7 +560,6 @@ static void http_task(void *pvParams)
 //----------------------------------------------
 #define DAEMON_TASK_DELAY_UNIT                  100
 #define DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS 60
-void _launchDisplayTask();
 bool _hasRebootRequest = false;
 static void daemon_task(void *pvParams = NULL)
 {
@@ -563,14 +571,12 @@ static void daemon_task(void *pvParams = NULL)
       if (_displayInactiveTicks > 0) ++_displayInactiveTicks;
       // to prevent display from non-responding(unknown reason, bug?)
       if (_displayInactiveTicks > DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS) {
+        _displayTaskState = TaskNoResponse;
+        APP_LOGC("[daemon_task]", "--->relaunch display task, free RAM: %d bytes", esp_get_free_heap_size());
 #ifdef DEBUG_PN
         _genDebugMsgPN("d", "display task inactive");
 #endif
-        vTaskDelete(displayTaskHandle);
-        vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
-        APP_LOGC("[daemon_task]", "--->relaunch display task, free RAM: %d bytes", esp_get_free_heap_size());
-        _displayInactiveTicks = 0;
-        _launchDisplayTask();
+        _resetDisplay();
       }
     }
     if (_hasRebootRequest && !mqtt.hasUnackPub()) System::instance()->restart();
