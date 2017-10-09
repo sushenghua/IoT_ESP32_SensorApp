@@ -128,6 +128,7 @@ void _resetDisplay()
   // vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
   _displayInactiveTicks = 0;
   // _launchDisplayTask();
+  System::instance()->setRestartRequest();
 }
 
 //----------------------------------------------
@@ -1013,10 +1014,14 @@ const char* System::deviceName()
 
 void System::setDeviceName(const char* name, size_t len)
 {
-  if (len > 0)
-    memcpy(_config2.devName, name, len < DEV_NAME_MAX_LEN ? len : DEV_NAME_MAX_LEN);
-  else
+  if (len > 0) {
+    len = len < DEV_NAME_MAX_LEN ? len : DEV_NAME_MAX_LEN
+    memcpy(_config2.devName, name, len);
+    _config2.devName[len] = '\0'; // null terminated
+  }
+  else {
     strncpy(_config2.devName, name, DEV_NAME_MAX_LEN);
+  }
   _updateConfig2(); // _saveConfig2();
 }
 
