@@ -1015,7 +1015,7 @@ const char* System::deviceName()
 void System::setDeviceName(const char* name, size_t len)
 {
   if (len > 0) {
-    len = len < DEV_NAME_MAX_LEN ? len : DEV_NAME_MAX_LEN
+    len = len < DEV_NAME_MAX_LEN ? len : DEV_NAME_MAX_LEN;
     memcpy(_config2.devName, name, len);
     _config2.devName[len] = '\0'; // null terminated
   }
