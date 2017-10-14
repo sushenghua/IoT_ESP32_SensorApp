@@ -166,7 +166,7 @@ float HS::TEMP_TABLE[] = {
        -10.0f,      // deep cold
          5.0f,      // icy cold
         18.0f,      // cold
-        23.0f,      // comfortable
+        27.0f,      // comfortable
         32.0f,      // hot
         38.0f       // very hot
                     // burn hot

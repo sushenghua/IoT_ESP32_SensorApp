@@ -37,7 +37,7 @@
 #define PIN_NUM_CLK  19
 #define PIN_NUM_CS   22
 
-#define USE_CS_CONTROL
+// #define USE_CS_CONTROL
 #ifdef  USE_CS_CONTROL
 #define ILI9341_PIN_CS   PIN_NUM_CS
 #else
