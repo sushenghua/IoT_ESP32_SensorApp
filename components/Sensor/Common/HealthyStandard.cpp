@@ -135,6 +135,7 @@ void HS::calculateAQI(const float *table, float concertration, uint16_t &indexVa
 
 // table of level
 float HS::HCHO_TABLE[] = {
+        0.02f,      // healthy (excellent)
         0.08f,      // healthy
         0.30f,      // unhealthy
         0.50f,      // very unhealthy
@@ -144,6 +145,7 @@ float HS::HCHO_TABLE[] = {
 
 // table of level color
 static uint16_t HCHOLEVELCOLOR[] = {
+        0x07E0,     // excellent (same color as 'good')
         0x07E0,     // good
         0xFBE0,     // unhealthy
         0xF800,     // very unhealthy
