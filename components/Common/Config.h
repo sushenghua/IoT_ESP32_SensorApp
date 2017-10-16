@@ -32,6 +32,7 @@
 #define LOG_ALERT
 #define DEBUG_PN
 
+#define LOG_REMOTE_CMD
 // #define LOG_APPUPDATER
 
 #endif // _CONF_H_INCLUDED

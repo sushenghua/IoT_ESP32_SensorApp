@@ -74,8 +74,9 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
 {
   cJSON *root = cJSON_Parse(msg);
   cJSON *cmd = cJSON_GetObjectItem(root, "cmd");
-
+#ifdef LOG_REMOTE_CMD
   APP_LOGC("[CmdEngine]", "json cmd %s", cmd->valuestring);
+#endif
 
   CmdKey cmdKey = strToCmdKey(cmd->valuestring);
 
