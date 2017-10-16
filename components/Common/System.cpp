@@ -121,14 +121,15 @@ void display_task(void *p)
   }
 }
 
-void _launchTasks();
+void _launchDisplayTask();
 void _resetDisplay()
 {
   // vTaskDelete(displayTaskHandle);
   // vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
   _displayInactiveTicks = 0;
+  dc.reset();
+  APP_LOGC("[display_task]", "reset done");
   // _launchDisplayTask();
-  System::instance()->setRestartRequest();
 }
 
 //----------------------------------------------

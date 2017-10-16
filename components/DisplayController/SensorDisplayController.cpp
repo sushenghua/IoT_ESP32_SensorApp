@@ -46,9 +46,6 @@ void SensorDisplayController::init()
 
     _inited = true;
   }
-  else {
-    _dev->reset();
-  }
 }
 
 void SensorDisplayController::tick()

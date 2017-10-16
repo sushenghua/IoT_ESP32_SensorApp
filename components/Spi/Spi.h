@@ -113,6 +113,11 @@ public:
         return _transmit(waitTicks) == ESP_OK;
     }
 
+    void flushQueue(TickType_t waitTicks = 0) {
+        while (spi_device_get_trans_result(_handle, &_rtrans, waitTicks)) {
+        }
+    }
+
 public:
     // virtual callback
     virtual void preTxCb() {}
