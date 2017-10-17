@@ -16,6 +16,7 @@
 #include "AppUpdater.h"
 #include "MqttClientDelegate.h"
 #include "Wifi.h"
+#include "Config.h"
 
 #include "cJSON.h"
 
