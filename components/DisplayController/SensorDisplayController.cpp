@@ -151,6 +151,8 @@ void SensorDisplayController::setScreenMessage(const char * msg)
 
 void SensorDisplayController::update()
 {
+  if (_updateDisabled) return;
+
   if (_hasScreenMsg) {
     _dev->fillScreen(RGB565_BLACK);
     _dev->setCursor(10, _dev->height()/2);

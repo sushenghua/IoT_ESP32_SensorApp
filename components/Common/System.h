@@ -190,6 +190,7 @@ public:
   void setPnToken(bool enabled, MobileOS os, const char *token, size_t groupLen=0, const char *group=NULL);
   void resetAlertReactiveCounter();
 
+  void setDebugFlag(uint8_t flag);
   void setRestartRequest();
   void restart();
   bool restarting();

@@ -249,6 +249,16 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
       break;
     }
 
+    case SetDebugFlag: {
+      cJSON *flag = cJSON_GetObjectItem(root, "flag");
+      if (flag && flag->type == cJSON_Number) {
+        args[0] = flag->valueint;
+        argsSize = 1;
+        cmdKeyRet = cmdKey;
+      }
+      break;
+    }
+
     default:
       cmdKeyRet = cmdKey;
       break;
@@ -590,6 +600,10 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
 
     case SetPNToken:
       System::instance()->setPnToken(args[0]==1, (MobileOS)args[1], (const char*)(args+2));
+      break;
+
+    case SetDebugFlag:
+      System::instance()->setDebugFlag(args[0]);
       break;
 
     default:

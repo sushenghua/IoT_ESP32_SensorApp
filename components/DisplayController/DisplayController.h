@@ -27,6 +27,7 @@ public:
   virtual void tick() {};
   virtual void update();
 
+  void setUpdateDisabled(bool disabled = true) { _updateDisabled = disabled; }
   void reset() { _dev->reset(); }
   void turnOn(bool on) { _dev->turnOn(on); }
   void setBrightness(uint8_t b) { _dev->setBrightness(b); }
@@ -42,6 +43,7 @@ protected:
   void updateStatusBar(bool foreUpdateAll = false);
 
 protected:
+  bool          _updateDisabled;
   NetworkState  _networkState;
   bool          _networkIconNeedUpdate;
   bool          _timeNeedUpdate;

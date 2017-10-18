@@ -39,6 +39,7 @@ typedef enum CmdKey {
     SetPNToken              ,//= 27,
     UpdateFirmware          ,//= 28,
     Restart                 ,//= 29,
+    SetDebugFlag            ,//= 30,
     CmdKeyMaxValue
 
 } CmdKey;

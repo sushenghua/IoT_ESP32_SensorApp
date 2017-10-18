@@ -70,7 +70,8 @@ const uint8_t * _connectedIcon = NULL;
 const uint8_t * _notConnectedIcon = NULL;
 
 DisplayController::DisplayController(DisplayGFX *dev)
-: _networkState(NetworkOff)
+: _updateDisabled(false)
+, _networkState(NetworkOff)
 , _networkIconNeedUpdate(true)
 , _timeNeedUpdate(true)
 , _batteryNeedUpdate(true)
