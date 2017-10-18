@@ -124,6 +124,7 @@ public:
 protected:
     // helper
     esp_err_t _transmit(TickType_t waitTicks = portMAX_DELAY) {
+        if (_busy) return ESP_FAIL;
         // return spi_device_transmit(_handle, _trans);
         esp_err_t ret = spi_device_queue_trans(_handle, _trans, waitTicks);
         if (ret != ESP_OK) return ret;
@@ -137,6 +138,8 @@ protected:
     }
 
 protected:
+    // to ignore transaction request when busy
+    bool                          _busy;
     // spi handle of esp-idf framework
     spi_device_handle_t           _handle;
     // spi config
