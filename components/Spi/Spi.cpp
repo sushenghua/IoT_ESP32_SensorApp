@@ -114,7 +114,7 @@ void spi_post_transfer_cb(spi_transaction_t *t)
 }
 
 SpiChannel::SpiChannel()
-: _busy(false)
+: _disabled(false)
 , _trans(NULL)
 , _transCount(0)
 {
@@ -123,7 +123,7 @@ SpiChannel::SpiChannel()
 }
 
 SpiChannel::SpiChannel(uint8_t mode, int pinCs, int queueSize, int clkSpeed)
-: _busy(false)
+: _disabled(false)
 , _trans(NULL)
 , _transCount(0)
 {
