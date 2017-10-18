@@ -145,9 +145,7 @@ void SpiChannel::setParams(uint8_t mode, int pinCs, int queueSize, int clkSpeed)
 
 void SpiChannel::reset(TickType_t waitTicks)
 {
-    _busy = true;
     spi_device_reset(_handle, &_rtrans, waitTicks);
-    _busy = false;
 }
 
 void SpiChannel::enableCallback(bool preCbEnabled, bool postCbEnabled)
