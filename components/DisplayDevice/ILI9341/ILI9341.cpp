@@ -116,6 +116,8 @@ void ILI9341::init()
 
 void ILI9341::reset()
 {
+    _spiChannel.reset();
+
   // SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
   // bus->removeChannel(_spiChannel);
   // bus->deinit();
@@ -123,10 +125,8 @@ void ILI9341::reset()
   // bus->init(PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK);
   // bus->addChannel(_spiChannel);
 
-  // // _fireResetSignal();
+  // _fireResetSignal();
   // _initIli9341WithCmd();
-
-  _spiChannel.flushQueue();
 }
 
 void ILI9341::turnOn(bool on)

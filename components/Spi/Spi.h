@@ -62,6 +62,9 @@ public:
         _transCount = count;
     }
 
+    // reset
+    void reset(TickType_t waitTicks = 0);
+
     // callback
     void enableCallback(bool preCbEnabled = true, bool postCbEnabled = true);
 
@@ -111,11 +114,6 @@ public:
         _trans[0].flags = SPI_TRANS_USE_TXDATA;
         _trans[0].rx_buffer = NULL;
         return _transmit(waitTicks) == ESP_OK;
-    }
-
-    void flushQueue(TickType_t waitTicks = 0) {
-        while (spi_device_get_trans_result(_handle, &_rtrans, waitTicks)) {
-        }
     }
 
 public:
