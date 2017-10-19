@@ -211,19 +211,18 @@ esp_err_t spi_device_transmit(spi_device_handle_t handle, spi_transaction_t *tra
 
 
 /**
- * @brief Reset SPI device (added by Shenghua)
+ * @brief Reset SPI device (add by Shenghua)
  *
+ * Before calling this reset, you should stop futher call to spi_device_queue_trans which feed
+ * the transaction queue.
  *
  * @param handle Device handle obtained using spi_host_add_dev
- * @param trans_desc Pointer to variable able to contain a pointer to the description of the 
- *                   transaction that is executed
- * @param ticks_to_wait Ticks to wait until there's a returned item; use portMAX_DELAY to never time
-                        out.
+ *
  * @return 
  *         - ESP_ERR_INVALID_ARG   if parameter is invalid
  *         - ESP_OK                on success
  */
-esp_err_t spi_device_reset(spi_device_handle_t handle, spi_transaction_t **trans_desc, TickType_t ticks_to_wait);
+esp_err_t spi_device_reset(spi_device_handle_t handle);
 
 
 /**

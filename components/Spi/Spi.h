@@ -65,7 +65,7 @@ public:
 
     // reset
     void setDisabled(bool disabled = true) { _disabled = disabled; }
-    void reset(TickType_t waitTicks = 0);
+    void reset();
 
 #ifdef DEBUG_FLAG_ENABLED
     void spi_bug();

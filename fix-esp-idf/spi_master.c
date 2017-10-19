@@ -331,7 +331,7 @@ static int spi_set_clock(spi_dev_t *hw, int fapb, int hz, int duty_cycle) {
 }
 
 /* (add by Shenghua)
- * to protect variable or registers changed by other task in protection scope
+ * to protect variables or registers within protection scope from being changed by other tasks
  */
 static bool _spiIntrInProgress = false;
 
@@ -351,7 +351,7 @@ static void IRAM_ATTR spi_intr(void *arg)
     if (!host->hw->slave.trans_done) return;
 
     /* (add by Shenghua)
-     * other task should not update variables or registers before _spiIntrInProgress set to false
+     * other tasks should not update variables or registers before _spiIntrInProgress set to false
      */
     _spiIntrInProgress = true;
 
@@ -571,7 +571,7 @@ static void IRAM_ATTR spi_intr(void *arg)
     if (do_yield) portYIELD_FROM_ISR();
 
     /* (add by Shenghua)
-     * other task should not update variables or registers before _spiIntrInProgress set to false
+     * other tasks should not update variables or registers before _spiIntrInProgress set to false
      */
     _spiIntrInProgress = false;
 }
@@ -620,43 +620,44 @@ esp_err_t spi_device_transmit(spi_device_handle_t handle, spi_transaction_t *tra
     return ESP_OK;
 }
 
-esp_err_t spi_device_reset(spi_device_handle_t handle, spi_transaction_t **trans_desc, TickType_t ticks_to_wait)
+esp_err_t spi_device_reset(spi_device_handle_t handle)
 {
-    BaseType_t r;
-    // BaseType_t do_yield=pdFALSE;
     SPI_CHECK(handle!=NULL, "invalid dev handle", ESP_ERR_INVALID_ARG);
 
-    // disable intr to prevent futher
+    // disable intr to prevent futher call to spi_intr
     esp_intr_disable(handle->host->intr);
 
     // wait untill spi_intr done
     while (_spiIntrInProgress) vTaskDelay(5/portTICK_RATE_MS);
 
     // clear trans queue, ret queue
+    BaseType_t r;
+    spi_transaction_t *pTrans;
+    spi_transaction_t **ppTrans = &pTrans;
     int queueCount = handle->cfg.queue_size;
     while (queueCount-- > 0) {
-        // r=xQueueReceiveFromISR(handle->trans_queue, (void*)trans_desc, &do_yield);
-        r=xQueueReceive(handle->trans_queue, (void*)trans_desc, ticks_to_wait);
+        r=xQueueReceive(handle->trans_queue, (void*)ppTrans, 0);
         ESP_LOGW("spi_device_reset", "xQueueReceive trans queue return %d", r);
-        r=xQueueReceive(handle->ret_queue, (void*)trans_desc, ticks_to_wait);
+        r=xQueueReceive(handle->ret_queue, (void*)ppTrans, 0);
         ESP_LOGW("spi_device_reset", "xQueueReceive ret queue return %d", r);
     }
 
-    // queue reset
+    // reset trans queue, ret queue
     r = xQueueReset(handle->trans_queue);
     ESP_LOGW("spi_device_reset", "xQueueReset trans queue return %d", r);
     r = xQueueReset(handle->ret_queue);
     ESP_LOGW("spi_device_reset", "xQueueReset ret queue return %d", r);
 
-    // // reset DMA
-    // handle->host->hw->dma_conf.val |= SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST;
-    // handle->host->hw->dma_out_link.start=0;
-    // handle->host->hw->dma_in_link.start=0;
-    // handle->host->hw->dma_conf.val &= ~(SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST);
-    // handle->host->hw->dma_conf.out_data_burst_en=1;
+    // --- following code may not needed
+    // reset DMA
+    handle->host->hw->dma_conf.val |= SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST;
+    handle->host->hw->dma_out_link.start=0;
+    handle->host->hw->dma_in_link.start=0;
+    handle->host->hw->dma_conf.val &= ~(SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST);
+    handle->host->hw->dma_conf.out_data_burst_en=1;
 
-    // // Reset timing
-    // // handle->host->hw->ctrl2.val=0;
+    // Reset timing
+    // handle->host->hw->ctrl2.val=0;
 
     // // Disable unneeded ints
     // handle->host->hw->slave.rd_buf_done=0;
@@ -668,9 +669,9 @@ esp_err_t spi_device_reset(spi_device_handle_t handle, spi_transaction_t **trans
     // handle->host->hw->slave.rd_sta_inten=0;
     // handle->host->hw->slave.wr_sta_inten=0;
 
-    // // Force a transaction done interrupt; next call to 'spi_device_queue_trans' will work
-    // handle->host->hw->slave.trans_inten=1;
-    // handle->host->hw->slave.trans_done=1;
+    // Force a transaction done interrupt; next call to 'spi_device_queue_trans' will work
+    handle->host->hw->slave.trans_inten=1;
+    handle->host->hw->slave.trans_done=1;
 
     return ESP_OK;
 }

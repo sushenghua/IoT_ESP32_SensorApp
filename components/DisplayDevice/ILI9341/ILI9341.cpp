@@ -48,7 +48,8 @@
 #define PIN_NUM_RST  18
 #define PIN_NUM_BCKL 5
 
-#define ILI9341_CHANNEL_WAIT_TICKS  portMAX_DELAY
+// #define ILI9341_CHANNEL_WAIT_TICKS  portMAX_DELAY
+#define ILI9341_CHANNEL_WAIT_TICKS  1000
 #define ILI9341_CHANNEL_CLK_SPEED   10000000
 #define ILI9341_CHANNEL_QUEQUE_SIZE 1
 #define ILI9341_SPI_TRANS_MAX       1
@@ -116,9 +117,11 @@ void ILI9341::init()
 
 void ILI9341::reset()
 {
-  // _spiChannel.setDisabled(true);
+  _spiChannel.setDisabled(true);
   _spiChannel.reset();
-  // _spiChannel.setDisabled(false);
+  _spiChannel.setDisabled(false);
+
+  _initIli9341WithCmd();
 
   // SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
   // bus->removeChannel(_spiChannel);
@@ -129,7 +132,17 @@ void ILI9341::reset()
 
   // _fireResetSignal();
   // _initIli9341WithCmd();
+
+  // writeCommand(ILI9341_SWRESET);
+  // delay(RESET_DELAY_TIME);
 }
+
+#ifdef DEBUG_FLAG_ENABLED
+void ILI9341::spi_bug()
+{
+  _spiChannel.spi_bug();
+}
+#endif
 
 void ILI9341::turnOn(bool on)
 {
