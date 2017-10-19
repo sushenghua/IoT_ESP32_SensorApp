@@ -148,6 +148,13 @@ void SpiChannel::reset(TickType_t waitTicks)
     spi_device_reset(_handle, &_rtrans, waitTicks);
 }
 
+#ifdef DEBUG_FLAG_ENABLED
+void SpiChannel::spi_bug()
+{
+    spi_device_try_to_block(_handle, &_rtrans, 0);
+}
+#endif
+
 void SpiChannel::enableCallback(bool preCbEnabled, bool postCbEnabled)
 {
     _config.pre_cb = preCbEnabled? spi_pre_transfer_cb : NULL;

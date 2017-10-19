@@ -9,6 +9,7 @@
 
 #include <string.h>
 #include "driver/spi_master.h"
+#include "Config.h"
 
 class SpiChannel;
 
@@ -65,6 +66,10 @@ public:
     // reset
     void setDisabled(bool disabled = true) { _disabled = disabled; }
     void reset(TickType_t waitTicks = 0);
+
+#ifdef DEBUG_FLAG_ENABLED
+    void spi_bug();
+#endif
 
     // callback
     void enableCallback(bool preCbEnabled = true, bool postCbEnabled = true);

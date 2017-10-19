@@ -116,6 +116,10 @@ public:
 
   uint16_t color565(uint8_t r, uint8_t g, uint8_t b);
 
+#ifdef DEBUG_FLAG_ENABLED
+  void spi_bug();
+#endif
+
 protected:
   void _initBus();
   void _initBackLed();
