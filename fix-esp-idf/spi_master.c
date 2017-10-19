@@ -353,6 +353,7 @@ static void IRAM_ATTR spi_intr(void *arg)
     /* (add by Shenghua)
      * other tasks should not update variables or registers before _spiIntrInProgress set to false
      */
+    if (_spiIntrInProgress) return;
     _spiIntrInProgress = true;
 
     if (host->cur_trans) {
@@ -684,13 +685,16 @@ esp_err_t spi_device_try_to_block(spi_device_handle_t handle, spi_transaction_t 
     BaseType_t r;
     SPI_CHECK(handle!=NULL, "invalid dev handle", ESP_ERR_INVALID_ARG);
 
+    // disable intr to prevent futher call to spi_intr
+    esp_intr_disable(handle->host->intr);
+
     while (_spiIntrInProgress) vTaskDelay(5/portTICK_RATE_MS);
 
     int queueCount = handle->cfg.queue_size;
     while (queueCount-- > 0) {
         // r=xQueueReceiveFromISR(handle->trans_queue, &trans, &do_yield);
         r=xQueueReceive(handle->ret_queue, (void*)trans_desc, ticks_to_wait);
-        ESP_LOGW("spi_device_reset", "xQueueReceive ret queue return %d", r);
+        ESP_LOGW("spi_device_try_to_block", "xQueueReceive ret queue return %d", r);
         // r=xQueueReceive(handle->trans_queue, (void*)trans_desc, ticks_to_wait);
         // ESP_LOGW("spi_device_reset", "xQueueReceive trans queue return %d", r);
     }
