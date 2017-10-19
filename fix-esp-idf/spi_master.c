@@ -682,8 +682,9 @@ esp_err_t spi_device_reset(spi_device_handle_t handle)
 esp_err_t spi_device_try_to_block(spi_device_handle_t handle, spi_transaction_t **trans_desc, TickType_t ticks_to_wait)
 {
     BaseType_t r;
-    // BaseType_t do_yield=pdFALSE;
     SPI_CHECK(handle!=NULL, "invalid dev handle", ESP_ERR_INVALID_ARG);
+
+    while (_spiIntrInProgress) vTaskDelay(5/portTICK_RATE_MS);
 
     int queueCount = handle->cfg.queue_size;
     while (queueCount-- > 0) {
@@ -704,6 +705,8 @@ esp_err_t spi_device_try_to_block(spi_device_handle_t handle, spi_transaction_t 
 
     handle->host->hw->slave.trans_inten=1;
     handle->host->hw->slave.trans_done=1;
+
+    handle->host->hw->cmd.usr = 0;
 
     return ESP_OK;
 }
