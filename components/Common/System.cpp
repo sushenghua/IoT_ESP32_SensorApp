@@ -586,12 +586,12 @@ static void daemon_task(void *pvParams = NULL)
       if (_displayDaemonInactiveTicks > DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS) {
         _displayTaskState = TaskNoResponse;
         // APP_LOGW("[daemon_task]", "--->relaunch display task, free RAM: %d bytes", esp_get_free_heap_size());
-        APP_LOGW("[daemon_task]", "display task no response -> reset");
+        APP_LOGE("[daemon_task]", "display task no response -> reset");
 #ifdef DEBUG_PN
         _genDebugMsgPN("d", "display task inactive");
 #endif
         _resetDisplay();
-        APP_LOGW("[daemon_task]", "reset done");
+        APP_LOGE("[daemon_task]", "reset done");
       }
     }
 #ifdef DEBUG_FLAG_ENABLED
