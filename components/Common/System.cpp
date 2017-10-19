@@ -58,8 +58,6 @@ void wifi_task(void *pvParameters)
   else if (deployMode == MQTTClientAndHTTPServerMode) Wifi::instance()->setWifiMode(WIFI_MODE_APSTA);
 
   Wifi::instance()->init();
-  // Wifi::instance()->start(true);
-  // vTaskDelete(wifiTaskHandle);
   while (true) {
     if (System::instance()->wifiOn()) {
       Wifi::instance()->start();
@@ -97,39 +95,47 @@ static void sntp_task(void *pvParams)
 #include "SensorDisplayController.h"
 #define DISPLAY_TASK_DELAY_UNIT  100
 ILI9341 dev;
-bool    _displayOn = true;
+bool _displayOn = true;
 static SensorDisplayController dc(&dev);
-uint16_t _displayInactiveTicks = 0;
 TaskHandle_t displayTaskHandle = 0;
 TaskState _displayTaskState = TaskEmpty;
 bool _hasScreenMessage = false;
+
+uint16_t _displayDaemonInactiveTicks = 0;
 
 void display_task(void *p)
 {
   dc.init();
   APP_LOGC("[display_task]", "start running ...");
-  _displayTaskState = TaskRunning;
-  // _displayInactiveTicks = 0;
+  // _displayDaemonInactiveTicks = 0;
   while (true) {
-    // APP_LOGI("[display_task]", "update");
-    // APP_LOGC("[display_task]", "task schedule state %d", xTaskGetSchedulerState());
-    // xTaskGetSchedulerState();
-    if (_enablePeripheralTaskLoop) { dc.update(); _displayInactiveTicks = 1; }
-    else if (_hasScreenMessage) { dc.update(); _hasScreenMessage = false; _displayInactiveTicks = 1; }
+    if (_enablePeripheralTaskLoop) {
+      dc.update();
+      _displayDaemonInactiveTicks = 1; _displayTaskState = TaskRunning;
+    }
+    else if (_hasScreenMessage) {
+      dc.update(); _hasScreenMessage = false;
+      _displayDaemonInactiveTicks = 1; _displayTaskState = TaskRunning;
+    }
     else _displayTaskState = TaskPaused;
     vTaskDelay(DISPLAY_TASK_DELAY_UNIT / portTICK_RATE_MS);
   }
 }
 
-void _launchDisplayTask();
 void _resetDisplay()
 {
-  // vTaskDelete(displayTaskHandle);
-  // vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
-  _displayInactiveTicks = 0;
+  _displayDaemonInactiveTicks = 0;
+
+  dc.setUpdateDisabled(true);
   dc.reset();
-  APP_LOGC("[display_task]", "reset done");
-  // _launchDisplayTask();
+  dc.setUpdateDisabled(false);
+  // System::instance()->setRestartRequest();
+}
+
+void _debugDisplay()
+{
+  dev.spi_bug();
+  APP_LOGC("[display_task]", "debug call done");
 }
 
 //----------------------------------------------
@@ -560,8 +566,13 @@ static void http_task(void *pvParams)
 //----------------------------------------------
 // daemon task
 //----------------------------------------------
+#define DEBUG_FLAG_NULL                         0
+#define DEBUG_FLAG_RESET_DISPLAY                1
+#define DEBUG_FLAG_TRY_TRIGGER_DISPLAY_BUG      2
+uint8_t _debugFlag = DEBUG_FLAG_NULL;
+
 #define DAEMON_TASK_DELAY_UNIT                  100
-#define DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS 60
+#define DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS 50   // time(ms): this ticks * DAEMON_TASK_DELAY_UNIT
 bool _hasRebootRequest = false;
 static void daemon_task(void *pvParams = NULL)
 {
@@ -570,17 +581,27 @@ static void daemon_task(void *pvParams = NULL)
 #endif
   while (true) {
     if (_displayTaskState == TaskRunning) {
-      if (_displayInactiveTicks > 0) ++_displayInactiveTicks;
-      // to prevent display from non-responding(unknown reason, bug?)
-      if (_displayInactiveTicks > DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS) {
+      if (_displayDaemonInactiveTicks > 0) ++_displayDaemonInactiveTicks;
+      // inspect display's non-responding(spi trans queue blocked, unknown reason, caused by LCD device?)
+      if (_displayDaemonInactiveTicks > DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS) {
         _displayTaskState = TaskNoResponse;
-        APP_LOGC("[daemon_task]", "--->relaunch display task, free RAM: %d bytes", esp_get_free_heap_size());
+        // APP_LOGW("[daemon_task]", "--->relaunch display task, free RAM: %d bytes", esp_get_free_heap_size());
+        APP_LOGW("[daemon_task]", "display task no response -> reset");
 #ifdef DEBUG_PN
         _genDebugMsgPN("d", "display task inactive");
 #endif
         _resetDisplay();
+        APP_LOGW("[daemon_task]", "reset done");
       }
     }
+#ifdef DEBUG_FLAG_ENABLED
+    if (_debugFlag != DEBUG_FLAG_NULL) {
+      APP_LOGC("[daemon_task]", "debug flag set to %d", _debugFlag);
+      if (_debugFlag == DEBUG_FLAG_TRY_TRIGGER_DISPLAY_BUG) _debugDisplay();
+      else if (_debugFlag == DEBUG_FLAG_RESET_DISPLAY) _resetDisplay();
+      _debugFlag = DEBUG_FLAG_NULL;
+    }
+#endif
     if (_hasRebootRequest && !mqtt.hasUnackPub()) System::instance()->restart();
     vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
   }
@@ -1126,6 +1147,11 @@ const char* System::model()
   sprintf(MODEL+strlen(MODEL), "-");
   sprintf(MODEL+strlen(MODEL), sensorTypeStr(_config2.co2SensorType));
   return MODEL;
+}
+
+void System::setDebugFlag(uint8_t flag)
+{
+  _debugFlag = flag;
 }
 
 void System::setRestartRequest()
