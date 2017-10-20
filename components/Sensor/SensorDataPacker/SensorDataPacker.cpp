@@ -86,6 +86,7 @@ const uint8_t* SensorDataPacker::dataBlock(size_t &size)
 const char* SensorDataPacker::dataJsonString(size_t &size)
 {
   size_t packCount = 0;
+  bool commaPreceded = false;
 
   sprintf(_dataStringBuf + packCount, "{\"ret\":{");
   packCount += strlen(_dataStringBuf + packCount);
@@ -96,28 +97,33 @@ const char* SensorDataPacker::dataJsonString(size_t &size)
         "\"temp\":%.1f,\"templvl\":%d,\"humid\":%.1f,\"humidlvl\":%d",
         th.temp, th.levelTemp, th.humid, th.levelHumid);
     packCount += strlen(_dataStringBuf + packCount);
+    commaPreceded = true;
   }
 
   if (_pmSensor) {
     if (_sensorCapability & PM_CAPABILITY_MASK) {
       PMData& pm = _pmSensor->pmData();
       sprintf(_dataStringBuf + packCount,
-          ",\"pm1.0\":%.1f,\"pm2.5\":%.1f,\"pm10\":%.1f,\"pm2.5us\":%d,\"pm2.5uslvl\":%d,"\
+          "%s\"pm1.0\":%.1f,\"pm2.5\":%.1f,\"pm10\":%.1f,\"pm2.5us\":%d,\"pm2.5uslvl\":%d,"\
           "\"pm2.5cn\":%d,\"pm2.5cnlvl\":%d,\"pm10us\":%d,\"pm10uslvl\":%d",
+          commaPreceded ? "," : "",
           pm.pm1d0, pm.pm2d5, pm.pm10, pm.aqiPm2d5US, pm.levelPm2d5US,
           pm.aqiPm2d5CN, pm.levelPm2d5CN, pm.aqiPm10US, pm.levelPm10US);
       packCount += strlen(_dataStringBuf + packCount);
+      commaPreceded = true;
     }
     if (_sensorCapability & HCHO_CAPABILITY_MASK) {
       HchoData hcho = _pmSensor->hchoData();
-      sprintf(_dataStringBuf + packCount, ",\"hcho\":%.2f,\"hcholvl\":%d", hcho.hcho, hcho.level);
+      sprintf(_dataStringBuf + packCount, "%s\"hcho\":%.2f,\"hcholvl\":%d",
+              commaPreceded ? "," : "", hcho.hcho, hcho.level);
       packCount += strlen(_dataStringBuf + packCount);
+      commaPreceded = true;
     }
   }
   if (_co2Sensor && (_sensorCapability & CO2_CAPABILITY_MASK)) {
     CO2Data co2Data = _co2Sensor->co2Data();
-    sprintf(_dataStringBuf + packCount,
-        ",\"co2\":%d,\"co2lvl\":%d", (int)co2Data.co2, co2Data.level);
+    sprintf(_dataStringBuf + packCount, "%s\"co2\":%d,\"co2lvl\":%d",
+            commaPreceded ? "," : "", (int)co2Data.co2, co2Data.level);
     packCount += strlen(_dataStringBuf + packCount);
   }
 
