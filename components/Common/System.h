@@ -166,6 +166,7 @@ public:
   const char* idfVersion();
   const char* firmwareVersion();
   const char* model();
+  bool flashEncryptionEnabled();
 
   DeployMode deployMode();
   SensorType pmSensorType();
@@ -210,6 +211,7 @@ public:
   void markPowerEvent();
 
 private:
+  void _logInfo();
   void _launchTasks();
   void _setDefaultConfig();
   bool _loadConfig1();

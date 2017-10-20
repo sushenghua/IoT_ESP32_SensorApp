@@ -649,6 +649,7 @@ const char* mobileOSStr(MobileOS os)
 /////////////////////////////////////////////////////////////////////////////////////////
 #include "NvsFlash.h"
 #include "esp_system.h"
+#include "esp_flash_encrypt.h"
 #include <string.h>
 #include "ProductConfig.h"
 #include "AppUpdaterConfig.h"
@@ -704,6 +705,7 @@ void System::_setDefaultConfig()
 void System::init()
 {
   _state = Initializing;
+  _logInfo();
   NvsFlash::init();
   _initMacADDR();
   _loadConfig1();
@@ -712,6 +714,12 @@ void System::init()
   _loadMobileTokens();
   _launchTasks();
   _state = Running;
+}
+
+void System::_logInfo()
+{
+  APP_LOGW("[System]", "esp flash encryption enabled: %s", flashEncryptionEnabled()? "Yes" : "No");
+  APP_LOGW("[System]", "free RAM: %d bytes", esp_get_free_heap_size());
 }
 
 // configMAX_PRIORITIES defined in "FreeRTOSConfig.h"
@@ -1147,6 +1155,11 @@ const char* System::model()
   sprintf(MODEL+strlen(MODEL), "-");
   sprintf(MODEL+strlen(MODEL), sensorTypeStr(_config2.co2SensorType));
   return MODEL;
+}
+
+bool System::flashEncryptionEnabled()
+{
+  return esp_flash_encryption_enabled();
 }
 
 void System::setDebugFlag(uint8_t flag)
