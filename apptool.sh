@@ -16,12 +16,8 @@ BootloaderBinEncrypted=build/bootloader/bootloaderEncrypted.bin
 AppBin=build/SensorApp.bin
 AppBinEncrypted=build/SensorAppEncrypted.bin
 
-OTABin=build/partitions_two_ota.bin
-OTABinEncrypted=build/partitions_two_ota_encrypted.bin
-
-BootloadAddr=0x1000
-AppAddr=0x10000
-OTAAddr=0x8000
+BootloadFlashAddress=0x1000
+AppFlashAddress=0x10000
 
 FlashSpeed=921600
 Port=/dev/ttyUSB0
@@ -51,27 +47,21 @@ if [[ ( $# -gt 0 && $1 == *"e"* ) ]]; then
   # printf "\n"
   printf "${PinkColorB}--------------------->>> encrypt binary <<<-----------------------\n${ColorE}"
   if [ -f $BootloaderBin ]; then
-    printf "${GreenColorB}------> encrypt bootloader bin ...\n${ColorE}"
-    espsecure.py encrypt_flash_data --keyfile $EncryptioinKey --address $BootloadAddr -o  $BootloaderBinEncrypted $BootloaderBin
+    printf "${GreenColorB}------> encrypt bootloader binary ...\n${ColorE}"
+    espsecure.py encrypt_flash_data --keyfile $EncryptioinKey --address $BootloadFlashAddress \
+    -o $BootloaderBinEncrypted $BootloaderBin
     printf "${ColorE}done encryption bootloader binary to: ${GreenColorB}$BootloaderBinEncrypted \n"
   else
-    printf "${RedColorB}--->>> bootloader binary $BootloaderBin not exists \n${ColorE}"
+    printf "${RedColorB}--->>> bootloader binary $BootloaderBin does not exist \n${ColorE}"
   fi
 
   if [ -f $AppBin ]; then
-    printf "${GreenColorB}------> encrypt app bin ...\n${ColorE}"
-    espsecure.py encrypt_flash_data --keyfile $EncryptioinKey --address $AppAddr -o $AppBinEncrypted $AppBin
+    printf "${GreenColorB}------> encrypt app binary ...\n${ColorE}"
+    espsecure.py encrypt_flash_data --keyfile $EncryptioinKey --address $AppFlashAddress \
+    -o $AppBinEncrypted $AppBin
     printf "${ColorE}done encryption app binary to: ${GreenColorB}$AppBinEncrypted \n${ColorE}"
   else
-    printf "${RedColorB}--->>> app binary $AppBin not exists \n${ColorE}"
-  fi
-
-  if [ -f $OTABin ]; then
-    printf "${GreenColorB}------> encrypt OTA bin ...\n${ColorE}"
-    espsecure.py encrypt_flash_data --keyfile $EncryptioinKey --address $OTAAddr -o $OTABinEncrypted $OTABin
-    printf "${ColorE}done encryption OTA binary to: ${GreenColorB}$OTABinEncrypted \n${ColorE}"
-  else
-    printf "${RedColorB}--->>> app binary $OTABin not exists \n${ColorE}"
+    printf "${RedColorB}--->>> app binary $AppBin does not exist \n${ColorE}"
   fi
 
 fi
@@ -83,21 +73,21 @@ if [[ ( $# -eq 2 && $1 == *"f"* ) ]]; then
   printf "${PinkColorB}---------------------->>> flash binary <<<------------------------\n${ColorE}"
   if [[ ( $2 == "bootloader" ) ]]; then
     if [ ! -f $BootloaderBinEncrypted ]; then
-      printf "${RedColorB}--->>> bootloader binary $BootloaderBinEncrypted not exists \n${ColorE}"
+      printf "${RedColorB}--->>> bootloader binary $BootloaderBinEncrypted does not exist \n${ColorE}"
     else
-      printf "${GreenColorB}------> flash bootloader bin at $BootloadAddr ...\n${ColorE}"
-      # esptool.py --chip esp32 --port $Port --baud $FlashSpeed --before default_reset --after hard_reset \
-      # write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect \
-      # $BootloadAddr $BootloaderBinEncrypted
+      printf "${GreenColorB}------> flash encrypted bootloader at $BootloadFlashAddress ...\n${ColorE}"
+      esptool.py --chip esp32 --port $Port --baud $FlashSpeed --before default_reset --after hard_reset \
+      write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect \
+      $BootloadFlashAddress $BootloaderBinEncrypted
     fi
   elif [[ ( $2 == "app" ) ]]; then
     if [ ! -f $AppBinEncrypted ]; then
-      printf "${RedColorB}--->>> app binary $AppBinEncrypted not exists \n${ColorE}"
+      printf "${RedColorB}--->>> app binary $AppBinEncrypted does not exist \n${ColorE}"
     else
-      printf "${GreenColorB}------> flash app bin at $AppAddr ...\n${ColorE}"
-      # esptool.py --chip esp32 --port $Port --baud $FlashSpeed --before default_reset --after hard_reset \
-      # write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect \
-      # $AppAddr $AppBinEncrypted
+      printf "${GreenColorB}------> flash encrypted app at $AppFlashAddress ...\n${ColorE}"
+      esptool.py --chip esp32 --port $Port --baud $FlashSpeed --before default_reset --after hard_reset \
+      write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect \
+      $AppFlashAddress $AppBinEncrypted
     fi
   fi
 fi
