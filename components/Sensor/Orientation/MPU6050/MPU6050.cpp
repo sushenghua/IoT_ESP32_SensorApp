@@ -31,31 +31,13 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 // I2c
 /////////////////////////////////////////////////////////////////////////////////////////
-#include "I2c.h"
-#include "Semaphore.h"
+// #include "I2c.h"
+// #include "Semaphore.h"
+// #include "I2cPeripheralsPower.h"
+#include "I2cPeripherals.h"
 #include "Config.h"
 #include "AppLog.h"
 
-#define MPU6050_I2C_PORT                    I2C_NUM_0
-#define MPU6050_I2C_PIN_SCK                 26
-#define MPU6050_I2C_PIN_SDA                 27
-#define MPU6050_I2C_CLK_SPEED               100000
-
-#define MPU6050_I2C_SEMAPHORE_WAIT_TICKS    1000
-
-// I2c _i2c(I2C_NUM_0, MPU6050_I2C_PIN_SCK, MPU6050_I2C_PIN_SDA);
-I2c  *_mpu6050I2c;
-
-void initMPU6050I2c()
-{
-  if (xSemaphoreTake(Semaphore::i2c, I2C_MAX_WAIT_TICKS)) {
-    _mpu6050I2c = I2c::instanceForPort(MPU6050_I2C_PORT, MPU6050_I2C_PIN_SCK, MPU6050_I2C_PIN_SDA);
-    _mpu6050I2c->setMode(I2C_MODE_MASTER);
-    _mpu6050I2c->setMasterClkSpeed(MPU6050_I2C_CLK_SPEED);
-    _mpu6050I2c->init();
-    xSemaphoreGive(Semaphore::i2c);
-  }
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // MPU6050Adapter
@@ -66,56 +48,29 @@ void initMPU6050I2c()
 int i2cReadByte(uint8_t devAddr, uint8_t regAddr, uint8_t* buf)
 {
   int ret = -1;
-  if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
-    if (_mpu6050I2c->masterMemRx(devAddr, regAddr, buf, 1)) ret = 0;
-    xSemaphoreGive(Semaphore::i2c);
-  }
+  if (I2cPeripherals::masterMemRx(devAddr, regAddr, buf, 1)) ret = 0;
   return ret;
 }
 
 int i2cReadBytes(uint8_t devAddr, uint8_t regAddr, uint8_t count, uint8_t* buf)
 {
   int ret = -1;
-  if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
-    if (_mpu6050I2c->masterMemRx(devAddr, regAddr, buf, count)) ret = 0;
-    xSemaphoreGive(Semaphore::i2c);
-  }
+  if (I2cPeripherals::masterMemRx(devAddr, regAddr, buf, count)) ret = 0;
   return ret;
 }
 
 int i2cWriteByte(uint8_t devAddr, uint8_t regAddr, uint8_t data)
 {
   int ret = -1;
-  if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
-    if (_mpu6050I2c->masterMemTx(devAddr, regAddr, &data, 1)) ret = 0;
-    xSemaphoreGive(Semaphore::i2c);
-  }
+  if (I2cPeripherals::masterMemTx(devAddr, regAddr, &data, 1)) ret = 0;
   return ret;
 }
 
 int i2cWriteBytes(uint8_t devAddr, uint8_t regAddr, uint8_t count, uint8_t* data)
 {
   int ret = -1;
-  if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
-    if (_mpu6050I2c->masterMemTx(devAddr, regAddr, data, count)) ret = 0;
-    xSemaphoreGive(Semaphore::i2c);
-  }
+  if (I2cPeripherals::masterMemTx(devAddr, regAddr, data, count)) ret = 0;
   return ret;
-}
-
-bool mpu6050Ready(int trials = 3)
-{
-  bool ready = false;
-  if (xSemaphoreTake(Semaphore::i2c, MPU6050_I2C_SEMAPHORE_WAIT_TICKS)) {
-    for (int i = 0; i < trials; ++i) {
-      if (_mpu6050I2c->deviceReady(MPU6050_ADDR)) {
-        ready = true;
-        break;
-      }
-    }
-    xSemaphoreGive(Semaphore::i2c);
-  }
-  return ready;
 }
 
 int mpu6050GetMs(unsigned long *time)
@@ -323,21 +278,14 @@ void mpu6050ReadBit(uint8_t slaveAddr, uint8_t regAddr, uint8_t bitNum, uint8_t 
  * better than the default internal clock source.
  */
 
+bool MPU6050Sensor::deviceReady()
+{
+  return I2cPeripherals::deviceReady(MPU6050_ADDR);
+}
+
 bool MPU6050Sensor::init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRange,
                          uint16_t sampleRate, int8_t enableDMP)
 {
-  // init i2c
-  initMPU6050I2c();
-
-  // check device connected
-  if (!mpu6050Ready()) {
-    APP_LOGE("[MPU6050]", "device not found");
-    return false;
-  }
-  else {
-    APP_LOGI("[MPU6050]", "device init");
-  }
-
   // check device who am i
   uint8_t whoami = 0x00;
   i2cReadByte(MPU6050_ADDR, MPU6050_RA_WHO_AM_I, &whoami);
@@ -348,7 +296,7 @@ bool MPU6050Sensor::init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRang
 
   // try to init mpu with default value from InvenSense lib inv_mpu.c
   if(mpu_init(NULL)) {
-    APP_LOGE("[MPU6050]", "init failed");
+    APP_LOGE("[MPU6050]", "init mpu failed");
     return false;
   }
 

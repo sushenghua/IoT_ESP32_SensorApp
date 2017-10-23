@@ -40,14 +40,11 @@
 #include "AppLog.h"
 #include "I2c.h"
 #include "Semaphore.h"
+#include "I2cPeripherals.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // TSL2561 light-to-digital sensor I2C
 /////////////////////////////////////////////////////////////////////////////////////////
-#define TSL2561_I2C_PORT                       I2C_NUM_0
-#define TSL2561_I2C_PIN_SCK                    26
-#define TSL2561_I2C_PIN_SDA                    27
-#define TSL2561_I2C_CLK_SPEED                  100000
 
 // I2C address options
 #define TSL2561_ADDR_LOW                       0x29
@@ -56,54 +53,19 @@
 
 #define TSL2561_ADDR                           TSL2561_ADDR_FLOAT
 
-#define TSL2561_I2C_SEMAPHORE_WAIT_TICKS       1000
-
-I2c    *_sharedTsl2561I2c;
-
-void tsl2561I2cInit()
+bool tsl2561Ready()
 {
-  if (xSemaphoreTake(Semaphore::i2c, I2C_MAX_WAIT_TICKS)) {
-    _sharedTsl2561I2c = I2c::instanceForPort(TSL2561_I2C_PORT, TSL2561_I2C_PIN_SCK, TSL2561_I2C_PIN_SDA);
-    _sharedTsl2561I2c->setMode(I2C_MODE_MASTER);
-    _sharedTsl2561I2c->setMasterClkSpeed(TSL2561_I2C_CLK_SPEED);
-    _sharedTsl2561I2c->init();
-    xSemaphoreGive(Semaphore::i2c);
-  }
+  return I2cPeripherals::deviceReady(TSL2561_ADDR);
 }
 
-bool tsl2561I2cReady(int trials = 3)
+bool tsl2561MemTx(uint8_t memAddr, uint8_t *data)
 {
-  bool ready = false;
-  if (xSemaphoreTake(Semaphore::i2c, TSL2561_I2C_SEMAPHORE_WAIT_TICKS)) {
-    for (int i = 0; i < trials; ++i) {
-      if (_sharedTsl2561I2c->deviceReady(TSL2561_ADDR)) {
-        ready = true;
-        break;
-      }
-    }
-    xSemaphoreGive(Semaphore::i2c);
-  }
-  return ready;
+  return I2cPeripherals::masterMemTx(TSL2561_ADDR, memAddr, data, 1);
 }
 
-bool tsl2561I2cMemTx(uint8_t memAddr, uint8_t *data)
+bool tsl2561MemRx(uint8_t memAddr, uint8_t *data, size_t count)
 {
-  bool ret = false;
-  if (xSemaphoreTake(Semaphore::i2c, TSL2561_I2C_SEMAPHORE_WAIT_TICKS)) {
-    ret = _sharedTsl2561I2c->masterMemTx(TSL2561_ADDR, memAddr, data, 1);
-    xSemaphoreGive(Semaphore::i2c);
-  }
-  return ret;
-}
-
-bool tsl2561I2cMemRx(uint8_t memAddr, uint8_t *data, size_t count)
-{
-  bool ret = false;
-  if (xSemaphoreTake(Semaphore::i2c, TSL2561_I2C_SEMAPHORE_WAIT_TICKS)) {
-    ret = _sharedTsl2561I2c->masterMemRx(TSL2561_ADDR, memAddr, data, count);
-    xSemaphoreGive(Semaphore::i2c);
-  }
-  return ret;
+  return I2cPeripherals::masterMemRx(TSL2561_ADDR, memAddr, data, count);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -241,7 +203,7 @@ uint8_t _tsl2561TxVal;
 bool tsl2561Enable(bool enable)
 {
   _tsl2561TxVal = enable ? TSL2561_CONTROL_POWERON : TSL2561_CONTROL_POWEROFF;
-  return tsl2561I2cMemTx(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CONTROL, &_tsl2561TxVal);
+  return tsl2561MemTx(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CONTROL, &_tsl2561TxVal);
 }
 
 bool tsl2561SetIntegrationTimeAndGain(TSL2561IntegrationTime time, TSL2561Gain gain)
@@ -254,7 +216,7 @@ bool tsl2561SetIntegrationTimeAndGain(TSL2561IntegrationTime time, TSL2561Gain g
 
     // update the timing register
     _tsl2561TxVal = time | gain;
-    ret = tsl2561I2cMemTx(TSL2561_COMMAND_BIT | TSL2561_REGISTER_TIMING, &_tsl2561TxVal);
+    ret = tsl2561MemTx(TSL2561_COMMAND_BIT | TSL2561_REGISTER_TIMING, &_tsl2561TxVal);
     if (!ret) break;
 
     // update value placeholder
@@ -290,13 +252,13 @@ bool tsl2561GetChannelValues(uint16_t &broadbandCh, uint16_t &irCh)
     }
 
     // reads a two byte value from channel 0 (visible + infrared)
-    ret = tsl2561I2cMemRx(TSL2561_COMMAND_BIT | TSL2561_WORD_BIT | TSL2561_REGISTER_CHAN0_LOW, _tsl2561RxBuf, 2);
+    ret = tsl2561MemRx(TSL2561_COMMAND_BIT | TSL2561_WORD_BIT | TSL2561_REGISTER_CHAN0_LOW, _tsl2561RxBuf, 2);
     if (!ret) break;
     broadbandCh = _tsl2561RxBuf[1]; broadbandCh <<= 8;
     broadbandCh |= _tsl2561RxBuf[0] & 0xFF;
 
     // reads a two byte value from channel 1 (infrared)
-    ret = tsl2561I2cMemRx(TSL2561_COMMAND_BIT | TSL2561_WORD_BIT | TSL2561_REGISTER_CHAN1_LOW, _tsl2561RxBuf, 2);
+    ret = tsl2561MemRx(TSL2561_COMMAND_BIT | TSL2561_WORD_BIT | TSL2561_REGISTER_CHAN1_LOW, _tsl2561RxBuf, 2);
     if (!ret) break;
     irCh = _tsl2561RxBuf[1]; irCh <<= 8;
     irCh |= _tsl2561RxBuf[0] & 0xFF;
@@ -467,15 +429,28 @@ void tsl2561CalculateLuminosity(uint32_t &ret, uint16_t broadband, uint16_t ir)
 TSL2561::TSL2561()
 {}
 
-void TSL2561::init()
+#define  TSL2561_TRY_INIT_DELAY             100
+#define  TSL2561_RESET_ON_SAMPLE_FAIL_COUNT 1
+uint16_t _tsl2561SampleFailCount = 0;
+uint32_t _tsl2561PwrResetStamp = 0;
+
+void TSL2561::init(bool checkDeviceReady)
 {
-  // init i2c
-  tsl2561I2cInit();
+  APP_LOGI("[TSL2561]", "TSL2561 sensor init");
 
-  // check ready
-  if (!tsl2561I2cReady()) APP_LOGE("[TSL2561]", "TSL2651 sensor not found");
-  else APP_LOGI("[TSL2561]", "TSL2561 sensor init");
-
+  // check ready, it blocks task here if not ready
+  while (checkDeviceReady && !tsl2561Ready()) {
+    APP_LOGE("[TSL2561]", "TSL2651 sensor not found");
+    if (_tsl2561PwrResetStamp == I2cPeripherals::resetStamp()) {
+      APP_LOGC("[TSL2561]", "TSL2651 sensor require reset");
+      _tsl2561PwrResetStamp = I2cPeripherals::reset();
+    }
+    delay(TSL2561_TRY_INIT_DELAY);
+  }
+  // sync power reset count
+  _tsl2561PwrResetStamp = I2cPeripherals::resetStamp();
+  // reset sample fail count
+  _tsl2561SampleFailCount = 0;
   // init integration time and gain
   tsl2561SetIntegrationTimeAndGain(TSL2561_INTEGRATIONTIME_402MS, TSL2561_GAIN_1X);
 }
@@ -485,15 +460,22 @@ uint16_t _irCache;
 
 void TSL2561::sampleData()
 {
+  // other tasks has reset the i2c peripherals power
+  if (_tsl2561PwrResetStamp < I2cPeripherals::resetStamp()) {
+    APP_LOGE("[TSL2561]", "reset stamp out of sync");
+    init(false);
+  }
+
   if (tsl2561GetLuminosity(_broadbandCache, _irCache)) {
     tsl2561CalculateLuminosity(_luminosity, _broadbandCache, _irCache);
 #ifdef DEBUG_APP_OK
     APP_LOGC("[TSL2561]", "--->lux: %d b: %d, ir: %d", _luminosity, _broadbandCache, _irCache);
 #endif
   }
-#ifdef DEBUG_APP_ERR
   else {
+#ifdef DEBUG_APP_ERR
     APP_LOGE("[TSL2561]", "sample data failed");
-  }
 #endif
+    if (++_tsl2561SampleFailCount == TSL2561_RESET_ON_SAMPLE_FAIL_COUNT) init();
+  }
 }

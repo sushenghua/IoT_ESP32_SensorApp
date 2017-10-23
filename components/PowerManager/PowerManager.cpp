@@ -9,65 +9,26 @@
 #include "AppLog.h"
 #include "Adc.h"
 #include "Semaphore.h"
+#include "I2cPeripherals.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Power chip I2C
 /////////////////////////////////////////////////////////////////////////////////////////
-#define POWER_I2C_PORT                       I2C_NUM_0
-#define POWER_I2C_PIN_SCK                    26
-#define POWER_I2C_PIN_SDA                    27
-#define POWER_I2C_CLK_SPEED                  100000
+#define POWER_CHIP_ADDR                      0x6B
 
-#define POWER_ADDR                           0x6B
-
-#define PWR_I2C_SEMAPHORE_WAIT_TICKS         1000
-
-I2c    *_sharedPwrI2c;
-
-void pwrI2cInit()
+bool pwrChipMemTx(uint8_t memAddr, uint8_t *data)
 {
-  if (xSemaphoreTake(Semaphore::i2c, I2C_MAX_WAIT_TICKS)) {
-    _sharedPwrI2c = I2c::instanceForPort(POWER_I2C_PORT, POWER_I2C_PIN_SCK, POWER_I2C_PIN_SDA);
-    _sharedPwrI2c->setMode(I2C_MODE_MASTER);
-    _sharedPwrI2c->setMasterClkSpeed(POWER_I2C_CLK_SPEED);
-    _sharedPwrI2c->init();
-    xSemaphoreGive(Semaphore::i2c);
-  }
+  return I2cPeripherals::masterMemTx(POWER_CHIP_ADDR, memAddr, data, 1);
 }
 
-bool pwrI2cMemTx(uint8_t memAddr, uint8_t *data)
+bool pwrChipMemRx(uint8_t memAddr, uint8_t *data)
 {
-  bool ret = false;
-  if (xSemaphoreTake(Semaphore::i2c, PWR_I2C_SEMAPHORE_WAIT_TICKS)) {
-    ret = _sharedPwrI2c->masterMemTx(POWER_ADDR, memAddr, data, 1);
-    xSemaphoreGive(Semaphore::i2c);
-  }
-  return ret;
+  return I2cPeripherals::masterMemRx(POWER_CHIP_ADDR, memAddr, data, 1);
 }
 
-bool pwrI2cMemRx(uint8_t memAddr, uint8_t *data)
+bool pwrChipReady()
 {
-  bool ret = false;
-  if (xSemaphoreTake(Semaphore::i2c, PWR_I2C_SEMAPHORE_WAIT_TICKS)) {
-    ret = _sharedPwrI2c->masterMemRx(POWER_ADDR, memAddr, data, 1);
-    xSemaphoreGive(Semaphore::i2c);
-  }
-  return ret;
-}
-
-bool pwrI2cReady(int trials = 3)
-{
-  bool ready = false;
-  if (xSemaphoreTake(Semaphore::i2c, PWR_I2C_SEMAPHORE_WAIT_TICKS)) {
-    for (int i = 0; i < trials; ++i) {
-      if (_sharedPwrI2c->deviceReady(POWER_ADDR)) {
-        ready = true;
-        break;
-      }
-    }
-    xSemaphoreGive(Semaphore::i2c);
-  }
-  return ready;
+  return I2cPeripherals::deviceReady(POWER_CHIP_ADDR);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -118,14 +79,33 @@ float   _batLevel = 0;
 PowerManager::PowerManager()
 {}
 
+#define  PWR_CHIP_TRY_INIT_DELAY                         200
+#define  PWR_CHIP_RESET_PERIPHERALS_ON_SAMPLE_FAIL_COUNT 1
+uint16_t _pwrChipSampleFailCount = 0;
+uint32_t _i2cPeripheralsPwrResetStamp = 0;
+
+void _resetI2cPeripheralsOnPwrChipNotReady()
+{
+  while (!pwrChipReady()) {
+    APP_LOGE("[Power]", "Power chip not found");
+    if (_i2cPeripheralsPwrResetStamp == I2cPeripherals::resetStamp()) {
+      APP_LOGC("[Power]", "Power chip require i2c I2cPeripherals reset");
+      _i2cPeripheralsPwrResetStamp = I2cPeripherals::reset();
+    }
+    vTaskDelay( PWR_CHIP_TRY_INIT_DELAY / portTICK_RATE_MS );
+  }
+  // sync power reset count
+  _i2cPeripheralsPwrResetStamp = I2cPeripherals::resetStamp();
+  // reset sample fail count
+  _pwrChipSampleFailCount = 0;
+}
+
 void PowerManager::init()
 {
-  // init i2c
-  pwrI2cInit();
+  APP_LOGI("[Power]", "Power chip init");
 
-  // check ready
-  if (!pwrI2cReady()) APP_LOGE("[Power]", "Power chip not found");
-  else APP_LOGI("[Power]", "Power chip init");
+  // check ready, it blocks task here if not ready
+  _resetI2cPeripheralsOnPwrChipNotReady();
 
   // default settings
   applyDefaultSettings();
@@ -174,12 +154,17 @@ uint8_t _statusCache;
 
 inline bool _readSysStatus()
 {
-  return pwrI2cMemRx(PREG_SYS_STATUS, &_statusCache);
+  return pwrChipMemRx(PREG_SYS_STATUS, &_statusCache);
 }
 
 PowerManager::ChargeStatus PowerManager::chargeStatus(bool readCache)
 {
-  if (!readCache) _readSysStatus();
+  if (!readCache) {
+    if (!_readSysStatus()) {
+      if (++_pwrChipSampleFailCount == PWR_CHIP_RESET_PERIPHERALS_ON_SAMPLE_FAIL_COUNT)
+        _resetI2cPeripheralsOnPwrChipNotReady();
+    }
+  }
   return (ChargeStatus)( (_statusCache >> 4) & 0x03 );
 }
 
@@ -195,18 +180,18 @@ bool PowerManager::powerOff()
 {
   // disable watchdog timer
   _data = PREG_RST_CHRG_TERM_TIMER & PREG_WATCHDOG_TIMER_OFF_AND_MASK;
-  if (!pwrI2cMemTx(PREG_CHRG_TERM_TIMER, &_data)) return false;
+  if (!pwrChipMemTx(PREG_CHRG_TERM_TIMER, &_data)) return false;
 
   // set BATFET_DISABLE bit
   _data = PREG_RST_MISC_OPERATION | PREG_BATFET_OFF_OR_MASK;
-  if (!pwrI2cMemTx(PREG_MISC_OPERATION, &_data)) return false;
+  if (!pwrChipMemTx(PREG_MISC_OPERATION, &_data)) return false;
 
   return true;
 }
 
 uint8_t PowerManager::_chargeCurrentReg()
 {
-  pwrI2cMemRx(PREG_CHRG_CURRENT, &_data);
+  pwrChipMemRx(PREG_CHRG_CURRENT, &_data);
   // APP_LOGC("[Power]", "charge current reg: %#X", data());
   return _data;
 }
@@ -214,5 +199,5 @@ uint8_t PowerManager::_chargeCurrentReg()
 bool PowerManager::_setChargeCurrent()
 {
   _data = PREG_1536mA_CHRG_CURRENT;
-  return pwrI2cMemTx(PREG_CHRG_CURRENT, &_data);
+  return pwrChipMemTx(PREG_CHRG_CURRENT, &_data);
 }

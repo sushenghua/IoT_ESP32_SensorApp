@@ -19,7 +19,7 @@ public:
   SHT3xSensor();
 
   // init and display delegate
-  void init();
+  void init(bool checkDeviceReady=true);
   void setDisplayDelegate(SensorDisplayController *dc) { _dc = dc; }
 
   // cached values

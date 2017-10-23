@@ -16,7 +16,7 @@ public:
   TSL2561();
 
   // init and display delegate
-  void init();
+  void init(bool checkDeviceReady=true);
 
   // cached values
   const uint32_t & luminosity() { return _luminosity; }

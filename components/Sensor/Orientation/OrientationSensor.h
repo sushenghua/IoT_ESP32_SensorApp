@@ -13,7 +13,7 @@
 class OrientationSensor
 {
 public:
-    void init();    
+    void init(bool checkDeviceReady=true);    
     void setDisplayDelegate(SensorDisplayController *dc) { _dc = dc; }
 
     // sample

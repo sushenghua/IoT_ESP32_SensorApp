@@ -32,6 +32,7 @@ public:
   void setPins(int pinSck, int pinSda);
   void init(size_t rxBufLen = 0, size_t txBufLen = 0); // only slave required, master use defualt 0
   void deinit();
+  void reset();
 
   // communication
   bool deviceReady(uint8_t addr, TickType_t waitTicks = I2C_DEFAULT_WAIT_TICKS);

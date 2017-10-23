@@ -406,6 +406,8 @@ public:
   bool init(uint8_t clkSource, uint8_t gyroRange, uint8_t accelRange,
             uint16_t sampleRate, int8_t enableDMP);
 
+  bool deviceReady();
+
   // gyro config
   uint8_t getFullScaleGyroRange();
   void setFullScaleGyroRange(uint8_t range);

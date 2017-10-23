@@ -93,6 +93,12 @@ void I2c::deinit()
   }
 }
 
+void I2c::reset()
+{
+  i2c_reset_tx_fifo(_port);
+  i2c_reset_rx_fifo(_port);
+}
+
 #define WRITE_BIT      I2C_MASTER_WRITE /*!< I2C master write */
 #define READ_BIT       I2C_MASTER_READ  /*!< I2C master read */
 #define ACK_CHECK_EN   0x1              /*!< I2C master will check ack from slave*/
