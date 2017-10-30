@@ -16,8 +16,8 @@
 // peripherals power
 /////////////////////////////////////////////////////////////////////////////////////////
 #define PIN_PERIPHERALS_POWER                   2
-#define PERIPHERALS_POWER_ON_LOGIC              1
-#define PERIPHERALS_POWER_OFF_LOGIC             0
+#define PERIPHERALS_POWER_ON_LOGIC              0
+#define PERIPHERALS_POWER_OFF_LOGIC             1
 
 #define ALLOWED_PERIPHERALS_POWER_RESET_COUNT   1000
 

@@ -235,9 +235,9 @@ void checkAlert(SensorDataType type, float value)
   _alertValue[type] = value;
   uint32_t mask = (uint32_t)sensorAlertMask(type);
   TriggerAlert trigger = System::instance()->sensorValueTriggerAlert(type, value);
-  if (trigger == TriggerL) { _lAlertMask |= mask; _gAlertMask &= (~mask); }
-  else if (trigger == TriggerG) { _lAlertMask &= (~mask); _gAlertMask |= mask; }
-  else { _lAlertMask &= (~mask); _gAlertMask &= (~mask); }
+  if (trigger == TriggerL) { _lAlertMask |= mask; _gAlertMask &= (~mask); System::instance()->turnAlertSoundOn(true); }
+  else if (trigger == TriggerG) { _lAlertMask &= (~mask); _gAlertMask |= mask; System::instance()->turnAlertSoundOn(true); }
+  else { _lAlertMask &= (~mask); _gAlertMask &= (~mask); System::instance()->turnAlertSoundOn(false); }
 }
 
 TaskHandle_t sht3xSensorTaskHandle;
@@ -439,7 +439,7 @@ void _sendLAlertPushNotification()
 {
   // assume no recent publish; if recent publish occurs, wait longer for next check
   _lAlertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FOR_NO_RECENT_PUB;
-  if (System::instance()->alertPnOn()) {
+  if (System::instance()->alertPnEnabled()) {
     size_t jsonSize = genAlertPushNotificationJsonString(_lAlertMask, "l");
     if (jsonSize > 0) {
 #ifdef LOG_ALERT
@@ -455,7 +455,7 @@ void _sendGAlertPushNotification()
 {
   // assume no recent publish; if recent publish occurs, wait longer for next check
   _gAlertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FOR_NO_RECENT_PUB;
-  if (System::instance()->alertPnOn()) {
+  if (System::instance()->alertPnEnabled()) {
     size_t jsonSize = genAlertPushNotificationJsonString(_gAlertMask, "g");
     if (jsonSize > 0) {
 #ifdef LOG_ALERT
@@ -566,6 +566,13 @@ static void http_task(void *pvParams)
 //----------------------------------------------
 // daemon task
 //----------------------------------------------
+#include "Buzzer.h"
+Buzzer buzzer;
+bool _buzzerTriggered = false;
+uint16_t _buzzerSoundTicksCounter = 0;
+#define BUZZER_SOUND_ON_TICKS    100
+#define BUZZER_SOUND_CYCLE_TICKS 200
+
 #define DEBUG_FLAG_NULL                         0
 #define DEBUG_FLAG_RESET_DISPLAY                1
 #define DEBUG_FLAG_TRY_TRIGGER_DISPLAY_BUG      2
@@ -573,9 +580,13 @@ uint8_t _debugFlag = DEBUG_FLAG_NULL;
 
 #define DAEMON_TASK_DELAY_UNIT                  100
 #define DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS 50   // time(ms): this ticks * DAEMON_TASK_DELAY_UNIT
+
 bool _hasRebootRequest = false;
+
 static void daemon_task(void *pvParams = NULL)
 {
+  buzzer.init();
+
 #ifdef DEBUG_PN
   _genDebugMsgPN("d", "daemon task enabled");
 #endif
@@ -603,6 +614,13 @@ static void daemon_task(void *pvParams = NULL)
     }
 #endif
     if (_hasRebootRequest && !mqtt.hasUnackPub()) System::instance()->restart();
+
+    if (_buzzerTriggered) {
+      if (_buzzerSoundTicksCounter == 0) buzzer.start();
+      else if (_buzzerSoundTicksCounter == BUZZER_SOUND_ON_TICKS) buzzer.stop();
+      ++_buzzerSoundTicksCounter;
+      if (_buzzerSoundTicksCounter == BUZZER_SOUND_CYCLE_TICKS) _buzzerSoundTicksCounter = 0;
+    }
     vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
   }
 }
@@ -612,11 +630,13 @@ static void daemon_task(void *pvParams = NULL)
 // prepare env
 //**********************************************
 #include "Semaphore.h"
+#include "I2cPeripherals.h"
 
 static void beforeCreateTasks()
 {
   // _dcUpdateSemaphore = xSemaphoreCreateMutex();
   Semaphore::init();
+  I2cPeripherals::init();
 }
 
 
@@ -1055,14 +1075,14 @@ void System::setDeviceName(const char* name, size_t len)
   _updateConfig2(); // _saveConfig2();
 }
 
-bool System::alertPnOn()
+bool System::alertPnEnabled()
 {
-  return _alerts.pnOn;
+  return _alerts.pnEnabled;
 }
 
-bool System::alertSoundOn()
+bool System::alertSoundEnabled()
 {
-  return _alerts.soundOn;
+  return _alerts.soundEnabled;
 }
 
 Alerts * System::alerts()
@@ -1088,21 +1108,36 @@ bool System::tokenEnabled(MobileOS os, const char* token)
   return (index != -1 && _mobileTokens.token(index).os == os && _mobileTokens.token(index).on);
 }
 
-void System::setAlertPnOn(bool on)
+void System::setAlertPnEnabled(bool enabled)
 {
-  if (_alerts.pnOn != on) {
-    _alerts.pnOn = on;
+  if (_alerts.pnEnabled != enabled) {
+    _alerts.pnEnabled = enabled;
     _alertsNeedToSave = true;
-    if (on) _resetAlertReactiveCounter();
+    if (enabled) _resetAlertReactiveCounter();
   }
 }
 
-void System::setAlertSoundOn(bool on)
+void System::setAlertSoundEnabled(bool enabled)
 {
-  if (_alerts.soundOn != on) {
-    _alerts.soundOn = on;
+  if (_alerts.soundEnabled != enabled) {
+    _alerts.soundEnabled = enabled;
     _alertsNeedToSave = true;
+    if (!enabled) turnAlertSoundOn(false);
   }
+}
+
+bool System::alertSoundOn()
+{
+  return _buzzerTriggered;
+}
+
+void System::turnAlertSoundOn(bool on)
+{
+  if (on) {
+    _buzzerTriggered = true;
+    _buzzerSoundTicksCounter = 0;
+  }
+  else _buzzerTriggered = false;
 }
 
 void System::setAlert(SensorDataType type, bool lEnabled, bool gEnabled, float lValue, float gValue)

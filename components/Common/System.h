@@ -119,13 +119,13 @@ struct Alert {
 #define ALERT_REACTIVE_COUNT   60000  // 60000 * 10ms(mqtt_task delay) = 10 min
 
 struct Alerts {
-  bool  pnOn;
-  bool  soundOn;
+  bool  pnEnabled;
+  bool  soundEnabled;
   uint32_t reactiveTimeCount;
   Alert sensors[SensorDataTypeCount];
   void init() {
-    pnOn = false;
-    soundOn = false;
+    pnEnabled = false;
+    soundEnabled = false;
     reactiveTimeCount = ALERT_REACTIVE_COUNT;
     for (uint8_t i=0; i<SensorDataTypeCount; ++i) {
       sensors[i].lEnabled = sensors[i].gEnabled = false;
@@ -179,14 +179,16 @@ public:
   void setDevCapability(uint32_t cap);
   void setDeviceName(const char* name, size_t len = 0);
 
-  bool alertPnOn();
-  bool alertSoundOn();
+  bool alertPnEnabled();
+  bool alertSoundEnabled();
   Alerts * alerts();
   TriggerAlert sensorValueTriggerAlert(SensorDataType type, float value);
   MobileTokens * mobileTokens();
   bool tokenEnabled(MobileOS os, const char* token);
-  void setAlertPnOn(bool on);
-  void setAlertSoundOn(bool on);
+  void setAlertPnEnabled(bool enabled);
+  void setAlertSoundEnabled(bool enabled);
+  bool alertSoundOn();
+  void turnAlertSoundOn(bool on);
   void setAlert(SensorDataType type, bool lEnabled, bool gEnabled, float lValue, float gValue);
   void setPnToken(bool enabled, MobileOS os, const char *token, size_t groupLen=0, const char *group=NULL);
   void resetAlertReactiveCounter();

@@ -377,8 +377,7 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
         replyJsonResult(_delegate, System::instance()->uid(), cmdKey, userdata);
       }
       else {
-        _delegate->replyMessage(System::instance()->uid(),
-                    strlen(System::instance()->uid()), userdata);
+        _delegate->replyMessage(System::instance()->uid(), strlen(System::instance()->uid()), userdata);
       }
       break;
 
@@ -544,8 +543,8 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
       break;
 
     case SetAlertEnableConfig:
-      System::instance()->setAlertPnOn(args[0] == 1);
-      System::instance()->setAlertSoundOn(args[1] == 1);
+      System::instance()->setAlertPnEnabled(args[0] == 1);
+      System::instance()->setAlertSoundEnabled(args[1] == 1);
       break;
 
     case SetSensorAlertConfig: {
@@ -568,8 +567,8 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
         size_t packCount = 0;
         sprintf(_strBuf + packCount, "{\"cmd\":\"%s\",\"ret\":{\"enpn\":%s,\"ensnd\":%s,\"vals\":{",
                 cmdKeyToStr(cmdKey),
-                sys->alertPnOn() ? "true" : "false",
-                sys->alertSoundOn() ? "true" : "false");
+                sys->alertPnEnabled() ? "true" : "false",
+                sys->alertSoundEnabled() ? "true" : "false");
         packCount += strlen(_strBuf + packCount);
 
         Alerts *alerts = sys->alerts();

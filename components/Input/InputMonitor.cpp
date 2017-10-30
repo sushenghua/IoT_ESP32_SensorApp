@@ -57,6 +57,7 @@ static void gpio_check_task(void* args)
 {
   uint32_t ioNum;
   int lvl;
+  System *sys = System::instance();
   while (true) {
     _synced_gpio_check_task_paused = _gpio_check_task_paused;
     if (_synced_gpio_check_task_paused) {
@@ -74,7 +75,8 @@ static void gpio_check_task(void* args)
               // APP_LOGC("[BTN]", "pwr released, duration cnt: %d, time: %.2f",
               //          _pwrLowDurationCount, GPIO_CHECK_TASK_DELAY_UNIT*_pwrLowDurationCount/1000.0f);
               if (_pwrLowDurationCount < PWR_TOGGLE_DISPLAY_LOW_COUNT) {
-                System::instance()->toggleDisplay();
+                if (sys->alertSoundOn()) sys->turnAlertSoundOn(false);
+                else sys->toggleDisplay();
               }
             }
             else {          // pressed
@@ -92,11 +94,12 @@ static void gpio_check_task(void* args)
               //          _usrLowDurationCount, GPIO_CHECK_TASK_DELAY_UNIT*_usrLowDurationCount/1000.0f);
               if (_usrLowDurationCount > 0 &&
                   _usrLowDurationCount < USER_TOGGLE_DISPLAY_LOW_COUNT) {
-                System::instance()->toggleDisplay();
+                if (sys->alertSoundOn()) sys->turnAlertSoundOn(false);
+                else sys->toggleDisplay();
               }
               else if (_usrLowDurationCount > USER_TOGGLE_WIFI_ON_LOW_COUNT &&
                        _usrLowDurationCount < USER_TOGGLE_WIFI_MODE_LOW_COUNT) {
-                System::instance()->toggleWifi();
+                sys->toggleWifi();
               }
             }
             else {          // pressed
@@ -108,7 +111,7 @@ static void gpio_check_task(void* args)
 
         case PWR_INT_PIN:
           // APP_LOGC("[PWR_INT]", "power int");
-          System::instance()->markPowerEvent();
+          sys->markPowerEvent();
           break;
 
         default:
@@ -119,12 +122,12 @@ static void gpio_check_task(void* args)
       if (_usrGpioLvl == 0) {
         ++_usrLowDurationCount;
         if (_usrLowDurationCount >= USER_TOGGLE_WIFI_MODE_LOW_COUNT)
-          System::instance()->toggleDeployMode();
+          sys->toggleDeployMode();
       }
       if (_pwrGpioLvl == 0) {
       	++_pwrLowDurationCount;
       	if (_pwrLowDurationCount >= PWR_TOGGLE_OFF_LOW_COUNT)
-          System::instance()->powerOff();
+          sys->powerOff();
       }
     }
   }
