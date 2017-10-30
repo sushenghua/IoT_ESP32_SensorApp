@@ -1,20 +1,20 @@
 /*
- * Alarm: controlled by esp PWM
+ * Buzzer: controlled by esp PWM
  * Copyright (c) 2017 Shenghua Su
  *
  */
 
-#ifndef _ALARM_H
-#define _ALARM_H
+#ifndef _BUZZER_H
+#define _BUZZER_H
 
 #include <string.h>
 #include "driver/mcpwm.h"
 
-class Alarm
+class Buzzer
 {
 public:
   // constructor
-  Alarm();
+  Buzzer();
   
   // init
   void init();
@@ -31,4 +31,4 @@ protected:
     mcpwm_config_t  _pwmConfig;
 };
 
-#endif // _ALARM_H
+#endif // _BUZZER_H
