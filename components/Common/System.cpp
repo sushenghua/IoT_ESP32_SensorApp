@@ -232,12 +232,18 @@ float    _alertValue[SensorDataTypeCount];
 
 void checkAlert(SensorDataType type, float value)
 {
+  System *sys = System::instance();
   _alertValue[type] = value;
   uint32_t mask = (uint32_t)sensorAlertMask(type);
-  TriggerAlert trigger = System::instance()->sensorValueTriggerAlert(type, value);
-  if (trigger == TriggerL) { _lAlertMask |= mask; _gAlertMask &= (~mask); System::instance()->turnAlertSoundOn(true); }
-  else if (trigger == TriggerG) { _lAlertMask &= (~mask); _gAlertMask |= mask; System::instance()->turnAlertSoundOn(true); }
-  else { _lAlertMask &= (~mask); _gAlertMask &= (~mask); System::instance()->turnAlertSoundOn(false); }
+  TriggerAlert trigger = sys->sensorValueTriggerAlert(type, value);
+  if (trigger == TriggerL) { _lAlertMask |= mask; _gAlertMask &= (~mask); }
+  else if (trigger == TriggerG) { _lAlertMask &= (~mask); _gAlertMask |= mask; }
+  else { _lAlertMask &= (~mask); _gAlertMask &= (~mask); }
+
+  if (sys->alertSoundEnabled()) {
+    if (_lAlertMask || _gAlertMask) sys->turnAlertSoundOn(true);
+    else sys->turnAlertSoundOn(false);
+  }
 }
 
 TaskHandle_t sht3xSensorTaskHandle;
@@ -564,15 +570,34 @@ static void http_task(void *pvParams)
 
 
 //----------------------------------------------
-// daemon task
+// buzzer task
 //----------------------------------------------
 #include "Buzzer.h"
 Buzzer buzzer;
 bool _buzzerTriggered = false;
 uint16_t _buzzerSoundTicksCounter = 0;
-#define BUZZER_SOUND_ON_TICKS    100
-#define BUZZER_SOUND_CYCLE_TICKS 200
+#define BUZZER_SOUND_ON_TICKS    2
+#define BUZZER_SOUND_CYCLE_TICKS 10
 
+TaskHandle_t buzzerTaskHandle;
+static void buzzer_task(void *pvParams = NULL)
+{
+  buzzer.init();
+  while (true) {
+    if (_buzzerTriggered) {
+      if (_buzzerSoundTicksCounter == 0) buzzer.start();
+      else if (_buzzerSoundTicksCounter == BUZZER_SOUND_ON_TICKS) buzzer.stop();
+      ++_buzzerSoundTicksCounter;
+      if (_buzzerSoundTicksCounter == BUZZER_SOUND_CYCLE_TICKS) _buzzerSoundTicksCounter = 0;
+    }
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+  }
+}
+
+
+//----------------------------------------------
+// daemon task
+//----------------------------------------------
 #define DEBUG_FLAG_NULL                         0
 #define DEBUG_FLAG_RESET_DISPLAY                1
 #define DEBUG_FLAG_TRY_TRIGGER_DISPLAY_BUG      2
@@ -585,8 +610,6 @@ bool _hasRebootRequest = false;
 
 static void daemon_task(void *pvParams = NULL)
 {
-  buzzer.init();
-
 #ifdef DEBUG_PN
   _genDebugMsgPN("d", "daemon task enabled");
 #endif
@@ -614,13 +637,6 @@ static void daemon_task(void *pvParams = NULL)
     }
 #endif
     if (_hasRebootRequest && !mqtt.hasUnackPub()) System::instance()->restart();
-
-    if (_buzzerTriggered) {
-      if (_buzzerSoundTicksCounter == 0) buzzer.start();
-      else if (_buzzerSoundTicksCounter == BUZZER_SOUND_ON_TICKS) buzzer.stop();
-      ++_buzzerSoundTicksCounter;
-      if (_buzzerSoundTicksCounter == BUZZER_SOUND_CYCLE_TICKS) _buzzerSoundTicksCounter = 0;
-    }
     vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
   }
 }
@@ -755,6 +771,7 @@ void System::_logInfo()
 #define ORIENTATION_TASK_PRIORITY           3
 #define STATUS_CHECK_TASK_PRIORITY          3
 #define TOUCH_PAD_TASK_PRIORITY             3
+#define BUZZER_TASK_PRIORITY                3
 #define DAEMON_TASK_PRIORITY                3
 
 #define PRO_CORE    0
@@ -799,6 +816,8 @@ void System::_launchTasks()
     xTaskCreatePinnedToCore(http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
   // xTaskCreatePinnedToCore(touch_pad_task, "touch_pad_task", 2048, NULL, TOUCH_PAD_TASK_PRIORITY, NULL, RUN_ON_CORE);
+
+  xTaskCreate(&buzzer_task, "buzzer_task", 2048, NULL, BUZZER_TASK_PRIORITY, &buzzerTaskHandle);
 
   // xTaskCreatePinnedToCore(daemon_task, "daemon_task", 2048, NULL, DAEMON_TASK_PRIORITY, NULL, RUN_ON_CORE);
   daemon_task();
@@ -1133,11 +1152,16 @@ bool System::alertSoundOn()
 
 void System::turnAlertSoundOn(bool on)
 {
-  if (on) {
-    _buzzerTriggered = true;
-    _buzzerSoundTicksCounter = 0;
+  if (_buzzerTriggered != on) {
+    if (on) {
+      _buzzerTriggered = true;
+      _buzzerSoundTicksCounter = 0;
+    }
+    else {
+      _buzzerTriggered = false;
+      buzzer.stop();
+    }
   }
-  else _buzzerTriggered = false;
 }
 
 void System::setAlert(SensorDataType type, bool lEnabled, bool gEnabled, float lValue, float gValue)

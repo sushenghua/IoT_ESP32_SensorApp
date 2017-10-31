@@ -121,11 +121,11 @@ void OrientationSensor::sampleData()
     float accelY = _mpuData.accel[1] / MPU6050_ACCE_SCALE_FACTOR;
     float angle = calculateAngle(accelX, accelY);
 
-// #ifdef DEBUG_APP_OK
+#ifdef DEBUG_APP_OK
     float accelZ = _mpuData.accel[2] / MPU6050_ACCE_SCALE_FACTOR;
     uint8_t rotation = _dc->rotation();
     APP_LOGC("[OriSensor]", "rotation: %d,  aX: %f  aY: %f  aZ: %f  angle: %f", rotation, accelX, accelY, accelZ, angle);
-// #endif
+#endif
 
     // for MPU6050 chip(on PCB) and LCD installed as both face front
     // if (fabs(angle - 0) < 20) {
