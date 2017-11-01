@@ -576,7 +576,10 @@ static void http_task(void *pvParams)
 Buzzer buzzer;
 bool _buzzerTriggered = false;
 uint16_t _buzzerSoundTicksCounter = 0;
-#define BUZZER_SOUND_ON_TICKS    2
+#define BUZZER_SOUND_ON1_TICKS    0
+#define BUZZER_SOUND_OFF1_TICKS   1
+#define BUZZER_SOUND_ON2_TICKS    2
+#define BUZZER_SOUND_OFF2_TICKS   3
 #define BUZZER_SOUND_CYCLE_TICKS 10
 
 TaskHandle_t buzzerTaskHandle;
@@ -585,8 +588,10 @@ static void buzzer_task(void *pvParams = NULL)
   buzzer.init();
   while (true) {
     if (_buzzerTriggered) {
-      if (_buzzerSoundTicksCounter == 0) buzzer.start();
-      else if (_buzzerSoundTicksCounter == BUZZER_SOUND_ON_TICKS) buzzer.stop();
+      if (_buzzerSoundTicksCounter == BUZZER_SOUND_ON1_TICKS) buzzer.start();
+      else if (_buzzerSoundTicksCounter == BUZZER_SOUND_OFF1_TICKS) buzzer.stop();
+      else if (_buzzerSoundTicksCounter == BUZZER_SOUND_ON2_TICKS) buzzer.start();
+      else if (_buzzerSoundTicksCounter == BUZZER_SOUND_OFF2_TICKS) buzzer.stop();
       ++_buzzerSoundTicksCounter;
       if (_buzzerSoundTicksCounter == BUZZER_SOUND_CYCLE_TICKS) _buzzerSoundTicksCounter = 0;
     }
