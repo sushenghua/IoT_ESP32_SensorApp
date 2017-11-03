@@ -658,7 +658,7 @@ esp_err_t spi_device_reset(spi_device_handle_t handle)
     handle->host->hw->dma_conf.out_data_burst_en=1;
 
     // Reset timing
-    // handle->host->hw->ctrl2.val=0;
+    handle->host->hw->ctrl2.val=0;
 
     // // Disable unneeded ints
     // handle->host->hw->slave.rd_buf_done=0;

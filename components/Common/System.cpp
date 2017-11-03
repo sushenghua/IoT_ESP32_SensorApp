@@ -135,7 +135,7 @@ void _resetDisplay()
 void _debugDisplay()
 {
   dev.spi_bug();
-  APP_LOGC("[display_task]", "debug call done");
+  APP_LOGC("[display_guard_task]", "debug call done");
 }
 
 
@@ -151,7 +151,7 @@ uint8_t _debugFlag = DEBUG_FLAG_NULL;
 void _genDebugMsgPN(const char* tag, const char* msg);
 #endif
 
-#define DISPLAY_GUARD_TASK_DELAY_UNIT           100
+#define DISPLAY_GUARD_TASK_DELAY_UNIT           500
 TaskHandle_t displayGuardTaskHandle = 0;
 
 static void display_guard_task(void *pvParams = NULL)
