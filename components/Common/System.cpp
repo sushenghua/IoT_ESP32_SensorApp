@@ -22,7 +22,8 @@ enum TaskState {
   TaskRunning     = 1,
   TaskPaused      = 2,
   TaskNoResponse  = 3,
-  TaskKilled      = 4
+  TaskHandleErr   = 4,
+  TaskKilled      = 5
 };
 
 // watch dog
@@ -161,6 +162,7 @@ static void display_guard_task(void *pvParams = NULL)
 #endif
   while (true) {
     if (_displayTaskState == TaskNoResponse) {
+      _displayTaskState = TaskHandleErr;
       // APP_LOGW("[daemon_task]", "--->relaunch display task, free RAM: %d bytes", esp_get_free_heap_size());
       APP_LOGE("[display_guard_task]", "display task no response -> reset");
 #ifdef DEBUG_PN
@@ -168,6 +170,9 @@ static void display_guard_task(void *pvParams = NULL)
 #endif
       _resetDisplay();
       APP_LOGE("[display_guard_task]", "reset done");
+    }
+    else if (_displayTaskState == TaskHandleErr) {
+      APP_LOGE("[display_guard_task]", "error handling ...");
     }
 #ifdef DEBUG_FLAG_ENABLED
     if (_debugFlag != DEBUG_FLAG_NULL) {
