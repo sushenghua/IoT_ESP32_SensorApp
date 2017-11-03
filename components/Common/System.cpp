@@ -138,6 +138,50 @@ void _debugDisplay()
   APP_LOGC("[display_task]", "debug call done");
 }
 
+
+//----------------------------------------------
+// display guard task
+//----------------------------------------------
+#define DEBUG_FLAG_NULL                         0
+#define DEBUG_FLAG_RESET_DISPLAY                1
+#define DEBUG_FLAG_TRY_TRIGGER_DISPLAY_BUG      2
+uint8_t _debugFlag = DEBUG_FLAG_NULL;
+
+#ifdef DEBUG_PN
+void _genDebugMsgPN(const char* tag, const char* msg);
+#endif
+
+#define DISPLAY_GUARD_TASK_DELAY_UNIT           100
+TaskHandle_t displayGuardTaskHandle = 0;
+
+static void display_guard_task(void *pvParams = NULL)
+{
+#ifdef DEBUG_PN
+  _genDebugMsgPN("d", "display guard task enabled");
+#endif
+  while (true) {
+    if (_displayTaskState == TaskNoResponse) {
+      // APP_LOGW("[daemon_task]", "--->relaunch display task, free RAM: %d bytes", esp_get_free_heap_size());
+      APP_LOGE("[display_guard_task]", "display task no response -> reset");
+#ifdef DEBUG_PN
+      _genDebugMsgPN("d", "display task inactive");
+#endif
+      _resetDisplay();
+      APP_LOGE("[display_guard_task]", "reset done");
+    }
+#ifdef DEBUG_FLAG_ENABLED
+    if (_debugFlag != DEBUG_FLAG_NULL) {
+      APP_LOGC("[display_guard_task]", "debug flag set to %d", _debugFlag);
+      if (_debugFlag == DEBUG_FLAG_TRY_TRIGGER_DISPLAY_BUG) _debugDisplay();
+      else if (_debugFlag == DEBUG_FLAG_RESET_DISPLAY) _resetDisplay();
+      _debugFlag = DEBUG_FLAG_NULL;
+    }
+#endif
+    vTaskDelay(DISPLAY_GUARD_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
+  }
+}
+
+
 //----------------------------------------------
 // status check tasks
 //----------------------------------------------
@@ -603,11 +647,6 @@ static void buzzer_task(void *pvParams = NULL)
 //----------------------------------------------
 // daemon task
 //----------------------------------------------
-#define DEBUG_FLAG_NULL                         0
-#define DEBUG_FLAG_RESET_DISPLAY                1
-#define DEBUG_FLAG_TRY_TRIGGER_DISPLAY_BUG      2
-uint8_t _debugFlag = DEBUG_FLAG_NULL;
-
 #define DAEMON_TASK_DELAY_UNIT                  100
 #define DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS 50   // time(ms): this ticks * DAEMON_TASK_DELAY_UNIT
 
@@ -615,32 +654,15 @@ bool _hasRebootRequest = false;
 
 static void daemon_task(void *pvParams = NULL)
 {
-#ifdef DEBUG_PN
-  _genDebugMsgPN("d", "daemon task enabled");
-#endif
   while (true) {
     if (_displayTaskState == TaskRunning) {
       if (_displayDaemonInactiveTicks > 0) ++_displayDaemonInactiveTicks;
       // inspect display's non-responding(spi trans queue blocked, unknown reason, caused by LCD device?)
       if (_displayDaemonInactiveTicks > DISPLAY_TASK_ALLOWED_INACTIVE_MAX_TICKS) {
         _displayTaskState = TaskNoResponse;
-        // APP_LOGW("[daemon_task]", "--->relaunch display task, free RAM: %d bytes", esp_get_free_heap_size());
-        APP_LOGE("[daemon_task]", "display task no response -> reset");
-#ifdef DEBUG_PN
-        _genDebugMsgPN("d", "display task inactive");
-#endif
-        _resetDisplay();
-        APP_LOGE("[daemon_task]", "reset done");
       }
     }
-#ifdef DEBUG_FLAG_ENABLED
-    if (_debugFlag != DEBUG_FLAG_NULL) {
-      APP_LOGC("[daemon_task]", "debug flag set to %d", _debugFlag);
-      if (_debugFlag == DEBUG_FLAG_TRY_TRIGGER_DISPLAY_BUG) _debugDisplay();
-      else if (_debugFlag == DEBUG_FLAG_RESET_DISPLAY) _resetDisplay();
-      _debugFlag = DEBUG_FLAG_NULL;
-    }
-#endif
+
     if (_hasRebootRequest && !mqtt.hasUnackPub()) System::instance()->restart();
     vTaskDelay(DAEMON_TASK_DELAY_UNIT / portTICK_PERIOD_MS);
   }
@@ -765,6 +787,7 @@ void System::_logInfo()
 
 // configMAX_PRIORITIES defined in "FreeRTOSConfig.h"
 #define DISPLAY_TASK_PRIORITY               3
+#define DISPLAY_GUARD_TASK_PRIORITY         3
 #define WIFI_TASK_PRIORITY                  3
 #define SNTP_TASK_PRIORITY                  3
 #define MQTTCLIENT_TASK_PRIORITY            3
@@ -794,6 +817,8 @@ void System::_launchTasks()
   beforeCreateTasks();
 
   _launchDisplayTask();
+
+  xTaskCreatePinnedToCore(display_guard_task, "display_guard_task", 2048, NULL, DISPLAY_GUARD_TASK_PRIORITY, &displayGuardTaskHandle, PRO_CORE);
 
   xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 4096, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
 
