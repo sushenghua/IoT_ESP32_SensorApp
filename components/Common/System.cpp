@@ -23,7 +23,8 @@ enum TaskState {
   TaskPaused      = 2,
   TaskNoResponse  = 3,
   TaskHandleErr   = 4,
-  TaskKilled      = 5
+  TaskKilled      = 5,
+  TaskDebug       = 6
 };
 
 // watch dog
@@ -131,10 +132,12 @@ void _resetDisplay()
   dc.reset();
   dc.setUpdateDisabled(false);
   // System::instance()->setRestartRequest();
+  APP_LOGW("[display_guard_task]", "reset done");
 }
 
 void _debugDisplay()
 {
+  _displayTaskState = TaskDebug;
   dev.spi_bug();
   APP_LOGC("[display_guard_task]", "debug call done");
 }
@@ -169,7 +172,6 @@ static void display_guard_task(void *pvParams = NULL)
       _genDebugMsgPN("d", "display task inactive");
 #endif
       _resetDisplay();
-      APP_LOGE("[display_guard_task]", "reset done");
     }
     else if (_displayTaskState == TaskHandleErr) {
       APP_LOGE("[display_guard_task]", "error handling ...");
