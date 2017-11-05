@@ -131,8 +131,8 @@ void _resetDisplay()
   dc.setUpdateDisabled(true);
   dc.reset();
   dc.setUpdateDisabled(false);
-  // System::instance()->setRestartRequest();
   APP_LOGW("[display_guard_task]", "reset done");
+  // System::instance()->setRestartRequest();
 }
 
 void _debugDisplay()
@@ -155,6 +155,9 @@ uint8_t _debugFlag = DEBUG_FLAG_NULL;
 void _genDebugMsgPN(const char* tag, const char* msg);
 #endif
 
+uint16_t _displayErrHandleWaitTicks = 0;
+#define RESTART_DISPLAY_ERR_HANDLE_WAIT_TICKS   10
+
 #define DISPLAY_GUARD_TASK_DELAY_UNIT           500
 TaskHandle_t displayGuardTaskHandle = 0;
 
@@ -172,9 +175,17 @@ static void display_guard_task(void *pvParams = NULL)
       _genDebugMsgPN("d", "display task inactive");
 #endif
       _resetDisplay();
+      _displayErrHandleWaitTicks = 0;
     }
     else if (_displayTaskState == TaskHandleErr) {
-      APP_LOGE("[display_guard_task]", "error handling ...");
+      if (_displayErrHandleWaitTicks < RESTART_DISPLAY_ERR_HANDLE_WAIT_TICKS) {
+        APP_LOGE("[display_guard_task]", "error handling ... %d", _displayErrHandleWaitTicks);
+      }
+      else {
+        APP_LOGE("[display_guard_task]", "error handling ... restart");
+        System::instance()->restart();
+      }
+      ++_displayErrHandleWaitTicks;
     }
 #ifdef DEBUG_FLAG_ENABLED
     if (_debugFlag != DEBUG_FLAG_NULL) {
