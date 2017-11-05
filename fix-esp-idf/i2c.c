@@ -377,6 +377,7 @@ static void i2c_isr_handler_default(void* arg)
         } else if (status & I2C_TXFIFO_EMPTY_INT_ST_M) {
             int tx_fifo_rem = I2C_FIFO_LEN - I2C[i2c_num]->status_reg.tx_fifo_cnt;
             size_t size = 0;
+            if (!p_i2c->tx_ring_buf) return; // i2c bug temp fix (Shenghua)
             uint8_t *data = (uint8_t*) xRingbufferReceiveUpToFromISR(p_i2c->tx_ring_buf, &size, tx_fifo_rem);
             if (data) {
                 for (idx = 0; idx < size; idx++) {
