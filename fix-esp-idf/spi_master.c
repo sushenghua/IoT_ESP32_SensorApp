@@ -674,6 +674,7 @@ esp_err_t spi_device_reset(spi_device_handle_t handle)
     handle->host->hw->slave.trans_inten=1;
     handle->host->hw->slave.trans_done=1;
     handle->host->hw->slave.sync_reset=1;
+    handle->host->hw->sram_cmd.rst_io=1;
 
     // Disable user define command, it will be re-enabled by spi_intr later
     handle->host->hw->cmd.usr = 0;
