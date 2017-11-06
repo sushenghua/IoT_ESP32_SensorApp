@@ -108,11 +108,27 @@ void ILI9341::_initIli9341()
   turnOn(true);           // turn on led
 }
 
-void ILI9341::init()
+void ILI9341::init(int mode)
 {
-  _initBus();
-  _initBackLed();
-  _initIli9341();
+  switch (mode) {
+    case DISPLAY_INIT_ALL:
+      _initBus();
+      _initBackLed();
+      _initIli9341();
+      break;
+
+    case DISPLAY_INIT_ONLY_BUS:
+      _initBus();
+      break;
+
+    case DISPLAY_INIT_ONLY_DEVICE:
+      _initBackLed();
+      _initIli9341();
+      break;
+
+    default:
+      break;
+  }
 }
 
 void ILI9341::reset()

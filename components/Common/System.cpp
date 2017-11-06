@@ -91,6 +91,15 @@ static void sntp_task(void *pvParams)
 //----------------------------------------------
 // display tasks
 //----------------------------------------------
+#include "esp_deep_sleep.h"
+esp_deep_sleep_wakeup_cause_t _wakeupCause = ESP_DEEP_SLEEP_WAKEUP_UNDEFINED;
+esp_deep_sleep_wakeup_cause_t getWakeupCause()
+{
+  if (_wakeupCause == ESP_DEEP_SLEEP_WAKEUP_UNDEFINED)
+    _wakeupCause = esp_deep_sleep_get_wakeup_cause();
+  return _wakeupCause;
+}
+
 // #include "ST7789V.h"
 // ST7789V dev;// static ILI9341 dev;
 #include "ILI9341.h"
@@ -107,7 +116,13 @@ uint16_t _displayDaemonInactiveTicks = 0;
 
 void display_task(void *p)
 {
-  dc.init();
+  if (getWakeupCause() == ESP_DEEP_SLEEP_WAKEUP_TIMER) {
+    APP_LOGC("[display_task]", "only init bus from timer wakeup");
+    dc.init(DISPLAY_INIT_ONLY_BUS);
+  }
+  else {
+    dc.init();
+  }
   APP_LOGC("[display_task]", "start running ...");
   // _displayDaemonInactiveTicks = 0;
   while (true) {

@@ -23,7 +23,7 @@ public:
   DisplayController(DisplayGFX *dev);
 
 public:
-  virtual void init();
+  virtual void init(int displayInitMode);
   virtual void tick() {};
   virtual void update();
 

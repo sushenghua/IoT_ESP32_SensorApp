@@ -71,6 +71,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #define DISPLAY_ROTATION_CW_180  2
 #define DISPLAY_ROTATION_CW_270  3
 
+// init mode
+#define DISPLAY_INIT_ALL          0
+#define DISPLAY_INIT_ONLY_BUS     1
+#define DISPLAY_INIT_ONLY_DEVICE  2
+
 /////////////////////////////////////////////////////////////////////////////////////////
 // DisplayGFX class
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -81,7 +86,7 @@ public:
 
 public:
   // all subclass should implement these common method
-  virtual void init() = 0;
+  virtual void init(int mode) = 0;
   virtual void reset() = 0;
   virtual void turnOn(bool on = true) = 0;
   virtual void setBrightness(uint8_t b) = 0;

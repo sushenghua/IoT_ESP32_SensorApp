@@ -83,7 +83,7 @@ DisplayController::DisplayController(DisplayGFX *dev)
   _activeDisplayController = this;
 }
 
-void DisplayController::init()
+void DisplayController::init(int displayInitMode)
 {
   APP_LOGI("[DisplayController]", "init");
   DeployMode deployMode = System::instance()->deployMode();

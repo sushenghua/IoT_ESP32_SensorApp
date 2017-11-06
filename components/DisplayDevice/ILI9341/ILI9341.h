@@ -85,7 +85,7 @@ public:
 
 public:
   // virtual methods
-  virtual void init();
+  virtual void init(int mode = DISPLAY_INIT_ALL);
   virtual void reset();
   virtual void turnOn(bool on = true);
   virtual void setBrightness(uint8_t b);

@@ -32,7 +32,7 @@ public:
   void setScreenMessage(const char * msg);
 
 public:
-  virtual void init();
+  virtual void init(int displayInitMode=DISPLAY_INIT_ALL);
   virtual void tick();
   virtual void update();
 

@@ -23,10 +23,10 @@ SensorDisplayController::SensorDisplayController(DisplayGFX *dev)
 , _subItemCount(0)
 {}
 
-void SensorDisplayController::init()
+void SensorDisplayController::init(int displayInitMode)
 {
   if (!_inited) {
-    DisplayController::init();
+    DisplayController::init(displayInitMode);
 
     APP_LOGI("[SensorDC]", "init");
 
@@ -34,7 +34,7 @@ void SensorDisplayController::init()
     _devCap = System::instance()->devCapability();
 
     // device init and screen preparation
-    _dev->init();
+    _dev->init(displayInitMode);
     _dev->fillScreen(RGB565_BLACK);
 
     _dev->setTextSize(2);
