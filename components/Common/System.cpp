@@ -117,12 +117,10 @@ uint16_t _displayDaemonInactiveTicks = 0;
 void display_task(void *p)
 {
   if (getWakeupCause() == ESP_DEEP_SLEEP_WAKEUP_TIMER) {
-    APP_LOGC("[display_task]", "only init bus from timer wakeup");
-    dc.init(DISPLAY_INIT_ONLY_BUS);
+    APP_LOGC("[display_task]", "timer wakeup reset");
   }
-  else {
-    dc.init();
-  }
+
+  dc.init();
   APP_LOGC("[display_task]", "start running ...");
   // _displayDaemonInactiveTicks = 0;
   while (true) {
@@ -199,7 +197,8 @@ static void display_guard_task(void *pvParams = NULL)
       }
       else {
         APP_LOGE("[display_guard_task]", "error handling ... restart");
-        System::instance()->restart();
+        // System::instance()->restart();
+        esp_deep_sleep(100000);
       }
       ++_displayErrHandleWaitTicks;
     }

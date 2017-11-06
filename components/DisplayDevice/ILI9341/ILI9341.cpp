@@ -105,6 +105,7 @@ void ILI9341::_initIli9341()
   turnOn(false);          // turn off led
   _fireResetSignal();     // hard wire reset
   _initIli9341WithCmd();  // send init cmd sequence to device
+  fillScreen(RGB565_BLACK);
   turnOn(true);           // turn on led
 }
 
@@ -119,6 +120,7 @@ void ILI9341::init(int mode)
 
     case DISPLAY_INIT_ONLY_BUS:
       _initBus();
+      _initBackLed();
       break;
 
     case DISPLAY_INIT_ONLY_DEVICE:
@@ -137,7 +139,7 @@ void ILI9341::reset()
   _spiChannel.reset();
   _spiChannel.setDisabled(false);
 
-  _initIli9341WithCmd();
+  // _initIli9341WithCmd();
 
   // SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
   // bus->removeChannel(_spiChannel);

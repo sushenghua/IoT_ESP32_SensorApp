@@ -621,9 +621,32 @@ esp_err_t spi_device_transmit(spi_device_handle_t handle, spi_transaction_t *tra
     return ESP_OK;
 }
 
-static void IRAM_ATTR spi_dmareset_cb(void *arg)
+static void IRAM_ATTR spi_dmareset_done(void *arg)
 {
-    // do nothing
+    spi_host_t *host = (spi_host_t *)arg;
+
+    // Reset timing
+    // host->hw->ctrl2.val=0;
+
+    // // Disable unneeded ints
+    // host->hw->slave.rd_buf_done=0;
+    // host->hw->slave.wr_buf_done=0;
+    // host->hw->slave.rd_sta_done=0;
+    // host->hw->slave.wr_sta_done=0;
+    // host->hw->slave.rd_buf_inten=0;
+    // host->hw->slave.wr_buf_inten=0;
+    // host->hw->slave.rd_sta_inten=0;
+    // host->hw->slave.wr_sta_inten=0;
+
+    // Force a transaction done interrupt; next call to 'spi_device_queue_trans' will work
+    host->hw->slave.trans_inten=1;
+    host->hw->slave.trans_done=1;
+
+    // host->hw->slave.sync_reset=1;
+    // host->hw->sram_cmd.rst_io=1;
+
+    // Disable user define command, it will be re-enabled by spi_intr later
+    host->hw->cmd.usr = 0;
 }
 
 esp_err_t spi_device_reset(spi_device_handle_t handle)
@@ -665,33 +688,15 @@ esp_err_t spi_device_reset(spi_device_handle_t handle)
     host->hw->dma_conf.out_data_burst_en=1;
 
     // if (host->dma_chan) spicommon_dmaworkaround_idle(host->dma_chan);
-    if (host->dma_chan)
-        spicommon_dmaworkaround_req_reset(host->dma_chan, spi_dmareset_cb, host);
+    if (host->dma_chan) {
+        if (spicommon_dmaworkaround_req_reset(host->dma_chan, spi_dmareset_done, host))
+            spi_dmareset_done(host);
+    }
+    else {
+        spi_dmareset_done(host);
+    }
 
-    while(spicommon_dmaworkaround_reset_in_progress()) vTaskDelay(5/portTICK_RATE_MS);
-
-    // Reset timing
-    // host->hw->ctrl2.val=0;
-
-    // // Disable unneeded ints
-    // host->hw->slave.rd_buf_done=0;
-    // host->hw->slave.wr_buf_done=0;
-    // host->hw->slave.rd_sta_done=0;
-    // host->hw->slave.wr_sta_done=0;
-    // host->hw->slave.rd_buf_inten=0;
-    // host->hw->slave.wr_buf_inten=0;
-    // host->hw->slave.rd_sta_inten=0;
-    // host->hw->slave.wr_sta_inten=0;
-
-    // Force a transaction done interrupt; next call to 'spi_device_queue_trans' will work
-    host->hw->slave.trans_inten=1;
-    host->hw->slave.trans_done=1;
-
-    // host->hw->slave.sync_reset=1;
-    // host->hw->sram_cmd.rst_io=1;
-
-    // Disable user define command, it will be re-enabled by spi_intr later
-    host->hw->cmd.usr = 0;
+    // while(spicommon_dmaworkaround_reset_in_progress()) vTaskDelay(5/portTICK_RATE_MS);
 
     return ESP_OK;
 }
