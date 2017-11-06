@@ -149,6 +149,7 @@ void _debugDisplay()
 #define DEBUG_FLAG_NULL                         0
 #define DEBUG_FLAG_RESET_DISPLAY                1
 #define DEBUG_FLAG_TRY_TRIGGER_DISPLAY_BUG      2
+#define DEBUG_FLAG_ASSERTION_FAIL               3
 uint8_t _debugFlag = DEBUG_FLAG_NULL;
 
 #ifdef DEBUG_PN
@@ -192,6 +193,7 @@ static void display_guard_task(void *pvParams = NULL)
       APP_LOGC("[display_guard_task]", "debug flag set to %d", _debugFlag);
       if (_debugFlag == DEBUG_FLAG_TRY_TRIGGER_DISPLAY_BUG) _debugDisplay();
       else if (_debugFlag == DEBUG_FLAG_RESET_DISPLAY) _resetDisplay();
+      else if (_debugFlag == DEBUG_FLAG_ASSERTION_FAIL) assert(false);
       _debugFlag = DEBUG_FLAG_NULL;
     }
 #endif
