@@ -621,6 +621,11 @@ esp_err_t spi_device_transmit(spi_device_handle_t handle, spi_transaction_t *tra
     return ESP_OK;
 }
 
+static void IRAM_ATTR spi_dmareset_cb(void *arg)
+{
+    // do nothing
+}
+
 esp_err_t spi_device_reset(spi_device_handle_t handle)
 {
     SPI_CHECK(handle!=NULL, "invalid dev handle", ESP_ERR_INVALID_ARG);
@@ -661,7 +666,7 @@ esp_err_t spi_device_reset(spi_device_handle_t handle)
 
     // if (host->dma_chan) spicommon_dmaworkaround_idle(host->dma_chan);
     if (host->dma_chan)
-        spicommon_dmaworkaround_req_reset(host->dma_chan, spi_slave_restart_after_dmareset, host);
+        spicommon_dmaworkaround_req_reset(host->dma_chan, spi_dmareset_cb, host);
 
     while(spicommon_dmaworkaround_reset_in_progress()) vTaskDelay(5/portTICK_RATE_MS);
 
