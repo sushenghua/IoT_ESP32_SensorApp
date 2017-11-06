@@ -625,8 +625,10 @@ esp_err_t spi_device_reset(spi_device_handle_t handle)
 {
     SPI_CHECK(handle!=NULL, "invalid dev handle", ESP_ERR_INVALID_ARG);
 
+    spi_host_t *host = handle->host;
+
     // disable intr to prevent futher call to spi_intr
-    esp_intr_disable(handle->host->intr);
+    esp_intr_disable(host->intr);
 
     // wait untill spi_intr done
     while (_spiIntrInProgress) vTaskDelay(5/portTICK_RATE_MS);
@@ -651,33 +653,40 @@ esp_err_t spi_device_reset(spi_device_handle_t handle)
 
     // --- following code may not needed
     // reset DMA
-    handle->host->hw->dma_conf.val |= SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST;
-    handle->host->hw->dma_out_link.start=0;
-    handle->host->hw->dma_in_link.start=0;
-    handle->host->hw->dma_conf.val &= ~(SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST);
-    handle->host->hw->dma_conf.out_data_burst_en=1;
+    host->hw->dma_conf.val |= SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST;
+    host->hw->dma_out_link.start=0;
+    host->hw->dma_in_link.start=0;
+    host->hw->dma_conf.val &= ~(SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST);
+    host->hw->dma_conf.out_data_burst_en=1;
+
+    // if (host->dma_chan) spicommon_dmaworkaround_idle(host->dma_chan);
+    if (host->dma_chan)
+        spicommon_dmaworkaround_req_reset(host->dma_chan, spi_slave_restart_after_dmareset, host);
+
+    while(spicommon_dmaworkaround_reset_in_progress()) vTaskDelay(5/portTICK_RATE_MS);
 
     // Reset timing
-    // handle->host->hw->ctrl2.val=0;
+    // host->hw->ctrl2.val=0;
 
     // // Disable unneeded ints
-    // handle->host->hw->slave.rd_buf_done=0;
-    // handle->host->hw->slave.wr_buf_done=0;
-    // handle->host->hw->slave.rd_sta_done=0;
-    // handle->host->hw->slave.wr_sta_done=0;
-    // handle->host->hw->slave.rd_buf_inten=0;
-    // handle->host->hw->slave.wr_buf_inten=0;
-    // handle->host->hw->slave.rd_sta_inten=0;
-    // handle->host->hw->slave.wr_sta_inten=0;
+    // host->hw->slave.rd_buf_done=0;
+    // host->hw->slave.wr_buf_done=0;
+    // host->hw->slave.rd_sta_done=0;
+    // host->hw->slave.wr_sta_done=0;
+    // host->hw->slave.rd_buf_inten=0;
+    // host->hw->slave.wr_buf_inten=0;
+    // host->hw->slave.rd_sta_inten=0;
+    // host->hw->slave.wr_sta_inten=0;
 
     // Force a transaction done interrupt; next call to 'spi_device_queue_trans' will work
-    handle->host->hw->slave.trans_inten=1;
-    handle->host->hw->slave.trans_done=1;
-    handle->host->hw->slave.sync_reset=1;
-    handle->host->hw->sram_cmd.rst_io=1;
+    host->hw->slave.trans_inten=1;
+    host->hw->slave.trans_done=1;
+
+    // host->hw->slave.sync_reset=1;
+    // host->hw->sram_cmd.rst_io=1;
 
     // Disable user define command, it will be re-enabled by spi_intr later
-    handle->host->hw->cmd.usr = 0;
+    host->hw->cmd.usr = 0;
 
     return ESP_OK;
 }
@@ -687,8 +696,10 @@ esp_err_t spi_device_try_to_block(spi_device_handle_t handle, spi_transaction_t 
     BaseType_t r;
     SPI_CHECK(handle!=NULL, "invalid dev handle", ESP_ERR_INVALID_ARG);
 
+    spi_host_t *host = handle->host;
+
     // disable intr to prevent futher call to spi_intr
-    esp_intr_disable(handle->host->intr);
+    esp_intr_disable(host->intr);
 
     while (_spiIntrInProgress) vTaskDelay(5/portTICK_RATE_MS);
 
@@ -701,18 +712,18 @@ esp_err_t spi_device_try_to_block(spi_device_handle_t handle, spi_transaction_t 
         // ESP_LOGW("spi_device_reset", "xQueueReceive trans queue return %d", r);
     }
 
-    handle->host->hw->dma_conf.val |= SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST;
-    handle->host->hw->dma_out_link.start=0;
-    handle->host->hw->dma_in_link.start=0;
-    handle->host->hw->dma_conf.val &= ~(SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST);
-    handle->host->hw->dma_conf.out_data_burst_en=1;
+    host->hw->dma_conf.val |= SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST;
+    host->hw->dma_out_link.start=0;
+    host->hw->dma_in_link.start=0;
+    host->hw->dma_conf.val &= ~(SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST);
+    host->hw->dma_conf.out_data_burst_en=1;
     //Reset timing
-    handle->host->hw->ctrl2.val=0;
+    host->hw->ctrl2.val=0;
 
-    handle->host->hw->slave.trans_inten=1;
-    handle->host->hw->slave.trans_done=1;
+    host->hw->slave.trans_inten=1;
+    host->hw->slave.trans_done=1;
 
-    handle->host->hw->cmd.usr = 0;
+    host->hw->cmd.usr = 0;
 
     return ESP_OK;
 }
