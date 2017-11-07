@@ -42,6 +42,17 @@ struct SysConfig2 {
   char        devName[DEV_NAME_MAX_LEN+1];
 };
 
+struct SysResetRestore {
+  uint32_t    deepSleepResetCount;
+  uint32_t    lAlertReactiveCounter;
+  uint32_t    gAlertReactiveCounter;
+  void init() {
+    deepSleepResetCount = 0;
+    lAlertReactiveCounter = 0;
+    gAlertReactiveCounter = 0;
+  }
+};
+
 // ------ mobile os
 enum MobileOS {
   iOS       = 0,
@@ -179,6 +190,8 @@ public:
   void setDevCapability(uint32_t cap);
   void setDeviceName(const char* name, size_t len = 0);
 
+  SysResetRestore * resetRestoreData();
+
   bool alertPnEnabled();
   bool alertSoundEnabled();
   Alerts * alerts();
@@ -194,6 +207,7 @@ public:
   void resetAlertReactiveCounter();
 
   void setDebugFlag(uint8_t flag);
+  void deepSleepReset();
   void setRestartRequest();
   void restart();
   bool restarting();
@@ -220,6 +234,8 @@ private:
   bool _saveConfig1();
   bool _loadConfig2();
   bool _saveConfig2();
+  bool _loadResetRestore();
+  bool _saveResetRestore();
   bool _loadAlerts();
   bool _saveAlerts();
   bool _loadMobileTokens();
@@ -227,19 +243,22 @@ private:
   void _saveMemoryData();
   void _updateConfig1(bool saveImmediately = false);
   void _updateConfig2(bool saveImmediately = false);
+  void _updateResetRestore(bool saveImmediately = false);
   void _updateAlerts(bool saveImmedidately = false);
   void _updateMobileTokens(bool saveImmedidately = false);
 
 private:
-  State        _state;
-  bool         _config1NeedToSave;
-  bool         _config2NeedToSave;
-  bool         _alertsNeedToSave;
-  bool         _tokensNeedToSave;
-  SysConfig1   _config1;
-  SysConfig2   _config2;
-  Alerts       _alerts;
-  MobileTokens _mobileTokens;
+  State             _state;
+  bool              _config1NeedToSave;
+  bool              _config2NeedToSave;
+  bool              _resetRestoreNeedToSave;
+  bool              _alertsNeedToSave;
+  bool              _tokensNeedToSave;
+  SysConfig1        _config1;
+  SysConfig2        _config2;
+  SysResetRestore   _resetRestore;
+  Alerts            _alerts;
+  MobileTokens      _mobileTokens;
 };
 
 #endif // _SYSTEM_H_

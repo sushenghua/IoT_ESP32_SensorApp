@@ -100,6 +100,11 @@ esp_deep_sleep_wakeup_cause_t getWakeupCause()
   return _wakeupCause;
 }
 
+bool isDeepSleepReset()
+{
+  return getWakeupCause() == ESP_DEEP_SLEEP_WAKEUP_TIMER;
+}
+
 // #include "ST7789V.h"
 // ST7789V dev;// static ILI9341 dev;
 #include "ILI9341.h"
@@ -116,8 +121,8 @@ uint16_t _displayDaemonInactiveTicks = 0;
 
 void display_task(void *p)
 {
-  if (getWakeupCause() == ESP_DEEP_SLEEP_WAKEUP_TIMER) {
-    APP_LOGC("[display_task]", "timer wakeup reset");
+  if (isDeepSleepReset()) {
+    APP_LOGC("[display_task]", "deep sleep timer wakeup reset");
   }
 
   dc.init();
@@ -197,8 +202,7 @@ static void display_guard_task(void *pvParams = NULL)
       }
       else {
         APP_LOGE("[display_guard_task]", "error handling ... restart");
-        // System::instance()->restart();
-        esp_deep_sleep(100000);
+        System::instance()->deepSleepReset();
       }
       ++_displayErrHandleWaitTicks;
     }
@@ -510,11 +514,19 @@ uint32_t _alertReactiveCount;
 uint32_t _lAlertReactiveCounter;
 uint32_t _gAlertReactiveCounter;
 
-void _resetAlertReactiveCounter()
+void _resetAlertReactiveCounter(bool deepSleepReset = false)
 {
   _alertReactiveCount = System::instance()->alerts()->reactiveTimeCount;
-  _lAlertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FOR_BOOT;
-  _gAlertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FOR_BOOT;
+
+  if (deepSleepReset) {
+    SysResetRestore *restoreData = System::instance()->resetRestoreData();
+    _lAlertReactiveCounter = restoreData->lAlertReactiveCounter;
+    _gAlertReactiveCounter = restoreData->gAlertReactiveCounter;
+  }
+  else {
+    _lAlertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FOR_BOOT;
+    _gAlertReactiveCounter = _alertReactiveCount - REACTIVE_COUNT_FOR_BOOT;
+  }
 }
 
 #define NPS_TOPIC           "api/nps"
@@ -607,7 +619,7 @@ static void mqtt_task(void *pvParams)
   cmdEngine.init();
   cmdEngine.enableUpdate();
 
-  _resetAlertReactiveCounter();
+  _resetAlertReactiveCounter(isDeepSleepReset());
   _alertStringBuf = SharedBuffer::msgBuffer();
 
   while (true) {
@@ -776,10 +788,12 @@ System::System()
 : _state(Uninitialized)
 , _config1NeedToSave(false)
 , _config2NeedToSave(false)
+, _resetRestoreNeedToSave(false)
 , _alertsNeedToSave(false)
 , _tokensNeedToSave(false)
 {
   _setDefaultConfig();
+  _resetRestore.init();
   _alerts.init();
   _mobileTokens.init();
 }
@@ -807,6 +821,7 @@ void System::init()
   _initMacADDR();
   _loadConfig1();
   _loadConfig2();
+  _loadResetRestore();
   _loadAlerts();
   _loadMobileTokens();
   _launchTasks();
@@ -986,6 +1001,7 @@ void System::markPowerEvent()
 
 #define SYSTEM_CONFIG1_TAG                "appConf1"
 #define SYSTEM_CONFIG2_TAG                "appConf2"
+#define SYSTEM_RESET_RESTORE_TAG          "appResetRestore"
 #define ALERT_TAG                         "appAlerts"
 #define TOKEN_TAG                         "appTokens"
 
@@ -1010,6 +1026,18 @@ bool System::_saveConfig2()
 {
   bool succeeded = NvsFlash::saveData(SYSTEM_CONFIG2_TAG, &_config2, sizeof(_config2));
   _config2NeedToSave = false; // ? or _config2NeedToSave = !succeeded;
+  return succeeded;
+}
+
+bool System::_loadResetRestore()
+{
+  return NvsFlash::loadData(SYSTEM_RESET_RESTORE_TAG, &_resetRestore, sizeof(_resetRestore));
+}
+
+bool System::_saveResetRestore()
+{
+  bool succeeded = NvsFlash::saveData(SYSTEM_RESET_RESTORE_TAG, &_resetRestore, sizeof(_resetRestore));
+  _resetRestoreNeedToSave = false;
   return succeeded;
 }
 
@@ -1040,10 +1068,11 @@ bool System::_saveMobileTokens()
 void System::_saveMemoryData()
 {
   // save those need to save ...
-  if (_config1NeedToSave) _saveConfig1();
-  if (_config2NeedToSave) _saveConfig2();
-  if (_alertsNeedToSave)  _saveAlerts();
-  if (_tokensNeedToSave)  _saveMobileTokens();
+  if (_config1NeedToSave)      _saveConfig1();
+  if (_config2NeedToSave)      _saveConfig2();
+  if (_resetRestoreNeedToSave) _saveResetRestore();
+  if (_alertsNeedToSave)       _saveAlerts();
+  if (_tokensNeedToSave)       _saveMobileTokens();
 }
 
 void System::_updateConfig1(bool saveImmedidately)
@@ -1060,6 +1089,14 @@ void System::_updateConfig2(bool saveImmedidately)
     _saveConfig2();
   else
     _config2NeedToSave = true; // save when reboot or power off
+}
+
+void System::_updateResetRestore(bool saveImmedidately)
+{
+  if (saveImmedidately)
+    _saveResetRestore();
+  else
+    _resetRestoreNeedToSave = true; // save when reboot or power off
 }
 
 void System::_updateAlerts(bool saveImmedidately)
@@ -1156,6 +1193,11 @@ void System::setDeviceName(const char* name, size_t len)
     strncpy(_config2.devName, name, DEV_NAME_MAX_LEN);
   }
   _updateConfig2(); // _saveConfig2();
+}
+
+SysResetRestore * System::resetRestoreData()
+{
+  return &_resetRestore;
 }
 
 bool System::alertPnEnabled()
@@ -1288,6 +1330,24 @@ bool System::flashEncryptionEnabled()
 void System::setDebugFlag(uint8_t flag)
 {
   _debugFlag = flag;
+}
+
+void System::deepSleepReset()
+{
+  // save alert reactive counter for later restore
+  _resetRestore.deepSleepResetCount++;
+  _resetRestore.lAlertReactiveCounter = _lAlertReactiveCounter;
+  _resetRestore.gAlertReactiveCounter = _gAlertReactiveCounter;
+  _updateResetRestore();
+
+  // save memory data
+  _saveMemoryData();
+
+  // stop those need to stop ...
+  pausePeripherals("prepare to deep sleep reset ...");
+
+  _state = Restarting;
+  esp_deep_sleep(50000);
 }
 
 void System::setRestartRequest()
