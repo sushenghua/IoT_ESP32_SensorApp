@@ -625,6 +625,14 @@ static void IRAM_ATTR spi_dmareset_done(void *arg)
 {
     spi_host_t *host = (spi_host_t *)arg;
 
+    // reset DMA
+    host->hw->dma_conf.val |= SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST;
+    host->hw->dma_out_link.start=0;
+    host->hw->dma_in_link.start=0;
+    host->hw->dma_conf.val &= ~(SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST);
+    host->hw->dma_conf.out_data_burst_en=1;
+
+    // --- following code may not needed
     // Reset timing
     // host->hw->ctrl2.val=0;
 
@@ -678,14 +686,6 @@ esp_err_t spi_device_reset(spi_device_handle_t handle)
     ESP_LOGW("spi_device_reset", "xQueueReset trans queue return %d", r);
     r = xQueueReset(handle->ret_queue);
     ESP_LOGW("spi_device_reset", "xQueueReset ret queue return %d", r);
-
-    // --- following code may not needed
-    // reset DMA
-    host->hw->dma_conf.val |= SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST;
-    host->hw->dma_out_link.start=0;
-    host->hw->dma_in_link.start=0;
-    host->hw->dma_conf.val &= ~(SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST);
-    host->hw->dma_conf.out_data_burst_en=1;
 
     // if (host->dma_chan) spicommon_dmaworkaround_idle(host->dma_chan);
     if (host->dma_chan) {
