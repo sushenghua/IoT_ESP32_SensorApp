@@ -139,7 +139,7 @@ void ILI9341::reset()
   _spiChannel.reset();
   _spiChannel.setDisabled(false);
 
-  // _initIli9341WithCmd();
+  _initIli9341WithCmd();
 
   // SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
   // bus->removeChannel(_spiChannel);
