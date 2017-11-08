@@ -218,7 +218,7 @@ esp_err_t spi_device_transmit(spi_device_handle_t handle, spi_transaction_t *tra
  *
  * @param handle Device handle obtained using spi_host_add_dev
  *
- * @return 
+ * @return
  *         - ESP_ERR_INVALID_ARG   if parameter is invalid
  *         - ESP_OK                on success
  */

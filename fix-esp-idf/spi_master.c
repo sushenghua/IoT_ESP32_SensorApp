@@ -626,11 +626,11 @@ static void IRAM_ATTR spi_dmareset_done(void *arg)
     spi_host_t *host = (spi_host_t *)arg;
 
     // reset DMA
-    host->hw->dma_conf.val |= SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST;
-    host->hw->dma_out_link.start=0;
-    host->hw->dma_in_link.start=0;
-    host->hw->dma_conf.val &= ~(SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST);
-    host->hw->dma_conf.out_data_burst_en=1;
+    // host->hw->dma_conf.val |= SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST;
+    // host->hw->dma_out_link.start=0;
+    // host->hw->dma_in_link.start=0;
+    // host->hw->dma_conf.val &= ~(SPI_OUT_RST|SPI_IN_RST|SPI_AHBM_RST|SPI_AHBM_FIFO_RST);
+    // host->hw->dma_conf.out_data_burst_en=1;
 
     // --- following code may not needed
     // Reset timing
