@@ -53,6 +53,15 @@ struct SysResetRestore {
   }
 };
 
+struct Bias {
+  bool     mbTempNeedCalibrate;
+  float    mbTempBias;
+  void init() {
+    mbTempNeedCalibrate = false;
+    mbTempBias = 0;
+  }
+};
+
 // ------ mobile os
 enum MobileOS {
   iOS       = 0,
@@ -192,6 +201,9 @@ public:
 
   SysResetRestore * resetRestoreData();
 
+  Bias * bias() { return &_bias; }
+  void setMbTempCalibration(bool need, float tempBias=0);
+
   bool alertPnEnabled();
   bool alertSoundEnabled();
   Alerts * alerts();
@@ -236,6 +248,8 @@ private:
   bool _saveConfig2();
   bool _loadResetRestore();
   bool _saveResetRestore();
+  bool _loadBias();
+  bool _saveBias();
   bool _loadAlerts();
   bool _saveAlerts();
   bool _loadMobileTokens();
@@ -244,6 +258,7 @@ private:
   void _updateConfig1(bool saveImmediately = false);
   void _updateConfig2(bool saveImmediately = false);
   void _updateResetRestore(bool saveImmediately = false);
+  void _updateBias(bool saveImmediately = false);
   void _updateAlerts(bool saveImmedidately = false);
   void _updateMobileTokens(bool saveImmedidately = false);
 
@@ -252,11 +267,13 @@ private:
   bool              _config1NeedToSave;
   bool              _config2NeedToSave;
   bool              _resetRestoreNeedToSave;
+  bool              _biasNeedToSave;
   bool              _alertsNeedToSave;
   bool              _tokensNeedToSave;
   SysConfig1        _config1;
   SysConfig2        _config2;
   SysResetRestore   _resetRestore;
+  Bias              _bias;
   Alerts            _alerts;
   MobileTokens      _mobileTokens;
 };

@@ -236,6 +236,7 @@ uint8_t _timeWifiUpdateCount = 0;
 
 PowerManager powerManager;
 bool _hasPwrEvent = true;
+PowerManager::ChargeStatus _chargeStatus = PowerManager::NotCharging;
 
 TaskState _statusTaskState = TaskEmpty;
 void status_check_task(void *p)
@@ -267,8 +268,8 @@ void status_check_task(void *p)
       }
       // battery charge check
       if (_hasPwrEvent) {
-        PowerManager::ChargeStatus chargeStatus = powerManager.chargeStatus();
-        dc.setBatteryCharge(chargeStatus == PowerManager::PreCharge || chargeStatus == PowerManager::FastCharge); 
+        _chargeStatus = powerManager.chargeStatus();
+        dc.setBatteryCharge(_chargeStatus == PowerManager::PreCharge || _chargeStatus == PowerManager::FastCharge); 
         _hasPwrEvent = false;
       }
     }
@@ -328,11 +329,11 @@ void checkAlert(SensorDataType type, float value)
   }
 }
 
+SHT3xSensor sht3xSensor;
 TaskHandle_t sht3xSensorTaskHandle;
 TaskState _sht3xSensorTaskState = TaskEmpty;
 void sht3x_sensor_task(void *p)
 {
-  SHT3xSensor sht3xSensor;
   sht3xSensor.init();
   sht3xSensor.setDisplayDelegate(&dc);
   SensorDataPacker::sharedInstance()->setTempHumidSensor(&sht3xSensor);
@@ -434,7 +435,8 @@ void orientation_sensor_task(void *p)
       orientationSensor.sampleData();
       if (_oriSensorTempReadCount++ == ORI_SENSOR_TEMP_READ_COUNT) {
         _oriSensorTemperature = orientationSensor.readTemperature();
-        // APP_LOGC("[orientation_sensor_task]", "temp: %.2f", _oriSensorTemperature);
+        sht3xSensor.setMainboardTemperature(_oriSensorTemperature,
+          _chargeStatus == PowerManager::PreCharge || _chargeStatus == PowerManager::FastCharge);
         _oriSensorTempReadCount = 0;
       }
     }
@@ -789,11 +791,13 @@ System::System()
 , _config1NeedToSave(false)
 , _config2NeedToSave(false)
 , _resetRestoreNeedToSave(false)
+, _biasNeedToSave(false)
 , _alertsNeedToSave(false)
 , _tokensNeedToSave(false)
 {
   _setDefaultConfig();
   _resetRestore.init();
+  _bias.init();
   _alerts.init();
   _mobileTokens.init();
 }
@@ -822,6 +826,7 @@ void System::init()
   _loadConfig1();
   _loadConfig2();
   _loadResetRestore();
+  _loadBias();
   _loadAlerts();
   _loadMobileTokens();
   _launchTasks();
@@ -1002,6 +1007,7 @@ void System::markPowerEvent()
 #define SYSTEM_CONFIG1_TAG                "appConf1"
 #define SYSTEM_CONFIG2_TAG                "appConf2"
 #define SYSTEM_RESET_RESTORE_TAG          "appResetRestore"
+#define SYSTEM_BIAS_TAG                   "appBias"
 #define ALERT_TAG                         "appAlerts"
 #define TOKEN_TAG                         "appTokens"
 
@@ -1041,6 +1047,18 @@ bool System::_saveResetRestore()
   return succeeded;
 }
 
+bool System::_loadBias()
+{
+  return NvsFlash::loadData(SYSTEM_BIAS_TAG, &_bias, sizeof(_bias));
+}
+
+bool System::_saveBias()
+{
+  bool succeeded = NvsFlash::saveData(SYSTEM_BIAS_TAG, &_bias, sizeof(_bias));
+  _biasNeedToSave = false;
+  return succeeded;
+}
+
 bool System::_loadAlerts()
 {
   return NvsFlash::loadData(ALERT_TAG, &_alerts, sizeof(_alerts));
@@ -1071,6 +1089,7 @@ void System::_saveMemoryData()
   if (_config1NeedToSave)      _saveConfig1();
   if (_config2NeedToSave)      _saveConfig2();
   if (_resetRestoreNeedToSave) _saveResetRestore();
+  if (_biasNeedToSave)         _saveBias();
   if (_alertsNeedToSave)       _saveAlerts();
   if (_tokensNeedToSave)       _saveMobileTokens();
 }
@@ -1097,6 +1116,14 @@ void System::_updateResetRestore(bool saveImmedidately)
     _saveResetRestore();
   else
     _resetRestoreNeedToSave = true; // save when reboot or power off
+}
+
+void System::_updateBias(bool saveImmedidately)
+{
+  if (saveImmedidately)
+    _saveBias();
+  else
+    _biasNeedToSave = true; // save when reboot or power off
 }
 
 void System::_updateAlerts(bool saveImmedidately)
@@ -1198,6 +1225,13 @@ void System::setDeviceName(const char* name, size_t len)
 SysResetRestore * System::resetRestoreData()
 {
   return &_resetRestore;
+}
+
+void System::setMbTempCalibration(bool need, float tempBias)
+{
+  _bias.mbTempNeedCalibrate = need;
+  _bias.mbTempBias = tempBias;
+  _updateBias(true);
 }
 
 bool System::alertPnEnabled()

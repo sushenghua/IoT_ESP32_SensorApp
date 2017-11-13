@@ -22,11 +22,17 @@ public:
   void init(bool checkDeviceReady=true);
   void setDisplayDelegate(SensorDisplayController *dc) { _dc = dc; }
 
+  void setMainboardTemperature(float mainboardTemp, bool charge);
+
   // cached values
   TempHumidData & tempHumidData() { return _tempHumidData; }
 
   // sample
   void sampleData();
+
+protected:
+  void _discrete(float temp);
+  bool _calibrateTemperature(float &temperature);
 
 protected:
   // value cache from sensor

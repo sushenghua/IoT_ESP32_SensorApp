@@ -38,17 +38,20 @@ static void IRAM_ATTR gpioIsrHandler(void* arg)
 #define PWR_TOGGLE_OFF_LOW_COUNT          200  // 2 second
 #define PWR_TOGGLE_DISPLAY_LOW_COUNT      50   // 0.5 second
 
-#define USER_TOGGLE_DISPLAY_LOW_COUNT      50   // 0.5 second
+#define USER_TOGGLE_DISPLAY_LOW_COUNT     50   // 0.5 second
 #define USER_TOGGLE_WIFI_ON_LOW_COUNT     200  // 2 second
 #define USER_TOGGLE_WIFI_MODE_LOW_COUNT   400  // 4 sencod
 
-#define GPIO_CHECK_TASK_PAUSE_DELAY       400       
+#define GPIO_CHECK_TASK_PAUSE_DELAY       400
+
+#define USER_PRESS_COUNT_FOR_CALIBRATE_MB_TEMP  2
 
 int      _pwrGpioLvl = 1;  // pull up externally
 int      _usrGpioLvl = 1;
 
 uint16_t _pwrLowDurationCount = 0;
 uint16_t _usrLowDurationCount = 0;
+uint16_t _usrPressCount = 0;
 
 bool _gpio_check_task_paused = false;
 bool _synced_gpio_check_task_paused = false;
@@ -103,6 +106,7 @@ static void gpio_check_task(void* args)
               }
             }
             else {          // pressed
+              ++_usrPressCount;
               // APP_LOGC("[BTN]", "usr pressed");
               _usrLowDurationCount = 0;
             }
@@ -126,8 +130,14 @@ static void gpio_check_task(void* args)
       }
       if (_pwrGpioLvl == 0) {
       	++_pwrLowDurationCount;
-      	if (_pwrLowDurationCount >= PWR_TOGGLE_OFF_LOW_COUNT)
+      	if (_pwrLowDurationCount >= PWR_TOGGLE_OFF_LOW_COUNT) {
+          if (_usrPressCount == USER_PRESS_COUNT_FOR_CALIBRATE_MB_TEMP && _usrGpioLvl == 0) {
+            sys->setMbTempCalibration(true);
+            sys->turnAlertSoundOn(true);
+            vTaskDelay(1000 / portTICK_RATE_MS);
+          }
           sys->powerOff();
+        }
       }
     }
   }

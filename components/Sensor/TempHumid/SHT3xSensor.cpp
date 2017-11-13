@@ -10,6 +10,7 @@
 #include "I2c.h"
 #include "Semaphore.h"
 #include "I2cPeripherals.h"
+#include "System.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // SHT3X Temperature Humidity sensor I2C
@@ -144,11 +145,14 @@ bool sht3xReadStatus(uint16_t &status)
 /////////////////////////////////////////////////////////////////////////////////////////
 // SHT3xSensor class
 /////////////////////////////////////////////////////////////////////////////////////////
-
+bool _needCalibrateMbTemp = false;
+float _mainBoardTempBias = 0;
 SHT3xSensor::SHT3xSensor()
 : _dc(NULL)
 {
   _tempHumidData.clear();
+  _needCalibrateMbTemp = System::instance()->bias()->mbTempNeedCalibrate;
+  _mainBoardTempBias = System::instance()->bias()->mbTempBias;
 }
 
 #define  SHT3X_TRY_INIT_DELAY             100
@@ -177,6 +181,74 @@ void SHT3xSensor::init(bool checkDeviceReady)
   sht3xReset();
 }
 
+#define UNDEFINED_TEMPERATURE             1000
+
+#define TEMP_CALIBRATION_OFFSET           4
+#define TEMP_CALIBRATION_DELTA_BASE1      3
+#define TEMP_CALIBRATION_DELTA_BASE2      8.2
+const float factor1 = TEMP_CALIBRATION_OFFSET / (8.2 - 1);
+const float factor2 = 0.698;
+
+bool  _hasChargeHeat = false;
+
+float _mainBoardTemp = UNDEFINED_TEMPERATURE;
+float _mainBoardTempDiscreted = 0;
+float _mainBoardTempDiscretedDelta = 0;
+
+float _sensorRawTemp = UNDEFINED_TEMPERATURE;
+float _sensorRawTempDiscreted = 0;
+float _sensorRawTempDiscretedDelta = 0;
+
+bool SHT3xSensor::_calibrateTemperature(float &temperature)
+{
+  float offset = 0;
+  if (_mainBoardTemp == UNDEFINED_TEMPERATURE) {
+    // offset = TEMP_CALIBRATION_OFFSET;
+    return false;
+  }
+  else {
+    float delta = _mainBoardTemp - temperature;
+    if (delta > TEMP_CALIBRATION_DELTA_BASE2) {
+      if (_hasChargeHeat)
+        offset = TEMP_CALIBRATION_OFFSET + factor2 * (delta - TEMP_CALIBRATION_DELTA_BASE2);
+      else
+        offset = TEMP_CALIBRATION_OFFSET;
+    }
+    else if (delta > TEMP_CALIBRATION_DELTA_BASE1) { // 
+      offset = factor1 * (delta - TEMP_CALIBRATION_DELTA_BASE1);
+    }
+    else {
+      offset = 0;
+    }
+  }
+  temperature -= offset;
+  return true;
+}
+
+void SHT3xSensor::_discrete(float temp)
+{
+  _sensorRawTemp = temp;
+  if (abs(_sensorRawTemp - _sensorRawTempDiscreted) > 0.1) {
+    _sensorRawTempDiscretedDelta = _sensorRawTemp - _sensorRawTempDiscreted;
+    _sensorRawTempDiscreted = _sensorRawTemp;
+  }
+  if (abs(_mainBoardTemp - _mainBoardTempDiscreted) > 0.5) {
+    _mainBoardTempDiscretedDelta = _mainBoardTemp - _mainBoardTempDiscreted;
+    _sensorRawTempDiscreted = _mainBoardTemp;
+  }
+}
+
+void SHT3xSensor::setMainboardTemperature(float mainboardTemp, bool charge)
+{
+  if (_needCalibrateMbTemp && _sensorRawTemp != UNDEFINED_TEMPERATURE) {
+    _mainBoardTempBias = mainboardTemp - _sensorRawTemp;
+    System::instance()->setMbTempCalibration(false, _mainBoardTempBias);
+    APP_LOGC("[SHT3X]", "set MB temp bias: %.2f", _mainBoardTempBias);
+  }
+  _mainBoardTemp = mainboardTemp - _mainBoardTempBias;
+  _hasChargeHeat = charge;
+}
+
 void SHT3xSensor::sampleData()
 {
   // other tasks has reset the i2c peripherals power
@@ -186,8 +258,17 @@ void SHT3xSensor::sampleData()
   }
 
   if ( sht3xReadTempHumid(_tempHumidData.temp, _tempHumidData.humid) ) {
-    _tempHumidData.calculateLevel();
-    if (_dc) _dc->setTempHumidData(&_tempHumidData, true);
+
+    _discrete(_tempHumidData.temp);
+
+    if (_calibrateTemperature(_tempHumidData.temp)) {
+      _tempHumidData.calculateLevel();
+      if (_dc) _dc->setTempHumidData(&_tempHumidData, true);
+    }
+
+    APP_LOGC("[SHT3xSensor]", "mb temp: %.2f, sht3x temp: %0.2f, cali temp: %0.2f",
+              _mainBoardTemp, _sensorRawTemp, _tempHumidData.temp);
+
 #ifdef DEBUG_APP_OK
     APP_LOGC("[SHT3X]", "--->temp: %2.2f  humid: %2.2f", _tempHumidData.temp, _tempHumidData.humid);
 #endif
