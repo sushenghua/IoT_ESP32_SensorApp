@@ -177,8 +177,8 @@ float HS::TEMP_TABLE[] = {
 // table of level color
 static uint16_t TEMPLEVELCOLOR[] = {
         0x07FF,     // deep cold
-        0x04DF,     // icy cold
-        0x01BF,     // cold
+        0x067F,     // icy cold
+        0x04DF,     // cold
         0x07E0,     // comfortable
         0xFBE0,     // hot
         0xF800,     // very hot
