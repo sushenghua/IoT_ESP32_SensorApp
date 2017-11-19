@@ -19,6 +19,7 @@ SensorDisplayController::SensorDisplayController(DisplayGFX *dev)
 , _dynamicContentNeedUpdate(true)
 , _rotationNeedUpdate(false)
 , _devUpdateRotationInProgress(false)
+, _qrCodeType(QRCodeMax)
 , _mainItemCount(0)
 , _subItemCount(0)
 {}
@@ -43,6 +44,8 @@ void SensorDisplayController::init(int displayInitMode)
     _lastRotation = _rotation;
     _initDisplayItems();
     _layoutScreen();
+
+    setQRCodeType(QRCodeDevice);
 
     _inited = true;
   }
@@ -191,6 +194,7 @@ void SensorDisplayController::update()
       case DISPLAY_ROTATION_CW_180:
         break;
       case DISPLAY_ROTATION_CW_270:
+        _renderQRCodeScreen();
         break;
     }
     _dynamicContentNeedUpdate = false;
@@ -504,4 +508,86 @@ void SensorDisplayController::_renderDetailScreen()
     _renderDetailScreenItem(_displaySubItems[i]);
   }
   _staticContentNeedUpdate = false;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// QR code screen rendering
+/////////////////////////////////////////////////////////////////////////////////////////
+#include "qrcodegen.h"
+#include "SharedBuffer.h"
+
+uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
+uint8_t qrcode[qrcodegen_BUFFER_LEN_MAX];
+
+inline bool _genQRCode(const char *text)
+{
+  return qrcodegen_encodeText(text, tempBuffer, qrcode, qrcodegen_Ecc_LOW,
+                              qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX,
+                              qrcodegen_Mask_AUTO, true);
+}
+
+#define BORDER         1
+#define PIXEL_SCALE    4
+char *  _qrStr = NULL;
+
+
+void SensorDisplayController::_renderQRCodeScreen()
+{
+  if (_staticContentNeedUpdate) {
+
+    if (_genQRCode(_qrStr)) {
+
+      _dev->fillScreen(RGB565_BLACK);
+
+      int size = qrcodegen_getSize(qrcode);
+      uint16_t imgSize = (size + BORDER) * PIXEL_SCALE;
+      uint16_t xOffset = (_dev->width() - imgSize) / 2;
+      uint16_t yOffset =  _contentOffsetY + (_dev->height() - _contentOffsetY - imgSize) / 2;
+      for (int y = -BORDER; y < size + BORDER; y++) {
+        for (int x = -BORDER; x < size + BORDER; x++) {
+          uint16_t color = qrcodegen_getModule(qrcode, x, y) ? RGB565_BLACK : RGB565_WHITE;
+          _dev->fillRect(xOffset + x * PIXEL_SCALE, yOffset + y * PIXEL_SCALE, PIXEL_SCALE, PIXEL_SCALE, color);
+        }
+      }
+    }
+
+    _staticContentNeedUpdate = false;
+  }
+}
+
+void SensorDisplayController::setQRCodeType(QRCodeType type)
+{
+  if (_qrCodeType != type) {
+    _qrCodeType = type;
+
+    _qrStr = SharedBuffer::qrStrBuffer();
+
+    System *sys = System::instance();
+
+    switch(type) {
+      case QRCodeDevice:
+        sprintf(_qrStr, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"firmv\":\"%s\",\"model\":\"%s\",\"alcd\":%s,\"deploy\":\"%s\",\"devname\":\"%s\"}, \"cmd\":\"%s\"}",
+                sys->uid(),
+                sys->devCapability(),
+                sys->firmwareVersion(),
+                sys->model(),
+                sys->displayAutoAdjustOn()? "true" : "false",
+                deployModeStr(sys->deployMode()),
+                sys->deviceName(),
+                "GetDeviceInfo");
+        break;
+
+      case QRCodeIOS:
+        break;
+
+      case QRCodeAndroid:
+        break;
+
+      default:
+        break;
+    }
+
+    if (_dev->rotation() == DISPLAY_ROTATION_CW_270) _staticContentNeedUpdate = true;
+  }
 }

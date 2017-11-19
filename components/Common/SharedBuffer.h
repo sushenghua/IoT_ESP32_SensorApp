@@ -14,6 +14,7 @@ class SharedBuffer
 public:
   static char*     msgBuffer();
   static uint8_t * cmdBuffer();
+  static char*     qrStrBuffer();
 };
 
 #endif // _SHARED_BUFFER_H

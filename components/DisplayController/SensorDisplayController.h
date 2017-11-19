@@ -14,6 +14,13 @@
 #include "CO2Data.h"
 #include "SensorConfig.h"
 
+enum QRCodeType {
+  QRCodeDevice    = 0,
+  QRCodeIOS       = 1,
+  QRCodeAndroid   = 2,
+  QRCodeMax
+};
+
 class SensorDisplayController : public DisplayController
 {
 public:
@@ -31,6 +38,8 @@ public:
   void setCO2Data(const CO2Data *co2Data, bool update = true);
   void setScreenMessage(const char * msg);
 
+  void setQRCodeType(QRCodeType type);
+
 public:
   virtual void init(int displayInitMode=DISPLAY_INIT_ALL);
   virtual void tick();
@@ -47,6 +56,7 @@ public:
                                 const char *value, uint8_t lvl, uint16_t color);
   void _renderDetailScreen();
   void _renderDetailScreenItem(SensorDataType type);
+  void _renderQRCodeScreen();
 
 protected:
   // init
@@ -91,6 +101,9 @@ protected:
   uint16_t   _humidColor;
   float      _temp;
   float      _humid;
+
+  // qr code
+  QRCodeType _qrCodeType;
 
   // screen layout
   uint32_t       _devCap;
