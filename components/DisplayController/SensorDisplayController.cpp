@@ -400,50 +400,54 @@ void SensorDisplayController::_renderMainScreen()
 /////////////////////////////////////////////////////////////////////////////////////////
 // detail screen rendering
 /////////////////////////////////////////////////////////////////////////////////////////
-#define DETAIL_LINE_HEIGHT        20
-#define DETAIL_LINE_VALUE_OFFSET  150
+#define DETAIL_LINE_BASE_OFFSET_X   10
+#define DETAIL_LINE_BASE_OFFSET_Y   40
+#define DETAIL_LINE_HEIGHT          20
+#define DETAIL_LINE_VALUE_OFFSET    150
 uint8_t detailRowCount = 0;
 
 void SensorDisplayController::_renderDetailScreenItem(SensorDataType type)
 {
+  uint16_t offsetX = DETAIL_LINE_BASE_OFFSET_X;
+  uint16_t offsetY = _contentOffsetY + DETAIL_LINE_BASE_OFFSET_Y;
   if (_staticContentNeedUpdate) {
     _dev->setTextSize(2);
     _dev->setTextColor(RGB565_WEAKWHITE, RGB565_BLACK);
     switch (type) {
     case PM:
-      _dev->setCursor(0, _contentOffsetY + DETAIL_LINE_HEIGHT * detailRowCount);
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount);
       _dev->write("PM2.5(ug/m");
       _dev->setTextSize(1); _dev->write("3");
       _dev->setTextSize(2); _dev->write("):");
-      _dev->setCursor(0, _contentOffsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 1));
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 1));
       _dev->write("PM2.5 index:");  
-      _dev->setCursor(0, _contentOffsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 2));
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 2));
       _dev->write("PM10(ug/m");
       _dev->setTextSize(1); _dev->write("3");
       _dev->setTextSize(2); _dev->write("):");
-      _dev->setCursor(0, _contentOffsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 3));
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 3));
       _dev->write("PM10 index:");
       break;
 
     case HCHO:
-      _dev->setCursor(0, _contentOffsetY + DETAIL_LINE_HEIGHT * detailRowCount);
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount);
       _dev->write("HCHO(ug/m");
       _dev->setTextSize(1); _dev->write("3");
       _dev->setTextSize(2); _dev->write("):");
       break;
 
     case CO2:
-      _dev->setCursor(0, _contentOffsetY + DETAIL_LINE_HEIGHT * detailRowCount);
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount);
       _dev->write("CO2(ppm):");
       break;
 
     case TEMP:
-      _dev->setCursor(0, _contentOffsetY + DETAIL_LINE_HEIGHT * detailRowCount);
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount);
       _dev->write("Temp(C):");
       break;
 
     case HUMID:
-      _dev->setCursor(0, _contentOffsetY + DETAIL_LINE_HEIGHT * detailRowCount);
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount);
       _dev->write("Humid(%):");
       break;
 
@@ -451,18 +455,19 @@ void SensorDisplayController::_renderDetailScreenItem(SensorDataType type)
     }
   }
 
+  offsetX = DETAIL_LINE_BASE_OFFSET_X + DETAIL_LINE_VALUE_OFFSET;
   switch (type) {
     case PM:
       _dev->setTextColor(_pm2d5Color, RGB565_BLACK);
-      _dev->setCursor(DETAIL_LINE_VALUE_OFFSET, _contentOffsetY + DETAIL_LINE_HEIGHT * detailRowCount);
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount);
       sprintf(_valueStr, "%.1f", _pm2d5); _dev->write(_valueStr);
-      _dev->setCursor(DETAIL_LINE_VALUE_OFFSET, _contentOffsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 1));
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 1));
       sprintf(_valueStr, "%d    ", _aqiPm2d5US); _dev->write(_valueStr);
 
       _dev->setTextColor(_pm10Color, RGB565_BLACK);
-      _dev->setCursor(DETAIL_LINE_VALUE_OFFSET, _contentOffsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 2));
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 2));
       sprintf(_valueStr, "%.1f", _pm10); _dev->write(_valueStr);
-      _dev->setCursor(DETAIL_LINE_VALUE_OFFSET, _contentOffsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 3));
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 3));
       sprintf(_valueStr, "%d    ", _aqiPm10US); _dev->write(_valueStr);
 
       detailRowCount += 4;
@@ -470,25 +475,25 @@ void SensorDisplayController::_renderDetailScreenItem(SensorDataType type)
 
     case HCHO:
       _dev->setTextColor(_hchoColor, RGB565_BLACK);
-      _dev->setCursor(DETAIL_LINE_VALUE_OFFSET, _contentOffsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
       sprintf(_valueStr, "%.2f", _hcho); _dev->write(_valueStr);
       break;
 
     case CO2:
       _dev->setTextColor(_co2Color, RGB565_BLACK);
-      _dev->setCursor(DETAIL_LINE_VALUE_OFFSET, _contentOffsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
       sprintf(_valueStr, "%d ", (int)_co2); _dev->write(_valueStr);
       break;
 
     case TEMP:
       _dev->setTextColor(_tempColor, RGB565_BLACK);
-      _dev->setCursor(DETAIL_LINE_VALUE_OFFSET, _contentOffsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
       sprintf(_valueStr, "%.1f", _temp); _dev->write(_valueStr);
       break;
 
     case HUMID:
       _dev->setTextColor(_hchoColor, RGB565_BLACK);
-      _dev->setCursor(DETAIL_LINE_VALUE_OFFSET, _contentOffsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
       sprintf(_valueStr, "%.1f", _humid); _dev->write(_valueStr);
       break;
 
