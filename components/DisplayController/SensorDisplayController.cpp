@@ -537,9 +537,7 @@ void SensorDisplayController::_renderQRCodeScreen()
   if (_staticContentNeedUpdate) {
 
     if (_genQRCode(_qrStr)) {
-
-      _dev->fillScreen(RGB565_BLACK);
-
+      // _dev->fillScreen(RGB565_BLACK);
       int size = qrcodegen_getSize(qrcode);
       uint16_t imgSize = (size + BORDER) * PIXEL_SCALE;
       uint16_t xOffset = (_dev->width() - imgSize) / 2;
