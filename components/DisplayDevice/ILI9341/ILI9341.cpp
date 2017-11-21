@@ -137,20 +137,25 @@ void ILI9341::reset()
 {
   _spiChannel.setDisabled(true);
   _spiChannel.reset();
+  // _spiChannel.setDisabled(false);
+
+  // remove channel device and free bus
+  SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
+  bus->removeChannel(_spiChannel);
+  bus->deinit();
+
+  // spi bus init and add channel device
+  bus->init(PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK);
+  bus->addChannel(_spiChannel);
+
+  // re-enable spi channel device
   _spiChannel.setDisabled(false);
 
+  // init ili9341 device
+  // _fireResetSignal();
   _initIli9341WithCmd();
 
-  // SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
-  // bus->removeChannel(_spiChannel);
-  // bus->deinit();
-
-  // bus->init(PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK);
-  // bus->addChannel(_spiChannel);
-
-  // _fireResetSignal();
-  // _initIli9341WithCmd();
-
+  // soft reset ili9341
   // writeCommand(ILI9341_SWRESET);
   // delay(RESET_DELAY_TIME);
 }
