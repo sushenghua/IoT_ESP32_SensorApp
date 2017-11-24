@@ -49,7 +49,7 @@
 #define PIN_NUM_BCKL 5
 
 // #define ILI9341_CHANNEL_WAIT_TICKS  portMAX_DELAY
-#define ILI9341_CHANNEL_WAIT_TICKS  6000
+#define ILI9341_CHANNEL_WAIT_TICKS  (6000/portTICK_RATE_MS)
 #define ILI9341_CHANNEL_CLK_SPEED   10000000
 #define ILI9341_CHANNEL_QUEQUE_SIZE 1
 #define ILI9341_SPI_TRANS_MAX       1
@@ -139,14 +139,14 @@ void ILI9341::reset()
   _spiChannel.reset();
   // _spiChannel.setDisabled(false);
 
-  // remove channel device and free bus
-  SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
-  bus->removeChannel(_spiChannel);
-  bus->deinit();
+  // // remove channel device and free bus
+  // SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
+  // bus->removeChannel(_spiChannel);
+  // bus->deinit();
 
-  // spi bus init and add channel device
-  bus->init(PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK);
-  bus->addChannel(_spiChannel);
+  // // spi bus init and add channel device
+  // bus->init(PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK);
+  // bus->addChannel(_spiChannel);
 
   // re-enable spi channel device
   _spiChannel.setDisabled(false);
@@ -169,12 +169,14 @@ void ILI9341::spi_bug()
 
 void ILI9341::turnOn(bool on)
 {
-  _on = on;
+  if (_on != on) {
+    _on = on;
 #ifdef USING_LED_CONTROLLER
-  _backLed.setDuty(on ? _backLedDuty : 0);
+    _backLed.setDuty(on ? _backLedDuty : 0);
 #else
-  gpio_set_level((gpio_num_t)PIN_NUM_BCKL, on ? 1 : 0);
+    gpio_set_level((gpio_num_t)PIN_NUM_BCKL, on ? 1 : 0);
 #endif
+  }
 }
 
 void ILI9341::setBrightness(uint8_t b)

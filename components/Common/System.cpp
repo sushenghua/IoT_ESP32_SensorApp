@@ -111,7 +111,6 @@ bool isDeepSleepReset()
 #include "SensorDisplayController.h"
 #define DISPLAY_TASK_DELAY_UNIT  100
 ILI9341 dev;
-bool _displayOn = true;
 static SensorDisplayController dc(&dev);
 TaskHandle_t displayTaskHandle = 0;
 TaskState _displayTaskState = TaskEmpty;
@@ -959,11 +958,6 @@ void System::powerOff()
 #endif
 }
 
-bool System::displayOn()
-{
-  return _displayOn;
-}
-
 void System::turnWifiOn(bool on)
 {
   if (_config1.wifiOn != on) {
@@ -974,8 +968,6 @@ void System::turnWifiOn(bool on)
 
 void System::turnDisplayOn(bool on)
 {
-  _displayOn = on;
-  // DisplayController::activeInstance()->turnOn(on);
   dc.turnOn(on);
 }
 
@@ -995,13 +987,45 @@ void System::toggleWifi()
 
 void System::toggleDisplay()
 {
-  _displayOn = !_displayOn;
-  dc.turnOn(_displayOn);
+  dc.toggleDisplay();
 }
 
-void System::markPowerEvent()
+void System::onEvent(int eventId)
 {
-  _hasPwrEvent = true;
+  switch (eventId) {
+    case INPUT_EVENT_PWR_BTN_SHORT_RELEASE:
+      if (alertSoundOn()) turnAlertSoundOn(false);
+      else toggleDisplay();
+      break;
+
+    case INPUT_EVENT_PWR_BTN_LONG_PRESS:
+      powerOff();
+      break;
+
+    case INPUT_EVENT_USR_BTN_SHORT_RELEASE:
+      dc.onUsrButtonRelease();
+      break;
+
+    case INPUT_EVENT_USR_BTN_MEDIUM_RELEASE:
+      toggleWifi();
+      break;
+
+    case INPUT_EVENT_USR_BTN_XLONG_PRESS:
+      toggleDeployMode();
+      break;
+
+    case INPUT_EVENT_PWR_CHIP_INT:
+      _hasPwrEvent = true;
+      break;
+
+    case INPUT_EVENT_MB_TEMP_CALIBRATE:
+      setMbTempCalibration(true);
+      turnAlertSoundOn(true);      // give sound response
+      break;
+
+    default:
+      break;
+  }
 }
 
 #define SYSTEM_CONFIG1_TAG                "appConf1"

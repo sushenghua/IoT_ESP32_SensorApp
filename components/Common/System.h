@@ -229,14 +229,14 @@ public:
 
   void powerOff();
   bool wifiOn() { return _config1.wifiOn; }
-  bool displayOn();
   bool displayAutoAdjustOn() { return _config1.displayAutoAdjustOn; }
   void turnWifiOn(bool on = true);
   void turnDisplayOn(bool on = true);
   void turnDisplayAutoAdjustOn(bool on = true);
   void toggleWifi();
   void toggleDisplay();
-  void markPowerEvent();
+
+  void onEvent(int eventId);
 
 private:
   void _logInfo();

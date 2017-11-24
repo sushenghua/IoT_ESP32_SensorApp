@@ -39,6 +39,7 @@ public:
   void setScreenMessage(const char * msg);
 
   void setQRCodeType(QRCodeType type);
+  void onUsrButtonRelease();
 
 public:
   virtual void init(int displayInitMode=DISPLAY_INIT_ALL);

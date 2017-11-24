@@ -536,17 +536,35 @@ inline bool _genQRCode(const char *text)
 #define PIXEL_SCALE    4
 char *  _qrStr = NULL;
 
+static const char * const QRCodeTitle[] = {
+    "Device",           // 0
+    "iOS App",          // 1
+    "Android App",      // 2
+};
+
+#define IOS_APP_URL      "https://itunes.apple.com/"
+#define ANDROID_APP_URL  "http://bing.com/"
 
 void SensorDisplayController::_renderQRCodeScreen()
 {
   if (_staticContentNeedUpdate) {
 
     if (_genQRCode(_qrStr)) {
-      // _dev->fillScreen(RGB565_BLACK);
+      // clear non status bar area
+      _dev->fillRect(0, _contentOffsetY, _dev->width(), _dev->height()-_contentOffsetY, RGB565_BLACK);
+
+      // layout
       int size = qrcodegen_getSize(qrcode);
       uint16_t imgSize = (size + BORDER) * PIXEL_SCALE;
       uint16_t xOffset = (_dev->width() - imgSize) / 2;
       uint16_t yOffset =  _contentOffsetY + (_dev->height() - _contentOffsetY - imgSize) / 2;
+
+      // title
+      _dev->setTextColor(RGB565_WHITE, RGB565_BLACK);
+      _dev->setCursor(xOffset, yOffset - 35);
+      _dev->write(QRCodeTitle[_qrCodeType]);
+
+      // QR Code
       for (int y = -BORDER; y < size + BORDER; y++) {
         for (int x = -BORDER; x < size + BORDER; x++) {
           uint16_t color = qrcodegen_getModule(qrcode, x, y) ? RGB565_BLACK : RGB565_WHITE;
@@ -582,9 +600,11 @@ void SensorDisplayController::setQRCodeType(QRCodeType type)
         break;
 
       case QRCodeIOS:
+        sprintf(_qrStr, "%s", IOS_APP_URL);
         break;
 
       case QRCodeAndroid:
+        sprintf(_qrStr, "%s", ANDROID_APP_URL);
         break;
 
       default:
@@ -592,5 +612,17 @@ void SensorDisplayController::setQRCodeType(QRCodeType type)
     }
 
     if (_dev->rotation() == DISPLAY_ROTATION_CW_270) _staticContentNeedUpdate = true;
+  }
+}
+
+void SensorDisplayController::onUsrButtonRelease()
+{
+  if (!_dev->on()) {
+    _dev->turnOn(true);
+  }
+  else {
+    if (_dev->rotation() == DISPLAY_ROTATION_CW_270) {
+      setQRCodeType( (QRCodeType)( (_qrCodeType + 1) % QRCodeMax) );
+    }
   }
 }

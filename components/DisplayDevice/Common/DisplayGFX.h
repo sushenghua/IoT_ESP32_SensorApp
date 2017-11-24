@@ -88,6 +88,7 @@ public:
   // all subclass should implement these common method
   virtual void init(int mode) = 0;
   virtual void reset() = 0;
+  virtual bool on() = 0;
   virtual void turnOn(bool on = true) = 0;
   virtual void setBrightness(uint8_t b) = 0;
   virtual void fadeBrightness(uint8_t b, int duration = 500) = 0;

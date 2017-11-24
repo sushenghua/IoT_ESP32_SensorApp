@@ -84,6 +84,8 @@ struct spi_device_t {
 };
 
 static spi_host_t *spihost[3];
+
+
 static const char *SPI_TAG = "spi_master";
 #define SPI_CHECK(a, str, ret_val) \
     if (!(a)) { \
@@ -669,34 +671,34 @@ esp_err_t spi_device_reset(spi_device_handle_t handle)
     // wait untill spi_intr done
     while (_spiIntrInProgress) vTaskDelay(5/portTICK_RATE_MS);
 
-    // // clear trans queue, ret queue
-    // BaseType_t r;
-    // spi_transaction_t *pTrans;
-    // spi_transaction_t **ppTrans = &pTrans;
-    // int queueCount = handle->cfg.queue_size;
-    // while (queueCount-- > 0) {
-    //     r=xQueueReceive(handle->trans_queue, (void*)ppTrans, 0);
-    //     ESP_LOGW("spi_device_reset", "xQueueReceive trans queue return %d", r);
-    //     r=xQueueReceive(handle->ret_queue, (void*)ppTrans, 0);
-    //     ESP_LOGW("spi_device_reset", "xQueueReceive ret queue return %d", r);
-    // }
+    // clear trans queue, ret queue
+    BaseType_t r;
+    spi_transaction_t *pTrans;
+    spi_transaction_t **ppTrans = &pTrans;
+    int queueCount = handle->cfg.queue_size;
+    while (queueCount-- > 0) {
+        r=xQueueReceive(handle->trans_queue, (void*)ppTrans, 0);
+        ESP_LOGW("spi_device_reset", "xQueueReceive trans queue return %d", r);
+        r=xQueueReceive(handle->ret_queue, (void*)ppTrans, 0);
+        ESP_LOGW("spi_device_reset", "xQueueReceive ret queue return %d", r);
+    }
 
-    // // reset trans queue, ret queue
-    // r = xQueueReset(handle->trans_queue);
-    // ESP_LOGW("spi_device_reset", "xQueueReset trans queue return %d", r);
-    // r = xQueueReset(handle->ret_queue);
-    // ESP_LOGW("spi_device_reset", "xQueueReset ret queue return %d", r);
+    // reset trans queue, ret queue
+    r = xQueueReset(handle->trans_queue);
+    ESP_LOGW("spi_device_reset", "xQueueReset trans queue return %d", r);
+    r = xQueueReset(handle->ret_queue);
+    ESP_LOGW("spi_device_reset", "xQueueReset ret queue return %d", r);
 
-    // // if (host->dma_chan) spicommon_dmaworkaround_idle(host->dma_chan);
-    // if (host->dma_chan) {
-    //     if (spicommon_dmaworkaround_req_reset(host->dma_chan, spi_dmareset_done, host))
-    //         spi_dmareset_done(host);
-    // }
-    // else {
-    //     spi_dmareset_done(host);
-    // }
+    // if (host->dma_chan) spicommon_dmaworkaround_idle(host->dma_chan);
+    if (host->dma_chan) {
+        if (spicommon_dmaworkaround_req_reset(host->dma_chan, spi_dmareset_done, host))
+            spi_dmareset_done(host);
+    }
+    else {
+        spi_dmareset_done(host);
+    }
 
-    // // while(spicommon_dmaworkaround_reset_in_progress()) vTaskDelay(5/portTICK_RATE_MS);
+    // while(spicommon_dmaworkaround_reset_in_progress()) vTaskDelay(5/portTICK_RATE_MS);
 
     return ESP_OK;
 }

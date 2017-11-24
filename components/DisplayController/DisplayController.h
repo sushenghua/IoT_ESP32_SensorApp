@@ -30,6 +30,7 @@ public:
   void setUpdateDisabled(bool disabled = true) { _updateDisabled = disabled; }
   void reset() { _dev->reset(); }
   void turnOn(bool on) { _dev->turnOn(on); }
+  void toggleDisplay() { _dev->turnOn(!_dev->on()); }
   void setBrightness(uint8_t b) { _dev->setBrightness(b); }
   void fadeBrightness(uint8_t b, int duration = 500) { _dev->fadeBrightness(b, duration); }
 

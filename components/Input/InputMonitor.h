@@ -9,6 +9,14 @@
 
 #include "driver/gpio.h"
 
+#define INPUT_EVENT_PWR_BTN_SHORT_RELEASE     1
+#define INPUT_EVENT_PWR_BTN_LONG_PRESS        2
+#define INPUT_EVENT_USR_BTN_SHORT_RELEASE     3
+#define INPUT_EVENT_USR_BTN_MEDIUM_RELEASE    4
+#define INPUT_EVENT_USR_BTN_XLONG_PRESS       5
+#define INPUT_EVENT_PWR_CHIP_INT              6
+#define INPUT_EVENT_MB_TEMP_CALIBRATE         7
+
 class InputMonitor
 {
 public:
