@@ -10,6 +10,7 @@
 #include <string.h>
 #include "driver/spi_master.h"
 #include "Config.h"
+#include "AppLog.h"
 
 class SpiChannel;
 
@@ -133,8 +134,20 @@ protected:
         if (_disabled) return ESP_FAIL;
         // return spi_device_transmit(_handle, _trans);
         esp_err_t ret = spi_device_queue_trans(_handle, _trans, waitTicks);
+
+#ifndef DEBUG_APP_ERR
         if (ret != ESP_OK) return ret;
         return spi_device_get_trans_result(_handle, &_rtrans, waitTicks);
+#else
+        if (ret != ESP_OK) {
+            APP_LOGE("[SpiBus]", "spi_device_queue_trans failed: %d", ret);
+            return ret;
+        }
+        ret = spi_device_get_trans_result(_handle, &_rtrans, waitTicks);
+        if (ret != ESP_OK) APP_LOGE("[SpiBus]", "spi_device_get_trans_result failed: %d", ret);
+        return ret;
+#endif
+
     }
     void _clearTrans(spi_transaction_t *trans) {
         //memset(trans, 0, sizeof(spi_transaction_t)); // also clear the trans->user -> may cause callback crash

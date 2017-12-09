@@ -37,7 +37,7 @@
 #define PIN_NUM_CLK  19
 #define PIN_NUM_CS   22
 
-// #define USE_CS_CONTROL
+#define USE_CS_CONTROL
 #ifdef  USE_CS_CONTROL
 #define ILI9341_PIN_CS   PIN_NUM_CS
 #else
@@ -82,7 +82,7 @@ void ILI9341::_initBus()
 #endif
 
   // spi bus init
-  SpiBus *bus = SpiBus::busForHost(HSPI_HOST);
+  SpiBus *bus = SpiBus::busForHost(VSPI_HOST);
   bus->init(PIN_NUM_MISO, PIN_NUM_MOSI, PIN_NUM_CLK);
   _spiChannel.setParams(0, ILI9341_PIN_CS, ILI9341_CHANNEL_QUEQUE_SIZE, ILI9341_CHANNEL_CLK_SPEED);
   _spiChannel.bindTransactionCache(_ili9341SpiTrans, ILI9341_SPI_TRANS_MAX);
@@ -153,7 +153,7 @@ void ILI9341::reset()
 
   // init ili9341 device
   // _fireResetSignal();
-  _initIli9341WithCmd();
+  // _initIli9341WithCmd();
 
   // soft reset ili9341
   // writeCommand(ILI9341_SWRESET);
