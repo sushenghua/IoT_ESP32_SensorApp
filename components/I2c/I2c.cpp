@@ -103,8 +103,8 @@ void I2c::reset()
 #define READ_BIT       I2C_MASTER_READ  /*!< I2C master read */
 #define ACK_CHECK_EN   0x1              /*!< I2C master will check ack from slave*/
 #define ACK_CHECK_DIS  0x0              /*!< I2C master will not check ack from slave */
-#define ACK_VAL        0x0              /*!< I2C ack value */
-#define NACK_VAL       0x1              /*!< I2C nack value */
+#define ACK_VAL        I2C_MASTER_ACK   /*!< I2C ack value 0x0 */
+#define NACK_VAL       I2C_MASTER_NACK  /*!< I2C nack value 0x1 */
 
 bool I2c::deviceReady(uint8_t addr, TickType_t waitTicks)
 {

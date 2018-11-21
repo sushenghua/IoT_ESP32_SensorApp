@@ -145,13 +145,13 @@ void SpiChannel::setParams(uint8_t mode, int pinCs, int queueSize, int clkSpeed)
 
 void SpiChannel::reset()
 {
-    spi_device_reset(_handle);
+    // spi_device_reset(_handle);
 }
 
 #ifdef DEBUG_FLAG_ENABLED
 void SpiChannel::spi_bug()
 {
-    spi_device_try_to_block(_handle, &_rtrans, 0);
+    // spi_device_try_to_block(_handle, &_rtrans, 0);
 }
 #endif
 
