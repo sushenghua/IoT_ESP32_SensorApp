@@ -91,18 +91,18 @@ static void sntp_task(void *pvParams)
 //----------------------------------------------
 // display tasks
 //----------------------------------------------
-#include "esp_deep_sleep.h"
-esp_deep_sleep_wakeup_cause_t _wakeupCause = ESP_DEEP_SLEEP_WAKEUP_UNDEFINED;
-esp_deep_sleep_wakeup_cause_t getWakeupCause()
+#include "esp_sleep.h"
+esp_sleep_wakeup_cause_t _wakeupCause = ESP_SLEEP_WAKEUP_UNDEFINED;
+esp_sleep_wakeup_cause_t getWakeupCause()
 {
-  if (_wakeupCause == ESP_DEEP_SLEEP_WAKEUP_UNDEFINED)
-    _wakeupCause = esp_deep_sleep_get_wakeup_cause();
+  if (_wakeupCause == ESP_SLEEP_WAKEUP_UNDEFINED)
+    _wakeupCause = esp_sleep_get_wakeup_cause();
   return _wakeupCause;
 }
 
 bool isDeepSleepReset()
 {
-  return getWakeupCause() == ESP_DEEP_SLEEP_WAKEUP_TIMER;
+  return getWakeupCause() == ESP_SLEEP_WAKEUP_TIMER;
 }
 
 // #include "ST7789V.h"
