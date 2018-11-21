@@ -266,8 +266,8 @@ void SHT3xSensor::sampleData()
       if (_dc) _dc->setTempHumidData(&_tempHumidData, true);
     }
 
-    APP_LOGC("[SHT3xSensor]", "mb temp: %.2f, sht3x temp: %0.2f, cali temp: %0.2f",
-              _mainBoardTemp, _sensorRawTemp, _tempHumidData.temp);
+    // APP_LOGC("[SHT3xSensor]", "mb temp: %.2f, sht3x temp: %0.2f, cali temp: %0.2f",
+    //           _mainBoardTemp, _sensorRawTemp, _tempHumidData.temp);
 
 #ifdef DEBUG_APP_OK
     APP_LOGC("[SHT3X]", "--->temp: %2.2f  humid: %2.2f", _tempHumidData.temp, _tempHumidData.humid);

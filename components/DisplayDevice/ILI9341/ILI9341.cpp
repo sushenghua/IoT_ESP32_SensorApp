@@ -34,8 +34,8 @@
 // #define PIN_NUM_MISO 25
 #define PIN_NUM_MISO PIN_NOT_USED
 #define PIN_NUM_MOSI 23
-#define PIN_NUM_CLK  19
-#define PIN_NUM_CS   22
+#define PIN_NUM_CLK  18
+#define PIN_NUM_CS   19
 
 #define USE_CS_CONTROL
 #ifdef  USE_CS_CONTROL
@@ -45,7 +45,7 @@
 #endif
 
 #define PIN_NUM_DC   21
-#define PIN_NUM_RST  18
+#define PIN_NUM_RST  22
 #define PIN_NUM_BCKL 5
 
 // #define ILI9341_CHANNEL_WAIT_TICKS  portMAX_DELAY
