@@ -32,7 +32,7 @@
 #define LOG_ALERT
 #define DEBUG_PN
 
-#define DEBUG_FLAG_ENABLED
+// #define DEBUG_FLAG_ENABLED
 
 #define LOG_REMOTE_CMD
 // #define LOG_APPUPDATER

@@ -152,13 +152,14 @@ void _resetDisplay()
   // System::instance()->setRestartRequest();
 }
 
+#ifdef DEBUG_FLAG_ENABLED
 void _debugDisplay()
 {
   _displayTaskState = TaskDebug;
   dev.spi_bug();
   APP_LOGC("[display_guard_task]", "debug call done");
 }
-
+#endif
 
 //----------------------------------------------
 // display guard task
