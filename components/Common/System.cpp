@@ -806,6 +806,7 @@ void System::_setDefaultConfig()
   _config1.wifiOn = true;
   _config1.displayAutoAdjustOn = false;
   _config1.deployMode = HTTPServerMode;
+  // _config1.deployMode = MQTTClientMode;
   _config2.pmSensorType =  PRODUCT_PM_SENSOR;
   _config2.co2SensorType = PRODUCT_CO2_SENSOR;
   _config2.devCapability = ( capabilityForSensorType(_config2.pmSensorType) |
