@@ -21,7 +21,7 @@ void LedController::init(int            gpio,
 
   // config timer
   _timerConfig.timer_num = timer;
-  _timerConfig.bit_num = LEDC_TIMER_10_BIT;
+  _timerConfig.duty_resolution = LEDC_TIMER_10_BIT;
   _timerConfig.freq_hz = frequency;
   _timerConfig.speed_mode = mode;
   ledc_timer_config(&_timerConfig);
@@ -31,7 +31,7 @@ void LedController::init(int            gpio,
   _channelConfig.gpio_num = gpio;
   _channelConfig.speed_mode = mode;
   _channelConfig.timer_sel = timer;
-  _channelConfig.duty = duty;                    // 0 ~ (2**bit_num - 1)
+  _channelConfig.duty = duty;                    // 0 ~ (2**duty_resolution - 1)
   _channelConfig.intr_type = LEDC_INTR_FADE_END; // Enable LEDC interrupt
   ledc_channel_config(&_channelConfig);
 

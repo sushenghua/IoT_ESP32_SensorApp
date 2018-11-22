@@ -20,5 +20,5 @@ void Adc::init(adc1_channel_t channel, adc_bits_width_t bitWidth, adc_atten_t at
 
 int Adc::readVoltage()
 {
-    return adc1_get_voltage(_channel);
+    return adc1_get_raw(_channel);
 }
