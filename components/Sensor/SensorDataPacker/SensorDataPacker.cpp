@@ -114,7 +114,7 @@ const char* SensorDataPacker::dataJsonString(size_t &size)
     }
     if (_sensorCapability & HCHO_CAPABILITY_MASK) {
       HchoData hcho = _pmSensor->hchoData();
-      sprintf(_dataStringBuf + packCount, "%s\"hcho\":%.2f,\"hcholvl\":%d",
+      sprintf(_dataStringBuf + packCount, "%s\"hcho\":%.3f,\"hcholvl\":%d",
               commaPreceded ? "," : "", hcho.hcho, hcho.level);
       packCount += strlen(_dataStringBuf + packCount);
       commaPreceded = true;
