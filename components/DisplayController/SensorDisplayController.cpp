@@ -246,14 +246,14 @@ const char * padSpace(uint16_t value)
 #define ITEM_TITLE_CHAR_H       20
 
 #define ITEM_RECT_RADIUS        10
-#define ITEM_RECT_OFFSET_X      160 // original 100
+#define ITEM_RECT_OFFSET_X      130 // original 100
 #define ITEM_RECT_HEIGHT        40
-#define ITEM_RECT_WIDTH         140
+#define ITEM_RECT_WIDTH         170
 
 #define ITEM_VALUE_OFFSET_X     10
 #define ITEM_VALUE_OFFSET_Y     9
 
-#define ITEM_LEVEL_OFFSET_X     86
+#define ITEM_LEVEL_OFFSET_X     116
 #define ITEM_LEVEL_OFFSET_Y     8
 #define ITEM_LEVEL_CHAR_W       48
 #define ITEM_LEVEL_CHAR_H       24
@@ -358,7 +358,7 @@ void SensorDisplayController::_targetData(SensorDataType t)
       _level = _level == 6 ? 5 : _level;
       break;
     case HCHO:
-      sprintf(_valueStr, "%.2f", _hcho);
+      sprintf(_valueStr, "%.3f", _hcho);
       _color = _hchoColor;
       _level = _hchoLevel;
       break;
@@ -431,7 +431,7 @@ void SensorDisplayController::_renderDetailScreenItem(SensorDataType type)
 
     case HCHO:
       _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount);
-      _dev->write("HCHO(ug/m");
+      _dev->write("HCHO(mg/m");
       _dev->setTextSize(1); _dev->write("3");
       _dev->setTextSize(2); _dev->write("):");
       break;
@@ -476,7 +476,7 @@ void SensorDisplayController::_renderDetailScreenItem(SensorDataType type)
     case HCHO:
       _dev->setTextColor(_hchoColor, RGB565_BLACK);
       _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
-      sprintf(_valueStr, "%.2f", _hcho); _dev->write(_valueStr);
+      sprintf(_valueStr, "%.3f", _hcho); _dev->write(_valueStr);
       break;
 
     case CO2:
