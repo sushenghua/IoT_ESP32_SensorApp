@@ -24,6 +24,11 @@ uint8_t * SharedBuffer::cmdBuffer()
   return _cmdBuf;
 }
 
+char* SharedBuffer::updaterMsgBuffer()
+{
+  return _qrStrBuf;
+}
+
 char * SharedBuffer::qrStrBuffer()
 {
   return _qrStrBuf;

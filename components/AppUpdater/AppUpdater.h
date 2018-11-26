@@ -27,7 +27,7 @@ public:
         size_t index;
         size_t amount;
     };
-    typedef uint16_t VersionNoType;
+    typedef uint32_t VersionNoType;
 
 public:
     AppUpdater();
@@ -37,6 +37,7 @@ public:
     void setMqttClientDelegate(MqttClientDelegate *delegate) { _delegate = delegate; }
     void update();
     void updateLoop(const char* data, size_t dataLen);
+    bool isUpdating() { return _state != UPDATE_STATE_IDLE; }
 
 protected:
     void _retCode(int code, const char *msg, int value = 0);

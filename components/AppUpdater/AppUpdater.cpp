@@ -102,7 +102,7 @@ AppUpdater::AppUpdater()
 
 void AppUpdater::init()
 {
-  _retBuf = SharedBuffer::msgBuffer();
+  _retBuf = SharedBuffer::updaterMsgBuffer();
   sprintf(_updateDrxDataTopic, "%s/%s/drx", APP_UPDATE_TOPIC, System::instance()->uid());
   sprintf(_updateDtxDataTopic, "%s/%s/dtx", APP_UPDATE_TOPIC, System::instance()->uid());
   _rxTopicLen = strlen(_updateDrxDataTopic);
@@ -127,7 +127,7 @@ void AppUpdater::_retCode(int code, const char *msg, int value)
 #ifdef LOG_APPUPDATER
   if (code == UPDATE_OK) APP_LOGC(TAG, "%s", msg);
   else if (code == DOWNLOAD_PROGRESS) APP_LOGI(TAG, "write data complete %d%%", value);
-  else if (code == MD5_CHECK_OK) APP_LOGI(TAG, "%S", msg);
+  else if (code == MD5_CHECK_OK) APP_LOGI(TAG, "%s", msg);
   else APP_LOGE(TAG, "%s, 0x%x", msg, value);
 #else
   if (code == MD5_CHECK_OK) APP_LOGI(TAG, "%s", msg);
@@ -145,6 +145,10 @@ void AppUpdater::_retCode(int code, const char *msg, int value)
 void AppUpdater::_sendUpdateCmd()
 {
   if (_delegate) {
+    _delegate->addUnsubTopic(MqttClientDelegate::cmdTopic());
+    _delegate->addUnsubTopic(MqttClientDelegate::strCmdTopic());
+    _delegate->unsubscribeTopics();
+
     _delegate->addSubTopic(_updateDrxDataTopic);
     _delegate->subscribeTopics();
     _delegate->publish(APP_UPDATE_TOPIC, System::instance()->uid(),
@@ -249,7 +253,9 @@ void AppUpdater::updateLoop(const char* data, size_t dataLen)
       VersionNoType newVersion = *((VersionNoType *)data);
       if (newVersion > _currentVersion) {
         _newVersionSize = *((size_t *)(data + sizeof(VersionNoType)));
-        // APP_LOGC(TAG, "version: %d, size: %d", newVersion, _newVersionSize);
+#ifdef LOG_APPUPDATER
+        APP_LOGC(TAG, "version: %d, size: %d", newVersion, _newVersionSize);
+#endif
         _prepareUpdate();
         md5_starts(&_md5Contex);
         APP_LOGI(TAG, "begin downloading data ...");

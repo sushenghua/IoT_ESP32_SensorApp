@@ -93,7 +93,7 @@ struct SubTopics
 
     int findTopic(const char *topic) {
         for (uint16_t i = 0; i < count; ++i) {
-            if (strcmp(topics[i].topic, topic) == 0)
+            if (topics[i].topic != NULL && strcmp(topics[i].topic, topic) == 0)
                 return i;
         }
         return -1;
@@ -159,9 +159,11 @@ public:
     // MqttClientDelegate interface
     virtual void addSubTopic(const char *topic, uint8_t qos = 0);
     virtual void subscribeTopics();
+    virtual bool hasTopicsToSubscribe() { return _topicsToSubscribe.count > 0; }
 
     virtual void addUnsubTopic(const char *topic);
     virtual void unsubscribeTopics();
+    virtual bool hasTopicsToUnsubscribe() { return _topicsToUnsubscribe.count > 0; }
 
     virtual void publish(const char *topic,
                          const void *data,

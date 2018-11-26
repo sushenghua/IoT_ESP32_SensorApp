@@ -277,44 +277,47 @@ void appendCmdKeyToJsonString(CmdKey cmdKey, char *jsonStr, size_t &count)
 
 void CmdEngine::interpreteMqttMsg(const char* topic, size_t topicLen, const char* msg, size_t msgLen)
 {
-  bool exec = false;
-  CmdKey cmdKey;
-  uint8_t *data = NULL;
-  size_t size = 0;
-  RetFormat retFmt = Binary;
-
-  do {
-    // binary data command topic
-    if (topicLen == strlen(MqttClientDelegate::cmdTopic()) &&
-        strncmp(topic, MqttClientDelegate::cmdTopic(), topicLen) == 0) {
-      // data size check
-      if (msgLen >= CMD_DATA_AT_LEAST_SIZE) {
-        data = (uint8_t *)msg;
-        cmdKey = (CmdKey)( *(uint16_t *)(data + CMD_DATA_KEY_OFFSET) );
-        data += CMD_DATA_ARG_OFFSET;
-        size = msgLen - CMD_DATA_KEY_SIZE;
-        retFmt = Binary;
-        exec = true;
-      }
-      else {
-        APP_LOGE("[CmdEngine]", "mqtt msg data size must be at least %d", CMD_DATA_AT_LEAST_SIZE);
-      }
-      break;
-    }
-    // string data command topic
-    if (topicLen == strlen(MqttClientDelegate::strCmdTopic()) &&
-        strncmp(topic, MqttClientDelegate::strCmdTopic(), topicLen) == 0) {
-      cmdKey = _parseJsonStringCmd(msg, msgLen, data, size, retFmt);
-      exec = true;
-      break;
-    }
+  if (_appUpdater.isUpdating()) {
     // app update topic
     if (strncmp(topic, _appUpdater.updateRxTopic(), _appUpdater.updateRxTopicLen()) == 0) {
         _appUpdater.updateLoop(msg, msgLen);
     }
-  } while (false);
+  }
+  else {
+    bool exec = false;
+    CmdKey cmdKey;
+    uint8_t *data = NULL;
+    size_t size = 0;
+    RetFormat retFmt = Binary;
+    do {
+      // binary data command topic
+      if (topicLen == strlen(MqttClientDelegate::cmdTopic()) &&
+          strncmp(topic, MqttClientDelegate::cmdTopic(), topicLen) == 0) {
+        // data size check
+        if (msgLen >= CMD_DATA_AT_LEAST_SIZE) {
+          data = (uint8_t *)msg;
+          cmdKey = (CmdKey)( *(uint16_t *)(data + CMD_DATA_KEY_OFFSET) );
+          data += CMD_DATA_ARG_OFFSET;
+          size = msgLen - CMD_DATA_KEY_SIZE;
+          retFmt = Binary;
+          exec = true;
+        }
+        else {
+          APP_LOGE("[CmdEngine]", "mqtt msg data size must be at least %d", CMD_DATA_AT_LEAST_SIZE);
+        }
+        break;
+      }
+      // string data command topic
+      if (topicLen == strlen(MqttClientDelegate::strCmdTopic()) &&
+          strncmp(topic, MqttClientDelegate::strCmdTopic(), topicLen) == 0) {
+        cmdKey = _parseJsonStringCmd(msg, msgLen, data, size, retFmt);
+        exec = true;
+        break;
+      }
+    } while (false);
 
-  if (exec) execCmd(cmdKey, retFmt, data, size);
+    if (exec) execCmd(cmdKey, retFmt, data, size);
+  }
 }
 
 void CmdEngine::interpreteSocketMsg(const void* msg, size_t msgLen, void *userdata)
