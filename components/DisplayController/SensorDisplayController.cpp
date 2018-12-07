@@ -588,10 +588,11 @@ void SensorDisplayController::setQRCodeType(QRCodeType type)
 
     switch(type) {
       case QRCodeDevice:
-        sprintf(_qrStr, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"firmv\":\"%s\",\"model\":\"%s\",\"alcd\":%s,\"deploy\":\"%s\",\"devname\":\"%s\"}, \"cmd\":\"%s\"}",
+        sprintf(_qrStr, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"firmv\":\"%s\",\"bdv\":\"%s\",\"model\":\"%s\",\"alcd\":%s,\"deploy\":\"%s\",\"devname\":\"%s\"}, \"cmd\":\"%s\"}",
                 sys->uid(),
                 sys->devCapability(),
                 sys->firmwareVersion(),
+                sys->boardVersion(),
                 sys->model(),
                 sys->displayAutoAdjustOn()? "true" : "false",
                 deployModeStr(sys->deployMode()),
