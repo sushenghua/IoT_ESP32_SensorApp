@@ -43,7 +43,8 @@ protected:
     void _retCode(int code, const char *msg, int value = 0);
     void _sendUpdateCmd();
     bool _beforeUpdateCheck();
-    void _prepareUpdate();	
+    bool _prepareUpdate();
+    void _onUpdateEnded(bool unsubUpdateTopic, bool subCmdTopic);
     void _onRxDataComplete();
     bool _verifyData(const char *verifyBits, size_t length);
 

@@ -123,6 +123,22 @@ const char* AppUpdater::updateRxTopic()
   return _updateDrxDataTopic;
 }
 
+void AppUpdater::_onUpdateEnded(bool unsubUpdateTopic, bool subCmdTopic)
+{
+  if (_delegate) {
+    if (unsubUpdateTopic) {
+      _delegate->addUnsubTopic(_updateDrxDataTopic);
+      _delegate->unsubscribeTopics();
+    }
+
+    if (subCmdTopic) {
+      _delegate->addSubTopic(MqttClientDelegate::cmdTopic());
+      _delegate->addSubTopic(MqttClientDelegate::strCmdTopic());
+      _delegate->subscribeTopics();
+    }
+  }
+}
+
 void AppUpdater::_retCode(int code, const char *msg, int value)
 {
 #ifdef LOG_APPUPDATER
@@ -179,15 +195,11 @@ bool AppUpdater::_beforeUpdateCheck()
 
 void AppUpdater::_onRxDataComplete()
 {
-  if (_delegate) {
-    _delegate->addUnsubTopic(_updateDrxDataTopic);
-    _delegate->unsubscribeTopics();
-  }
-
   bool succeeded = true;
   esp_err_t ret = ESP_OTA_END(_updateHandle);
   if (ret == ESP_OK) APP_LOGI(TAG, "ota end succeeded");
   else {
+    _onUpdateEnded(true, true); // unsub update toic, sub cmd topic
     _retCode(OTA_END_FAILED, "ota end failed!");
     succeeded = false;    // task_fatal_error();
   }
@@ -197,6 +209,7 @@ void AppUpdater::_onRxDataComplete()
     APP_LOGI(TAG, "ota set boot partition succeeded");
   }
   else {
+    _onUpdateEnded(true, true); // unsub update toic, sub cmd topic
     _retCode(OTA_SET_BOOT_PATITION_FAILED, "ota set boot partition failed", ret);
     succeeded = false;     // task_fatal_error();
   }
@@ -204,20 +217,22 @@ void AppUpdater::_onRxDataComplete()
   _state = UPDATE_STATE_IDLE;
 
   if (succeeded) {
+    _onUpdateEnded(true, false); // unsub update topic
     _retCode(UPDATE_OK, "update completed, restart ...");
     System::instance()->setRestartRequest();
   }
 }
 
-void AppUpdater::_prepareUpdate()
+bool AppUpdater::_prepareUpdate()
 {
   _updatePartition = esp_ota_get_next_update_partition(NULL);
   APP_LOGI(TAG, "Writing to partition subtype %d at offset 0x%x",
                 _updatePartition->subtype, _updatePartition->address);
   if (_updatePartition == NULL) {
+    _onUpdateEnded(true, true); // unsub update toic, sub cmd topic
     _retCode(OTA_GET_UPDATE_PARTITION_FAILED, "cannot get the update partition");
     _state = UPDATE_STATE_IDLE;
-    return;
+    return false;
   }
 
   System::instance()->pausePeripherals("updating ...");
@@ -227,9 +242,12 @@ void AppUpdater::_prepareUpdate()
     _writeFlag.index = 0;
     _writeFlag.amount = UPDATE_RX_DATA_BLOCK_SIZE;
     APP_LOGI(TAG, "ota_begin succeeded");
+    return true;
   } else {
+    _onUpdateEnded(true, true); // unsub update toic, sub cmd topic
     _retCode(OTA_BEGIN_FAILED, "ota_begin failed", err);
     _state = UPDATE_STATE_IDLE;
+    return false;
   }
 }
 
@@ -242,6 +260,7 @@ bool AppUpdater::_verifyData(const char *verifyBits, size_t length)
     return true;
   }
   else {
+    _onUpdateEnded(true, true); // unsub update toic, sub cmd topic
     _retCode(MD5_CHECK_FAILED, "downloaded data verified fail");
     return false;
   }
@@ -258,14 +277,16 @@ void AppUpdater::updateLoop(const char* data, size_t dataLen)
 #ifdef LOG_APPUPDATER
         APP_LOGC(TAG, "version: %d, size: %d", newVersion, _newVersionSize);
 #endif
-        _prepareUpdate();
+        if (!_prepareUpdate()) break;
         md5_starts(&_md5Contex);
         APP_LOGI(TAG, "begin downloading data ...");
         _delegate->publish(_updateDtxDataTopic, &_writeFlag, sizeof(_writeFlag), 1);
         _state = UPDATE_STATE_WAIT_DATA;
       }
       else {
+        _onUpdateEnded(true, true); // unsub update toic, sub cmd topic
         _retCode(UPDATE_OK, "already the latest version");
+        System::instance()->resumePeripherals();
         _state = UPDATE_STATE_IDLE;
       }
       break;
@@ -275,6 +296,7 @@ void AppUpdater::updateLoop(const char* data, size_t dataLen)
       // data block index, size
       size_t dataIndex = *((size_t*)data);
       if (dataIndex != _writeFlag.index) {
+        _onUpdateEnded(true, true); // unsub update toic, sub cmd topic
         _retCode(RXDATA_MISMATCHED_WITH_REQUIRED, "received data index mismatched with requested");
         break;
       }
@@ -284,6 +306,7 @@ void AppUpdater::updateLoop(const char* data, size_t dataLen)
       APP_LOGI(TAG, "rx data block index: %d, size: %d", dataIndex, blockSize);
 #endif
       if (_writeFlag.index + blockSize > _newVersionSize) {
+        _onUpdateEnded(true, true); // unsub update toic, sub cmd topic
         _retCode(RXDATA_SIZE_LARGER_THAN_EXPECTED, "received data size mismatched with the new version size");
         _state = UPDATE_STATE_IDLE;
         break;
@@ -310,6 +333,7 @@ void AppUpdater::updateLoop(const char* data, size_t dataLen)
           _delegate->publish(_updateDtxDataTopic, &_writeFlag, sizeof(_writeFlag), 1);
         }
       } else {
+        _onUpdateEnded(true, true); // unsub update toic, sub cmd topic
         _retCode(OTA_WRITE_FAILED, "ota_write failed", err);
         if (ESP_OTA_END(_updateHandle) != ESP_OK) {
           _retCode(OTA_END_FAILED, "ota end failed");

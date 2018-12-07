@@ -932,6 +932,7 @@ void System::pausePeripherals(const char *screenMsg)
 
 void System::resumePeripherals()
 {
+  dc.setScreenMessage(NULL);
   if (_displayTaskState == TaskPaused)           _displayTaskState = TaskRunning;
   if (_statusTaskState == TaskPaused)            _statusTaskState = TaskRunning;
   if (_pmSensorTaskState == TaskPaused)          _pmSensorTaskState = TaskRunning;

@@ -147,6 +147,7 @@ void SensorDisplayController::setScreenMessage(const char * msg)
   }
   else {
     _hasScreenMsg = false;
+    _rotationNeedUpdate = true;
     _staticContentNeedUpdate = true;
     _dynamicContentNeedUpdate = true;
   }
