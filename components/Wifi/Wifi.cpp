@@ -90,7 +90,7 @@ Wifi::Wifi()
 void Wifi::setDefaultConfig()
 {
   char apName[32];
-  sprintf(apName, "%s_%.*s", "AQStation", 8, System::instance()->uid());
+  sprintf(apName, "%s_%.*s", "QMonitor", 12, System::instance()->uid());
 
   setWifiMode(WIFI_MODE_APSTA);
   setStaConfig("ssid", "ssidpasswd", false, false);
