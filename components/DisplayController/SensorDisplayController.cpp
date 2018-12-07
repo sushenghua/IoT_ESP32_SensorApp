@@ -172,6 +172,7 @@ void SensorDisplayController::update()
     _dev->fillScreen(RGB565_BLACK);
     _dev->setRotation(_rotation);
     _layoutScreen();
+    if (_rotation == DISPLAY_ROTATION_CW_270) setQRCodeType(QRCodeDevice);
     this->updateStatusBar(true);
     _staticContentNeedUpdate = true;
     _dynamicContentNeedUpdate = true;
@@ -183,7 +184,8 @@ void SensorDisplayController::update()
   }
 
   // update content
-  if (_dynamicContentNeedUpdate && !_devUpdateRotationInProgress) {
+  if ((_dynamicContentNeedUpdate || _staticContentNeedUpdate)
+      && !_devUpdateRotationInProgress) {
     // APP_LOGI("[SensorDC]", "content update");
     switch(_dev->rotation()) {
       case DISPLAY_ROTATION_CW_0:
