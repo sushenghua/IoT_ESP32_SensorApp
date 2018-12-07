@@ -185,6 +185,7 @@ public:
   const char* macAddress();
   const char* idfVersion();
   const char* firmwareVersion();
+  const char* boardVersion();
   const char* model();
   bool flashEncryptionEnabled();
 

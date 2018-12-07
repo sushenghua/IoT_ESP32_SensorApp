@@ -60,9 +60,9 @@
 #define UPDATE_RX_DATA_BLOCK_SIZE    4096
 
 #define APP_UPDATE_TOPIC             "api/update"
-static char _updateDrxDataTopic[32];   // device rx
-static char _updateDtxDataTopic[32];   // device tx
-static char _updateCrxCodeTopic[32];   // client (mobile app) rx
+static char _updateDrxDataTopic[48];   // device rx
+static char _updateDtxDataTopic[48];   // device tx
+static char _updateCrxCodeTopic[48];   // client (mobile app) rx
 
 enum UpdateRetCode {
   UPDATE_OK                              = 0,
@@ -103,11 +103,12 @@ AppUpdater::AppUpdater()
 void AppUpdater::init()
 {
   _retBuf = SharedBuffer::updaterMsgBuffer();
-  sprintf(_updateDrxDataTopic, "%s/%s/drx", APP_UPDATE_TOPIC, System::instance()->uid());
-  sprintf(_updateDtxDataTopic, "%s/%s/dtx", APP_UPDATE_TOPIC, System::instance()->uid());
+  System* sys = System::instance();
+  sprintf(_updateDrxDataTopic, "%s/%s/drx/%s", APP_UPDATE_TOPIC, sys->uid(), sys->boardVersion());
+  sprintf(_updateDtxDataTopic, "%s/%s/dtx/%s", APP_UPDATE_TOPIC, sys->uid(), sys->boardVersion());
   _rxTopicLen = strlen(_updateDrxDataTopic);
 
-  sprintf(_updateCrxCodeTopic, "api/updatecode/%s", System::instance()->uid());
+  sprintf(_updateCrxCodeTopic, "api/updatecode/%s", sys->uid());
 
   _state = UPDATE_STATE_IDLE;
 }
@@ -151,8 +152,9 @@ void AppUpdater::_sendUpdateCmd()
 
     _delegate->addSubTopic(_updateDrxDataTopic);
     _delegate->subscribeTopics();
-    _delegate->publish(APP_UPDATE_TOPIC, System::instance()->uid(),
-                       strlen(System::instance()->uid()), 1);
+    System* sys = System::instance();
+    sprintf(_retBuf, "{\"uid\":\"%s\",\"bdv\":\"%s\"}", sys->uid(), sys->boardVersion());
+    _delegate->publish(APP_UPDATE_TOPIC, _retBuf, strlen(_retBuf), 1);
   }
 }
 
