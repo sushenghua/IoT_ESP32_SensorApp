@@ -160,6 +160,7 @@ void SensorDisplayController::update()
   if (_hasScreenMsg) {
     _dev->fillScreen(RGB565_BLACK);
     _dev->setCursor(10, _dev->height()/2);
+    _dev->setTextSize(2);
     _dev->setTextColor(RGB565_YELLOW, RGB565_BLACK);
     _dev->write(_msg);
     return;

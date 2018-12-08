@@ -761,6 +761,8 @@ const char* mobileOSStr(MobileOS os)
 #include "NvsFlash.h"
 #include "esp_system.h"
 #include "esp_flash_encrypt.h"
+#include "esp_partition.h"
+#include "esp_ota_ops.h"
 #include <string.h>
 #include "ProductConfig.h"
 #include "AppUpdaterConfig.h"
@@ -1397,6 +1399,23 @@ bool System::flashEncryptionEnabled()
 void System::setDebugFlag(uint8_t flag)
 {
   _debugFlag = flag;
+}
+
+void System::restoreFactory()
+{
+    const esp_partition_t*    fp ;
+    esp_err_t                 err ;
+    fp = esp_partition_find_first(ESP_PARTITION_TYPE_APP,             // try get factory partition
+                                  ESP_PARTITION_SUBTYPE_APP_FACTORY,
+                                  "factory" );
+    if (fp) {
+      err = esp_ota_set_boot_partition(fp);                           // set partition for boot
+      if (err == ESP_OK) {
+        setRestartRequest();
+      } else {
+        APP_LOGE("[System]", "restore factory partition failed");
+      }
+    }
 }
 
 void System::deepSleepReset()

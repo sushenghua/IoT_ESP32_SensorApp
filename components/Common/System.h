@@ -220,6 +220,7 @@ public:
   void resetAlertReactiveCounter();
 
   void setDebugFlag(uint8_t flag);
+  void restoreFactory();
   void deepSleepReset();
   void setRestartRequest();
   void restart();

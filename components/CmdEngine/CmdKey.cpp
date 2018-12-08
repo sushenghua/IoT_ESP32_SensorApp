@@ -39,7 +39,8 @@ static const char * const CmdKeyStr[] = {
     "SetPNToken",               // 27
     "UpdateFirmware",           // 28
     "Restart",                  // 29
-    "SetDebugFlag"              // 30
+    "RestoreFactory",           // 30
+    "SetDebugFlag"              // 31
 };
 
 CmdKey strToCmdKey(const char *str)

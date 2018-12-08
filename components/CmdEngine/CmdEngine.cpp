@@ -456,7 +456,11 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
       break;
 
     case Restart:
-      System::instance()->setRestartRequest();//System::instance()->restart();
+      System::instance()->setRestartRequest();
+      break;
+
+    case RestoreFactory:
+      System::instance()->restoreFactory();
       break;
 
     case GetStaSsidPass:
