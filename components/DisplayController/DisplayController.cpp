@@ -136,22 +136,28 @@ void DisplayController::updateStatusBar(bool foreUpdateAll)
   if (foreUpdateAll || _batteryNeedUpdate) {
     // base x offset
     uint16_t x = _dev->width() - BAT_BDR_OFFSET_FROM_R;
-    // charge state
-    if (_batteryCharge)
-      _dev->drawBitmap(x - BAT_CHARGE_ICON_WIDTH, 7, chargeIcon, BAT_CHARGE_ICON_WIDTH, 16, RGB565_WEAKWHITE);
-    else
-      _dev->fillRect(x - BAT_CHARGE_ICON_WIDTH, 7, BAT_CHARGE_ICON_WIDTH, 16, RGB565_BLACK);
     // battery shell
     _dev->drawBitmap(x, 7, batShellIcon, 40, 16, RGB565_WEAKWHITE);
-    // battery level
+    // battery level, and charge state
     if (_batteryLevel <= 0) _batteryLevel = 1;
     else if (_batteryLevel > 100) _batteryLevel = 100;
     uint16_t w = (uint16_t)(28 * _batteryLevel / 100.0f);
-    uint16_t color = RGB565_GREEN;
-    if (_batteryLevel < 20) color = RGB565_RED;
-    else if (_batteryLevel < 50) color = RGB565_YELLOW;
-    _dev->fillRect(x + 5, 10, w, 10, color);
-    _dev->fillRect(x + 5 + w, 10, 28 - w, 10, RGB565_BLACK);
+    if (_batteryCharge) {
+      uint16_t color = RGB565_DARKGREEN;
+      if (_batteryLevel < 20) color = RGB565_DARKRED;
+      else if (_batteryLevel < 50) color = RGB565_DARKYELLOW;
+      _dev->fillRect(x + 5, 10, w, 10, color);
+      _dev->fillRect(x + 5 + w, 10, 28 - w, 10, RGB565_BLACK);
+      _dev->drawBitmap(x + 3, 7, chargeIcon, BAT_CHARGE_ICON_WIDTH, 16, RGB565_WHITE);
+    }
+    else {
+      uint16_t color = RGB565_GREEN;
+      if (_batteryLevel < 20) color = RGB565_RED;
+      else if (_batteryLevel < 50) color = RGB565_YELLOW;
+      _dev->fillRect(x + 5, 10, w, 10, color);
+      _dev->fillRect(x + 5 + w, 10, 28 - w, 10, RGB565_BLACK);
+    }
+
     _batteryNeedUpdate = false;
   }
 }
