@@ -42,6 +42,17 @@ struct SysConfig2 {
   char        devName[DEV_NAME_MAX_LEN+1];
 };
 
+typedef uint32_t LifeTime;
+
+struct Maintenance {
+  LifeTime    allSessionsLife;    // seconds
+  LifeTime    recentSessionLife;  // seconds
+  void init() {
+    allSessionsLife = 0;
+    recentSessionLife = 0;
+  }
+};
+
 struct SysResetRestore {
   uint32_t    deepSleepResetCount;
   uint32_t    lAlertReactiveCounter;
@@ -200,6 +211,7 @@ public:
   void setDevCapability(uint32_t cap);
   void setDeviceName(const char* name, size_t len = 0);
 
+  const Maintenance * maintenance() { return &_maintenance; }
   SysResetRestore * resetRestoreData();
 
   Bias * bias() { return &_bias; }
@@ -248,6 +260,8 @@ private:
   bool _saveConfig1();
   bool _loadConfig2();
   bool _saveConfig2();
+  bool _loadMaintenance();
+  bool _saveMaintenance();
   bool _loadResetRestore();
   bool _saveResetRestore();
   bool _loadBias();
@@ -259,6 +273,7 @@ private:
   void _saveMemoryData();
   void _updateConfig1(bool saveImmediately = false);
   void _updateConfig2(bool saveImmediately = false);
+  void _updateMaintenance(bool saveImmediately = false);
   void _updateResetRestore(bool saveImmediately = false);
   void _updateBias(bool saveImmediately = false);
   void _updateAlerts(bool saveImmedidately = false);
@@ -268,12 +283,15 @@ private:
   State             _state;
   bool              _config1NeedToSave;
   bool              _config2NeedToSave;
+  bool              _maintenanceNeedToSave;
   bool              _resetRestoreNeedToSave;
   bool              _biasNeedToSave;
   bool              _alertsNeedToSave;
   bool              _tokensNeedToSave;
+  LifeTime          _currentSessionLife;
   SysConfig1        _config1;
   SysConfig2        _config2;
+  Maintenance       _maintenance;
   SysResetRestore   _resetRestore;
   Bias              _bias;
   Alerts            _alerts;

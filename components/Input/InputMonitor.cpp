@@ -52,6 +52,7 @@ int      _usrGpioLvl = 1;
 uint16_t _pwrLowDurationCount = 0;
 uint16_t _usrLowDurationCount = 0;
 uint16_t _usrPressCount = 0;
+bool     _pwrLongPressTriggered = false;
 
 bool _gpio_check_task_paused = false;
 bool _synced_gpio_check_task_paused = false;
@@ -80,6 +81,7 @@ static void gpio_check_task(void* args)
               if (_pwrLowDurationCount < PWR_TOGGLE_DISPLAY_LOW_COUNT) {
                 sys->onEvent(INPUT_EVENT_PWR_BTN_SHORT_RELEASE);
               }
+              _pwrLongPressTriggered = false;
             }
             else {          // pressed
               // APP_LOGC("[BTN]", "pwr pressed");
@@ -127,13 +129,17 @@ static void gpio_check_task(void* args)
           sys->onEvent(INPUT_EVENT_USR_BTN_XLONG_PRESS);
       }
       if (_pwrGpioLvl == 0) {
-      	++_pwrLowDurationCount;
+      	if( !_pwrLongPressTriggered)
+          ++_pwrLowDurationCount;
       	if (_pwrLowDurationCount >= PWR_TOGGLE_OFF_LOW_COUNT) {
           if (_usrPressCount == USER_PRESS_COUNT_FOR_CALIBRATE_MB_TEMP && _usrGpioLvl == 0) {
             sys->onEvent(INPUT_EVENT_MB_TEMP_CALIBRATE);
             vTaskDelay(1000 / portTICK_RATE_MS);
           }
-          sys->onEvent(INPUT_EVENT_PWR_BTN_LONG_PRESS);
+          if (!_pwrLongPressTriggered) {
+            _pwrLongPressTriggered = true;
+            sys->onEvent(INPUT_EVENT_PWR_BTN_LONG_PRESS);
+          }
         }
       }
     }

@@ -793,12 +793,15 @@ System::System()
 : _state(Uninitialized)
 , _config1NeedToSave(false)
 , _config2NeedToSave(false)
+, _maintenanceNeedToSave(false)
 , _resetRestoreNeedToSave(false)
 , _biasNeedToSave(false)
 , _alertsNeedToSave(false)
 , _tokensNeedToSave(false)
+, _currentSessionLife(0)
 {
   _setDefaultConfig();
+  _maintenance.init();
   _resetRestore.init();
   _bias.init();
   _alerts.init();
@@ -829,6 +832,7 @@ void System::init()
   _initMacADDR();
   _loadConfig1();
   _loadConfig2();
+  _loadMaintenance();
   _loadResetRestore();
   _loadBias();
   _loadAlerts();
@@ -948,6 +952,10 @@ void System::resumePeripherals()
 void System::powerOff()
 {
   APP_LOGC("[System]", "power off");
+
+  // update maintenance upon restart
+  _updateMaintenance();
+
   // save memory to data to flash before power off
   _saveMemoryData();
 
@@ -1036,6 +1044,7 @@ void System::onEvent(int eventId)
 
 #define SYSTEM_CONFIG1_TAG                "appConf1"
 #define SYSTEM_CONFIG2_TAG                "appConf2"
+#define SYSTEM_MAINTENANCE_TAG            "appMaintenance"
 #define SYSTEM_RESET_RESTORE_TAG          "appResetRestore"
 #define SYSTEM_BIAS_TAG                   "appBias"
 #define ALERT_TAG                         "appAlerts"
@@ -1062,6 +1071,23 @@ bool System::_saveConfig2()
 {
   bool succeeded = NvsFlash::saveData(SYSTEM_CONFIG2_TAG, &_config2, sizeof(_config2));
   _config2NeedToSave = false; // ? or _config2NeedToSave = !succeeded;
+  return succeeded;
+}
+
+bool System::_loadMaintenance()
+{
+  return NvsFlash::loadData(SYSTEM_MAINTENANCE_TAG, &_maintenance, sizeof(_maintenance));
+}
+
+bool System::_saveMaintenance()
+{
+  LifeTime sessionLife = (LifeTime)(esp_timer_get_time() / 1000000);
+  _maintenance.allSessionsLife += (sessionLife - _currentSessionLife);
+  _maintenance.recentSessionLife = sessionLife;
+  _currentSessionLife = sessionLife;
+  APP_LOGC("[System]", "session life: %d, all sessions life: %d", sessionLife, _maintenance.allSessionsLife);
+  bool succeeded = NvsFlash::saveData(SYSTEM_MAINTENANCE_TAG, &_maintenance, sizeof(_maintenance));
+  _maintenanceNeedToSave = false;
   return succeeded;
 }
 
@@ -1118,6 +1144,7 @@ void System::_saveMemoryData()
   // save those need to save ...
   if (_config1NeedToSave)      _saveConfig1();
   if (_config2NeedToSave)      _saveConfig2();
+  if (_maintenanceNeedToSave)  _saveMaintenance();
   if (_resetRestoreNeedToSave) _saveResetRestore();
   if (_biasNeedToSave)         _saveBias();
   if (_alertsNeedToSave)       _saveAlerts();
@@ -1138,6 +1165,14 @@ void System::_updateConfig2(bool saveImmedidately)
     _saveConfig2();
   else
     _config2NeedToSave = true; // save when reboot or power off
+}
+
+void System::_updateMaintenance(bool saveImmedidately)
+{
+  if (saveImmedidately)
+    _saveMaintenance();
+  else
+    _maintenanceNeedToSave = true; // save when reboot or power off
 }
 
 void System::_updateResetRestore(bool saveImmedidately)
@@ -1426,6 +1461,9 @@ void System::deepSleepReset()
   _resetRestore.gAlertReactiveCounter = _gAlertReactiveCounter;
   _updateResetRestore();
 
+  // update maintenance upon restart
+  _updateMaintenance();
+
   // save memory data
   _saveMemoryData();
 
@@ -1443,6 +1481,9 @@ void System::setRestartRequest()
 
 void System::restart()
 {
+  // update maintenance upon restart
+  _updateMaintenance();
+
   // save memory data
   _saveMemoryData();
 
