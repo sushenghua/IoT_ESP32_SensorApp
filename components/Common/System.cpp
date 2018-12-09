@@ -227,6 +227,8 @@ static void display_guard_task(void *pvParams = NULL)
 #include "InputMonitor.h"
 #include "PowerManager.h"
 
+#define BATTERY_LEVEL_TO_PWR_OFF  5
+#define SYS_EVENT_POWER_LOW       101  // value different from INPUT_EVENT_xxx in InputMonitor
 #define STATUS_TASK_DELAY_UNIT  100
 
 #define TIME_WIFI_UPDATE_COUNT  5
@@ -263,7 +265,10 @@ void status_check_task(void *p)
         _timeWifiUpdateCount = 0;
       }
       // battery level check
-      if (powerManager.batteryLevelPollTick()) {       
+      if (powerManager.batteryLevelPollTick()) {
+        if (powerManager.batteryLevel() < BATTERY_LEVEL_TO_PWR_OFF) {
+          System::instance()->onEvent(SYS_EVENT_POWER_LOW);
+        }
         dc.setBatteryLevel(powerManager.batteryLevel());
       }
       // battery charge check
@@ -1019,6 +1024,10 @@ void System::onEvent(int eventId)
     case INPUT_EVENT_MB_TEMP_CALIBRATE:
       setMbTempCalibration(true);
       turnAlertSoundOn(true);      // give sound response
+      break;
+
+    case SYS_EVENT_POWER_LOW:
+      powerOff();
       break;
 
     default:
