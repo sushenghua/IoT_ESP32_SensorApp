@@ -33,6 +33,7 @@ struct SysConfig1 {
   bool        wifiOn;
   bool        displayAutoAdjustOn;
   DeployMode  deployMode;
+  int64_t     reserve[2]; // reserve for future use
 };
 
 struct SysConfig2 {
@@ -40,6 +41,7 @@ struct SysConfig2 {
   SensorType  co2SensorType;
   uint32_t    devCapability;
   char        devName[DEV_NAME_MAX_LEN+1];
+  int64_t     reserve[2];
 };
 
 typedef uint32_t LifeTime;
@@ -47,6 +49,7 @@ typedef uint32_t LifeTime;
 struct Maintenance {
   LifeTime    allSessionsLife;    // seconds
   LifeTime    recentSessionLife;  // seconds
+  int64_t     reserve[2];
   void init() {
     allSessionsLife = 0;
     recentSessionLife = 0;
@@ -57,6 +60,7 @@ struct SysResetRestore {
   uint32_t    deepSleepResetCount;
   uint32_t    lAlertReactiveCounter;
   uint32_t    gAlertReactiveCounter;
+  int64_t     reserve[2];
   void init() {
     deepSleepResetCount = 0;
     lAlertReactiveCounter = 0;
@@ -65,8 +69,9 @@ struct SysResetRestore {
 };
 
 struct Bias {
-  bool     mbTempNeedCalibrate;
-  float    mbTempBias;
+  bool        mbTempNeedCalibrate;
+  float       mbTempBias;
+  int64_t     reserve[2];
   void init() {
     mbTempNeedCalibrate = false;
     mbTempBias = 0;
@@ -92,6 +97,7 @@ struct MobileToken {
   char     str[TOKEN_LEN+1];   // null terminated
   uint8_t  groupLen;
   char     group[GROUP_LEN+1]; // null terminated
+  int64_t  reserve[2];
 };
 
 struct MobileTokens {
@@ -141,10 +147,11 @@ enum TriggerAlert {
 };
 
 struct Alert {
-  bool  lEnabled;
-  bool  gEnabled;
-  float lValue;
-  float gValue;
+  bool        lEnabled;
+  bool        gEnabled;
+  float       lValue;
+  float       gValue;
+  int64_t     reserve[2];
 };
 
 #define ALERT_REACTIVE_COUNT   60000  // 60000 * 10ms(mqtt_task delay) = 10 min
@@ -162,6 +169,23 @@ struct Alerts {
       sensors[i].lEnabled = sensors[i].gEnabled = false;
       sensors[i].lValue = sensors[i].gValue = 0.0f;
     }
+  }
+};
+
+struct SysData {
+  SysConfig1        config1;
+  SysConfig2        config2;
+  Maintenance       maintenance;
+  SysResetRestore   resetRestore;
+  Bias              bias;
+  Alerts            alerts;
+  MobileTokens      mobileTokens;
+  void init() {
+    maintenance.init();
+    resetRestore.init();
+    bias.init();
+    alerts.init();
+    mobileTokens.init();
   }
 };
 
@@ -211,10 +235,10 @@ public:
   void setDevCapability(uint32_t cap);
   void setDeviceName(const char* name, size_t len = 0);
 
-  const Maintenance * maintenance() { return &_maintenance; }
+  const Maintenance * maintenance();
   SysResetRestore * resetRestoreData();
 
-  Bias * bias() { return &_bias; }
+  Bias * bias() { return &_data.bias; }
   void setMbTempCalibration(bool need, float tempBias=0);
 
   bool alertPnEnabled();
@@ -242,8 +266,8 @@ public:
   void resumePeripherals();
 
   void powerOff();
-  bool wifiOn() { return _config1.wifiOn; }
-  bool displayAutoAdjustOn() { return _config1.displayAutoAdjustOn; }
+  bool wifiOn() { return _data.config1.wifiOn; }
+  bool displayAutoAdjustOn() { return _data.config1.displayAutoAdjustOn; }
   void turnWifiOn(bool on = true);
   void turnDisplayOn(bool on = true);
   void turnDisplayAutoAdjustOn(bool on = true);
@@ -256,20 +280,10 @@ private:
   void _logInfo();
   void _launchTasks();
   void _setDefaultConfig();
-  bool _loadConfig1();
-  bool _saveConfig1();
-  bool _loadConfig2();
-  bool _saveConfig2();
-  bool _loadMaintenance();
-  bool _saveMaintenance();
-  bool _loadResetRestore();
-  bool _saveResetRestore();
-  bool _loadBias();
-  bool _saveBias();
-  bool _loadAlerts();
-  bool _saveAlerts();
-  bool _loadMobileTokens();
-  bool _saveMobileTokens();
+  bool _loadData();
+  bool _saveData();
+  void _updateData(bool saveImmedidately = false);
+  void _calculateMaintenance();
   void _saveMemoryData();
   void _updateConfig1(bool saveImmediately = false);
   void _updateConfig2(bool saveImmediately = false);
@@ -281,21 +295,9 @@ private:
 
 private:
   State             _state;
-  bool              _config1NeedToSave;
-  bool              _config2NeedToSave;
-  bool              _maintenanceNeedToSave;
-  bool              _resetRestoreNeedToSave;
-  bool              _biasNeedToSave;
-  bool              _alertsNeedToSave;
-  bool              _tokensNeedToSave;
+  bool              _dataNeedToSave;
   LifeTime          _currentSessionLife;
-  SysConfig1        _config1;
-  SysConfig2        _config2;
-  Maintenance       _maintenance;
-  SysResetRestore   _resetRestore;
-  Bias              _bias;
-  Alerts            _alerts;
-  MobileTokens      _mobileTokens;
+  SysData           _data;
 };
 
 #endif // _SYSTEM_H_

@@ -791,37 +791,27 @@ System * System::instance()
 
 System::System()
 : _state(Uninitialized)
-, _config1NeedToSave(false)
-, _config2NeedToSave(false)
-, _maintenanceNeedToSave(false)
-, _resetRestoreNeedToSave(false)
-, _biasNeedToSave(false)
-, _alertsNeedToSave(false)
-, _tokensNeedToSave(false)
+, _dataNeedToSave(false)
 , _currentSessionLife(0)
 {
   _setDefaultConfig();
-  _maintenance.init();
-  _resetRestore.init();
-  _bias.init();
-  _alerts.init();
-  _mobileTokens.init();
+  _data.init();
 }
 
 void System::_setDefaultConfig()
 {
-  _config1.wifiOn = true;
-  _config1.displayAutoAdjustOn = false;
-  _config1.deployMode = HTTPServerMode;
-  // _config1.deployMode = MQTTClientMode;
-  _config2.pmSensorType =  PRODUCT_PM_SENSOR;
-  _config2.co2SensorType = PRODUCT_CO2_SENSOR;
-  _config2.devCapability = ( capabilityForSensorType(_config2.pmSensorType) |
-                             capabilityForSensorType(_config2.co2SensorType) );
-  _config2.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
-  _config2.devCapability |= ORIENTATION_CAPABILITY_MASK;
-  _config2.devName[DEV_NAME_MAX_LEN] = '\0'; // null terminated
-  sprintf(_config2.devName, "%s_%.*s", "AQStation", 8, System::instance()->uid());
+  _data.config1.wifiOn = true;
+  _data.config1.displayAutoAdjustOn = false;
+  _data.config1.deployMode = HTTPServerMode;
+  // _data.config1.deployMode = MQTTClientMode;
+  _data.config2.pmSensorType =  PRODUCT_PM_SENSOR;
+  _data.config2.co2SensorType = PRODUCT_CO2_SENSOR;
+  _data.config2.devCapability = ( capabilityForSensorType(_data.config2.pmSensorType) |
+                                  capabilityForSensorType(_data.config2.co2SensorType) );
+  _data.config2.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
+  _data.config2.devCapability |= ORIENTATION_CAPABILITY_MASK;
+  _data.config2.devName[DEV_NAME_MAX_LEN] = '\0'; // null terminated
+  sprintf(_data.config2.devName, "%s_%.*s", "AQStation", 8, System::instance()->uid());
 }
 
 void System::init()
@@ -830,13 +820,7 @@ void System::init()
   _logInfo();
   NvsFlash::init();
   _initMacADDR();
-  _loadConfig1();
-  _loadConfig2();
-  _loadMaintenance();
-  _loadResetRestore();
-  _loadBias();
-  _loadAlerts();
-  _loadMobileTokens();
+  _loadData();
   _launchTasks();
   _state = Running;
 }
@@ -884,14 +868,14 @@ void System::_launchTasks()
 
   xTaskCreatePinnedToCore(sht3x_sensor_task, "sht3x_sensor_task", 4096, NULL, SHT3X_TASK_PRIORITY, &sht3xSensorTaskHandle, RUN_ON_CORE);
 
-  if (_config2.devCapability & PM_CAPABILITY_MASK)
+  if (_data.config2.devCapability & PM_CAPABILITY_MASK)
     xTaskCreatePinnedToCore(pm_sensor_task, "pm_sensor_task", 4096, NULL, PM_SENSOR_TASK_PRIORITY, &pmSensorTaskHandle, RUN_ON_CORE);
-  if (_config2.devCapability & CO2_CAPABILITY_MASK)
+  if (_data.config2.devCapability & CO2_CAPABILITY_MASK)
     xTaskCreatePinnedToCore(co2_sensor_task, "co2_sensor_task", 4096, NULL, CO2_SENSOR_TASK_PRIORITY, &co2SensorTaskHandle, RUN_ON_CORE);
 
   xTaskCreatePinnedToCore(tsl2561_sensor_task, "tsl2561_sensor_task", 4096, NULL, TSL2561_TASK_PRIORITY, &tsl2561SensorTaskHandle, RUN_ON_CORE);
 
-  if (_config2.devCapability & ORIENTATION_CAPABILITY_MASK)
+  if (_data.config2.devCapability & ORIENTATION_CAPABILITY_MASK)
     xTaskCreatePinnedToCore(orientation_sensor_task, "orientation_sensor_task", 4096, NULL, ORIENTATION_TASK_PRIORITY, &orientationSensorTaskHandle, RUN_ON_CORE);
 
   xTaskCreatePinnedToCore(status_check_task, "status_check_task", 2048, NULL, STATUS_CHECK_TASK_PRIORITY, NULL, RUN_ON_CORE);
@@ -902,9 +886,9 @@ void System::_launchTasks()
   xTaskCreate(&sntp_task, "sntp_task", 4096, NULL, SNTP_TASK_PRIORITY, &sntpTaskHandle);
   vTaskDelay(100 / portTICK_PERIOD_MS);
 
-  if (_config1.deployMode == MQTTClientMode || _config1.deployMode == MQTTClientAndHTTPServerMode)
+  if (_data.config1.deployMode == MQTTClientMode || _data.config1.deployMode == MQTTClientAndHTTPServerMode)
     xTaskCreatePinnedToCore(mqtt_task, "mqtt_task", 8192, NULL, MQTTCLIENT_TASK_PRIORITY, NULL, RUN_ON_CORE);
-  else if (_config1.deployMode == HTTPServerMode || _config1.deployMode == MQTTClientAndHTTPServerMode)
+  else if (_data.config1.deployMode == HTTPServerMode || _data.config1.deployMode == MQTTClientAndHTTPServerMode)
     xTaskCreatePinnedToCore(http_task, "http_task", 8192, NULL, HTTPSERVER_TASK_PRIORITY, NULL, RUN_ON_CORE);
 
   // xTaskCreatePinnedToCore(touch_pad_task, "touch_pad_task", 2048, NULL, TOUCH_PAD_TASK_PRIORITY, NULL, RUN_ON_CORE);
@@ -974,8 +958,8 @@ void System::powerOff()
 
 void System::turnWifiOn(bool on)
 {
-  if (_config1.wifiOn != on) {
-    _config1.wifiOn = on;
+  if (_data.config1.wifiOn != on) {
+    _data.config1.wifiOn = on;
     _updateConfig1(); // _saveConfig1();
   }
 }
@@ -987,15 +971,15 @@ void System::turnDisplayOn(bool on)
 
 void System::turnDisplayAutoAdjustOn(bool on)
 {
-  if (_config1.displayAutoAdjustOn != on) {
-    _config1.displayAutoAdjustOn = on;
+  if (_data.config1.displayAutoAdjustOn != on) {
+    _data.config1.displayAutoAdjustOn = on;
     _updateConfig1(); // _saveConfig1();
   }
 }
 
 void System::toggleWifi()
 {
-  _config1.wifiOn = !_config1.wifiOn;
+  _data.config1.wifiOn = !_data.config1.wifiOn;
   _updateConfig1(); // _saveConfig1();
 }
 
@@ -1042,310 +1026,234 @@ void System::onEvent(int eventId)
   }
 }
 
-#define SYSTEM_CONFIG1_TAG                "appConf1"
-#define SYSTEM_CONFIG2_TAG                "appConf2"
-#define SYSTEM_MAINTENANCE_TAG            "appMaintenance"
-#define SYSTEM_RESET_RESTORE_TAG          "appResetRestore"
-#define SYSTEM_BIAS_TAG                   "appBias"
-#define ALERT_TAG                         "appAlerts"
-#define TOKEN_TAG                         "appTokens"
+#define SYSTEM_DATA_TAG                   "appData"
+// #define SYSTEM_CONFIG1_TAG                "appConf1"
+// #define SYSTEM_CONFIG2_TAG                "appConf2"
+// #define SYSTEM_MAINTENANCE_TAG            "appMaintenance"
+// #define SYSTEM_RESET_RESTORE_TAG          "appResetRestore"
+// #define SYSTEM_BIAS_TAG                   "appBias"
+// #define ALERT_TAG                         "appAlerts"
+// #define TOKEN_TAG                         "appTokens"
 
-bool System::_loadConfig1()
+bool System::_loadData()
 {
-  return NvsFlash::loadData(SYSTEM_CONFIG1_TAG, &_config1, sizeof(_config1));
+  return NvsFlash::loadData(SYSTEM_DATA_TAG, &_data, sizeof(_data));
 }
 
-bool System::_saveConfig1()
+bool System::_saveData()
 {
-  bool succeeded = NvsFlash::saveData(SYSTEM_CONFIG1_TAG, &_config1, sizeof(_config1));
-  _config1NeedToSave = false; // ? or _config1NeedToSave = !succeeded;
+  // calculate to update maintenance
+  _calculateMaintenance();
+
+  // save data
+  bool succeeded = NvsFlash::saveData(SYSTEM_DATA_TAG, &_data, sizeof(_data));
+  _dataNeedToSave = false; // ? or _dataNeedToSave = !succeeded;
   return succeeded;
 }
 
-bool System::_loadConfig2()
+void System::_updateData(bool saveImmedidately)
 {
-  return NvsFlash::loadData(SYSTEM_CONFIG2_TAG, &_config2, sizeof(_config2));
+  if (saveImmedidately)
+    _saveData();
+  else
+    _dataNeedToSave = true; // save when reboot or power off
 }
 
-bool System::_saveConfig2()
-{
-  bool succeeded = NvsFlash::saveData(SYSTEM_CONFIG2_TAG, &_config2, sizeof(_config2));
-  _config2NeedToSave = false; // ? or _config2NeedToSave = !succeeded;
-  return succeeded;
-}
-
-bool System::_loadMaintenance()
-{
-  return NvsFlash::loadData(SYSTEM_MAINTENANCE_TAG, &_maintenance, sizeof(_maintenance));
-}
-
-bool System::_saveMaintenance()
+void System::_calculateMaintenance()
 {
   LifeTime sessionLife = (LifeTime)(esp_timer_get_time() / 1000000);
-  _maintenance.allSessionsLife += (sessionLife - _currentSessionLife);
-  _maintenance.recentSessionLife = sessionLife;
+  _data.maintenance.allSessionsLife += (sessionLife - _currentSessionLife);
+  _data.maintenance.recentSessionLife = sessionLife;
   _currentSessionLife = sessionLife;
-  APP_LOGC("[System]", "session life: %d, all sessions life: %d", sessionLife, _maintenance.allSessionsLife);
-  bool succeeded = NvsFlash::saveData(SYSTEM_MAINTENANCE_TAG, &_maintenance, sizeof(_maintenance));
-  _maintenanceNeedToSave = false;
-  return succeeded;
-}
-
-bool System::_loadResetRestore()
-{
-  return NvsFlash::loadData(SYSTEM_RESET_RESTORE_TAG, &_resetRestore, sizeof(_resetRestore));
-}
-
-bool System::_saveResetRestore()
-{
-  bool succeeded = NvsFlash::saveData(SYSTEM_RESET_RESTORE_TAG, &_resetRestore, sizeof(_resetRestore));
-  _resetRestoreNeedToSave = false;
-  return succeeded;
-}
-
-bool System::_loadBias()
-{
-  return NvsFlash::loadData(SYSTEM_BIAS_TAG, &_bias, sizeof(_bias));
-}
-
-bool System::_saveBias()
-{
-  bool succeeded = NvsFlash::saveData(SYSTEM_BIAS_TAG, &_bias, sizeof(_bias));
-  _biasNeedToSave = false;
-  return succeeded;
-}
-
-bool System::_loadAlerts()
-{
-  return NvsFlash::loadData(ALERT_TAG, &_alerts, sizeof(_alerts));
-}
-
-bool System::_saveAlerts()
-{
-  bool succeeded = NvsFlash::saveData(ALERT_TAG, &_alerts, sizeof(_alerts));
-  _alertsNeedToSave = false;
-  return succeeded;
-}
-
-bool System::_loadMobileTokens()
-{
-  return NvsFlash::loadData(TOKEN_TAG, &_mobileTokens, sizeof(_mobileTokens));
-}
-
-bool System::_saveMobileTokens()
-{
-  bool succeeded = NvsFlash::saveData(TOKEN_TAG, &_mobileTokens, sizeof(_mobileTokens));
-  _tokensNeedToSave =  false;
-  return succeeded;
+  // APP_LOGC("[System]", "session life: %d, all sessions life: %d", sessionLife, _data.maintenance.allSessionsLife);
 }
 
 void System::_saveMemoryData()
 {
   // save those need to save ...
-  if (_config1NeedToSave)      _saveConfig1();
-  if (_config2NeedToSave)      _saveConfig2();
-  if (_maintenanceNeedToSave)  _saveMaintenance();
-  if (_resetRestoreNeedToSave) _saveResetRestore();
-  if (_biasNeedToSave)         _saveBias();
-  if (_alertsNeedToSave)       _saveAlerts();
-  if (_tokensNeedToSave)       _saveMobileTokens();
+  if (_dataNeedToSave)  _saveData();
 }
 
 void System::_updateConfig1(bool saveImmedidately)
 {
-  if (saveImmedidately)
-    _saveConfig1();
-  else
-    _config1NeedToSave = true; // save when reboot or power off
+  _updateData(saveImmedidately);
 }
 
 void System::_updateConfig2(bool saveImmedidately)
 {
-  if (saveImmedidately)
-    _saveConfig2();
-  else
-    _config2NeedToSave = true; // save when reboot or power off
+  _updateData(saveImmedidately);
 }
 
 void System::_updateMaintenance(bool saveImmedidately)
 {
-  if (saveImmedidately)
-    _saveMaintenance();
-  else
-    _maintenanceNeedToSave = true; // save when reboot or power off
+  _updateData(saveImmedidately);
 }
 
 void System::_updateResetRestore(bool saveImmedidately)
 {
-  if (saveImmedidately)
-    _saveResetRestore();
-  else
-    _resetRestoreNeedToSave = true; // save when reboot or power off
+  _updateData(saveImmedidately);
 }
 
 void System::_updateBias(bool saveImmedidately)
 {
-  if (saveImmedidately)
-    _saveBias();
-  else
-    _biasNeedToSave = true; // save when reboot or power off
+  _updateData(saveImmedidately);
 }
 
 void System::_updateAlerts(bool saveImmedidately)
 {
-  if (saveImmedidately)
-    _saveAlerts();
-  else
-    _alertsNeedToSave = true; // save when reboot or power off
+  _updateData(saveImmedidately);
 }
 
 void System::_updateMobileTokens(bool saveImmedidately)
 {
-  if (saveImmedidately)
-    _saveMobileTokens();
-  else
-    _tokensNeedToSave = true; // save when reboot or power off
+  _updateData(saveImmedidately);
 }
 
 DeployMode System::deployMode()
 {
-  return _config1.deployMode;
+  return _data.config1.deployMode;
 }
 
 SensorType System::pmSensorType()
 {
-  return _config2.pmSensorType;
+  return _data.config2.pmSensorType;
 }
 
 SensorType System::co2SensorType()
 {
-  return _config2.co2SensorType;
+  return _data.config2.co2SensorType;
 }
 
 uint32_t System::devCapability()
 {
-  return _config2.devCapability;
+  return _data.config2.devCapability;
 }
 
 void System::setDeployMode(DeployMode mode)
 {
-  if (_config1.deployMode != mode) {
-    _config1.deployMode = mode;
-    _updateConfig1(); // _saveConfig1();
+  if (_data.config1.deployMode != mode) {
+    _data.config1.deployMode = mode;
+    _updateConfig1();
   }
 }
 
 void System::toggleDeployMode()
 {
-  if (_config1.deployMode == HTTPServerMode) {
-    _config1.deployMode = MQTTClientMode;
+  if (_data.config1.deployMode == HTTPServerMode) {
+    _data.config1.deployMode = MQTTClientMode;
   }
   else {
-    _config1.deployMode = HTTPServerMode;
+    _data.config1.deployMode = HTTPServerMode;
   }
-  _config1.wifiOn = true; // when deploy mode changed, always turn on wifi
-  _saveConfig1();
+  _data.config1.wifiOn = true; // when deploy mode changed, always turn on wifi
+  _updateConfig1();
   restart();
 }
 
 void System::setSensorType(SensorType pmType, SensorType co2Type)
 {
-  if (_config2.pmSensorType != pmType || _config2.co2SensorType != co2Type) {
-    _config2.pmSensorType = pmType;
-    _config2.co2SensorType = co2Type;
-    _config2.devCapability = ( capabilityForSensorType(_config2.pmSensorType) |
-                               capabilityForSensorType(_config2.co2SensorType) );
-    _config2.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
-    _config2.devCapability |= ORIENTATION_CAPABILITY_MASK;
-    _updateConfig2(); // _saveConfig2();
+  if (_data.config2.pmSensorType != pmType || _data.config2.co2SensorType != co2Type) {
+    _data.config2.pmSensorType = pmType;
+    _data.config2.co2SensorType = co2Type;
+    _data.config2.devCapability = ( capabilityForSensorType(_data.config2.pmSensorType) |
+                                    capabilityForSensorType(_data.config2.co2SensorType) );
+    _data.config2.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
+    _data.config2.devCapability |= ORIENTATION_CAPABILITY_MASK;
+    _updateConfig2();
   }
 }
 
 void System::setDevCapability(uint32_t cap)
 {
-  if (_config2.devCapability != cap) {
-    _config2.devCapability = cap;
-    _updateConfig2(); // _saveConfig2();
+  if (_data.config2.devCapability != cap) {
+    _data.config2.devCapability = cap;
+    _updateConfig2();
   }
 }
 
 const char* System::deviceName()
 {
-  return _config2.devName;
+  return _data.config2.devName;
 }
 
 void System::setDeviceName(const char* name, size_t len)
 {
   if (len > 0) {
     len = len < DEV_NAME_MAX_LEN ? len : DEV_NAME_MAX_LEN;
-    memcpy(_config2.devName, name, len);
-    _config2.devName[len] = '\0'; // null terminated
+    memcpy(_data.config2.devName, name, len);
+    _data.config2.devName[len] = '\0'; // null terminated
   }
   else {
-    strncpy(_config2.devName, name, DEV_NAME_MAX_LEN);
+    strncpy(_data.config2.devName, name, DEV_NAME_MAX_LEN);
   }
-  _updateConfig2(); // _saveConfig2();
+  _updateConfig2();
+}
+
+const Maintenance * System::maintenance()
+{
+  _calculateMaintenance();
+  return &_data.maintenance;
 }
 
 SysResetRestore * System::resetRestoreData()
 {
-  return &_resetRestore;
+  return &_data.resetRestore;
 }
 
 void System::setMbTempCalibration(bool need, float tempBias)
 {
-  _bias.mbTempNeedCalibrate = need;
-  _bias.mbTempBias = tempBias;
-  _updateBias(true);
+  _data.bias.mbTempNeedCalibrate = need;
+  _data.bias.mbTempBias = tempBias;
+  _updateBias();
 }
 
 bool System::alertPnEnabled()
 {
-  return _alerts.pnEnabled;
+  return _data.alerts.pnEnabled;
 }
 
 bool System::alertSoundEnabled()
 {
-  return _alerts.soundEnabled;
+  return _data.alerts.soundEnabled;
 }
 
 Alerts * System::alerts()
 {
-  return &_alerts;
+  return &_data.alerts;
 }
 
 TriggerAlert System::sensorValueTriggerAlert(SensorDataType type, float value)
 {
-  if (_alerts.sensors[type].lEnabled && value < _alerts.sensors[type].lValue) return TriggerL;
-  else if (_alerts.sensors[type].gEnabled && value >= _alerts.sensors[type].gValue) return TriggerG;
+  if (_data.alerts.sensors[type].lEnabled && value < _data.alerts.sensors[type].lValue) return TriggerL;
+  else if (_data.alerts.sensors[type].gEnabled && value >= _data.alerts.sensors[type].gValue) return TriggerG;
   else return TriggerNone;
 }
 
 MobileTokens * System::mobileTokens()
 {
-  return &_mobileTokens;
+  return &_data.mobileTokens;
 }
 
 bool System::tokenEnabled(MobileOS os, const char* token)
 {
-  int8_t index = _mobileTokens.findToken(token);
-  return (index != -1 && _mobileTokens.token(index).os == os && _mobileTokens.token(index).on);
+  int8_t index = _data.mobileTokens.findToken(token);
+  return (index != -1 && _data.mobileTokens.token(index).os == os && _data.mobileTokens.token(index).on);
 }
 
 void System::setAlertPnEnabled(bool enabled)
 {
-  if (_alerts.pnEnabled != enabled) {
-    _alerts.pnEnabled = enabled;
-    _alertsNeedToSave = true;
+  if (_data.alerts.pnEnabled != enabled) {
+    _data.alerts.pnEnabled = enabled;
+    _dataNeedToSave = true;
     if (enabled) _resetAlertReactiveCounter();
   }
 }
 
 void System::setAlertSoundEnabled(bool enabled)
 {
-  if (_alerts.soundEnabled != enabled) {
-    _alerts.soundEnabled = enabled;
-    _alertsNeedToSave = true;
+  if (_data.alerts.soundEnabled != enabled) {
+    _data.alerts.soundEnabled = enabled;
+    _dataNeedToSave = true;
     if (!enabled) turnAlertSoundOn(false);
   }
 }
@@ -1371,17 +1279,17 @@ void System::turnAlertSoundOn(bool on)
 
 void System::setAlert(SensorDataType type, bool lEnabled, bool gEnabled, float lValue, float gValue)
 {
-  _alerts.sensors[type].lEnabled = lEnabled;
-  _alerts.sensors[type].gEnabled = gEnabled;
-  _alerts.sensors[type].lValue = lValue;
-  _alerts.sensors[type].gValue = gValue;
-  _alertsNeedToSave = true;
+  _data.alerts.sensors[type].lEnabled = lEnabled;
+  _data.alerts.sensors[type].gEnabled = gEnabled;
+  _data.alerts.sensors[type].lValue = lValue;
+  _data.alerts.sensors[type].gValue = gValue;
+  _dataNeedToSave = true;
 }
 
 void System::setPnToken(bool enabled, MobileOS os, const char *token, size_t groupLen, const char *group)
 {
-  _mobileTokens.setToken(enabled, os, token, groupLen, group);
-  _tokensNeedToSave = true;
+  _data.mobileTokens.setToken(enabled, os, token, groupLen, group);
+  _dataNeedToSave = true;
 }
 
 void System::resetAlertReactiveCounter()
@@ -1420,9 +1328,9 @@ static char MODEL[20];
 
 const char* System::model()
 {
-  sprintf(MODEL, sensorTypeStr(_config2.pmSensorType));
+  sprintf(MODEL, sensorTypeStr(_data.config2.pmSensorType));
   sprintf(MODEL+strlen(MODEL), "-");
-  sprintf(MODEL+strlen(MODEL), sensorTypeStr(_config2.co2SensorType));
+  sprintf(MODEL+strlen(MODEL), sensorTypeStr(_data.config2.co2SensorType));
   return MODEL;
 }
 
@@ -1456,9 +1364,9 @@ void System::restoreFactory()
 void System::deepSleepReset()
 {
   // save alert reactive counter for later restore
-  _resetRestore.deepSleepResetCount++;
-  _resetRestore.lAlertReactiveCounter = _lAlertReactiveCounter;
-  _resetRestore.gAlertReactiveCounter = _gAlertReactiveCounter;
+  _data.resetRestore.deepSleepResetCount++;
+  _data.resetRestore.lAlertReactiveCounter = _lAlertReactiveCounter;
+  _data.resetRestore.gAlertReactiveCounter = _gAlertReactiveCounter;
   _updateResetRestore();
 
   // update maintenance upon restart
