@@ -45,7 +45,7 @@ void SensorDisplayController::init(int displayInitMode)
     _initDisplayItems();
     _layoutScreen();
 
-    setQRCodeType(QRCodeDevice);
+    // setQRCodeType(QRCodeDevice);
 
     _inited = true;
   }
@@ -173,7 +173,7 @@ void SensorDisplayController::update()
     _dev->fillScreen(RGB565_BLACK);
     _dev->setRotation(_rotation);
     _layoutScreen();
-    if (_rotation == DISPLAY_ROTATION_CW_270) setQRCodeType(QRCodeDevice);
+    if (_rotation == DISPLAY_ROTATION_CW_270) setQRCodeType(QRCodeDevice, true);
     this->updateStatusBar(true);
     _staticContentNeedUpdate = true;
     _dynamicContentNeedUpdate = true;
@@ -565,7 +565,7 @@ void SensorDisplayController::_renderQRCodeScreen()
 
       // title
       _dev->setTextColor(RGB565_WHITE, RGB565_BLACK);
-      _dev->setCursor(xOffset, yOffset - 35);
+      _dev->setCursor(xOffset, yOffset - 30);
       _dev->write(QRCodeTitle[_qrCodeType]);
 
       // QR Code
@@ -581,9 +581,9 @@ void SensorDisplayController::_renderQRCodeScreen()
   }
 }
 
-void SensorDisplayController::setQRCodeType(QRCodeType type)
+void SensorDisplayController::setQRCodeType(QRCodeType type, bool forceUpdate)
 {
-  if (_qrCodeType != type) {
+  if (_qrCodeType != type || forceUpdate) {
     _qrCodeType = type;
 
     _qrStr = SharedBuffer::qrStrBuffer();
@@ -592,7 +592,7 @@ void SensorDisplayController::setQRCodeType(QRCodeType type)
 
     switch(type) {
       case QRCodeDevice:
-        sprintf(_qrStr, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"firmv\":\"%s\",\"bdv\":\"%s\",\"model\":\"%s\",\"alcd\":%s,\"deploy\":\"%s\",\"devname\":\"%s\"}, \"cmd\":\"%s\"}",
+        sprintf(_qrStr, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"firmv\":\"%s\",\"bdv\":\"%s\",\"model\":\"%s\",\"alcd\":%s,\"deploy\":\"%s\",\"devname\":\"%s\",\"life\":\"%d\"}, \"cmd\":\"%s\"}",
                 sys->uid(),
                 sys->devCapability(),
                 sys->firmwareVersion(),
@@ -601,6 +601,7 @@ void SensorDisplayController::setQRCodeType(QRCodeType type)
                 sys->displayAutoAdjustOn()? "true" : "false",
                 deployModeStr(sys->deployMode()),
                 sys->deviceName(),
+                sys->maintenance()->allSessionsLife,
                 "GetDeviceInfo");
         break;
 

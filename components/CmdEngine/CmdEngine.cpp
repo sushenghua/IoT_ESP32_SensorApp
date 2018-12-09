@@ -362,7 +362,7 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
     case GetDeviceInfo:
       if (retFmt == JSON) {
         System *sys = System::instance();
-        sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\",\"bdv\":\"%s\",\"model\":\"%s\",\"alcd\":%s,\"deploy\":\"%s\",\"hostname\":\"%s\",\"devname\":\"%s\"}, \"cmd\":\"%s\"}",
+        sprintf(_strBuf, "{\"ret\":{\"uid\":\"%s\",\"cap\":\"%u\",\"libv\":\"%s\",\"firmv\":\"%s\",\"bdv\":\"%s\",\"model\":\"%s\",\"alcd\":%s,\"deploy\":\"%s\",\"hostname\":\"%s\",\"devname\":\"%s\",\"life\":\"%d\"}, \"cmd\":\"%s\"}",
                 sys->uid(),
                 sys->devCapability(),
                 sys->idfVersion(),
@@ -373,6 +373,7 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
                 deployModeStr(sys->deployMode()),
                 Wifi::instance()->getHostName(),
                 sys->deviceName(),
+                sys->maintenance()->allSessionsLife,
                 cmdKeyToStr(cmdKey));
         _delegate->replyMessage(_strBuf, strlen(_strBuf), userdata);
       }

@@ -38,7 +38,7 @@ public:
   void setCO2Data(const CO2Data *co2Data, bool update = true);
   void setScreenMessage(const char * msg);
 
-  void setQRCodeType(QRCodeType type);
+  void setQRCodeType(QRCodeType type, bool forceUpdate = false);
   void onUsrButtonRelease();
 
 public:
