@@ -52,6 +52,9 @@ bool pwrChipReady()
 #define PREG_RST_CHRG_TERM_TIMER             0x9C // 1001 1100  charge safety timer 12hrs
 #define PREG_WATCHDOG_TIMER_OFF_AND_MASK     0xCF // 1100 1111
 
+#define PREG_RST_PWR_ON_CONF                 0x3B // 0011 1011
+#define PREG_SYS_MIN_VOLTAGE_31V             0x33 // 0011 0011
+
 #define PREG_RST_MISC_OPERATION              0x4B // 0100 1011
 #define PREG_BATFET_OFF_OR_MASK              0x20 // 0010 0000
 
@@ -117,6 +120,7 @@ void PowerManager::init()
 void PowerManager::applyDefaultSettings()
 {
   _setChargeCurrent();
+  _setSysMinVoltage();
 }
 
 bool PowerManager::batteryLevelPollTick()
@@ -200,4 +204,10 @@ bool PowerManager::_setChargeCurrent()
 {
   _data = PREG_1536mA_CHRG_CURRENT;
   return pwrChipMemTx(PREG_CHRG_CURRENT, &_data);
+}
+
+bool PowerManager::_setSysMinVoltage()
+{
+  _data = PREG_SYS_MIN_VOLTAGE_31V;
+  return pwrChipMemTx(PREG_PWR_ON_CONF, &_data);
 }

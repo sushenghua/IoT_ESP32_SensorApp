@@ -41,6 +41,7 @@ public:
 protected:
   uint8_t _chargeCurrentReg();
   bool _setChargeCurrent();
+  bool _setSysMinVoltage();
 };
 
 #endif // end of _POWER_MANAGER_H
