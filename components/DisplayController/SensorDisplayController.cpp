@@ -544,10 +544,12 @@ static const char * const QRCodeTitle[] = {
     "Device",           // 0
     "iOS App",          // 1
     "Android App",      // 2
+    "Manual",           // 4
 };
 
-#define IOS_APP_URL      "https://itunes.apple.com/"
-#define ANDROID_APP_URL  "http://bing.com/"
+#define IOS_APP_URL         "https://testflight.apple.com/join/YqdQLVMQ"
+#define ANDROID_APP_URL     "http://appsgenuine.com/download/qmonitor.apk"
+#define DEVICE_MANUAL_URL   "http://appsgenuine.com/#eighth"
 
 void SensorDisplayController::_renderQRCodeScreen()
 {
@@ -611,6 +613,10 @@ void SensorDisplayController::setQRCodeType(QRCodeType type, bool forceUpdate)
 
       case QRCodeAndroid:
         sprintf(_qrStr, "%s", ANDROID_APP_URL);
+        break;
+
+      case QRCodeManual:
+        sprintf(_qrStr, "%s", DEVICE_MANUAL_URL);
         break;
 
       default:

@@ -18,6 +18,7 @@ enum QRCodeType {
   QRCodeDevice    = 0,
   QRCodeIOS       = 1,
   QRCodeAndroid   = 2,
+  QRCodeManual    = 3,
   QRCodeMax
 };
 
