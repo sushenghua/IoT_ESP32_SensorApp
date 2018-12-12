@@ -227,7 +227,7 @@ static void display_guard_task(void *pvParams = NULL)
 #include "InputMonitor.h"
 #include "PowerManager.h"
 
-#define BATTERY_LEVEL_TO_PWR_OFF  15
+#define BATTERY_LEVEL_TO_PWR_OFF  10
 #define SYS_EVENT_POWER_LOW       101  // value different from INPUT_EVENT_xxx in InputMonitor
 #define STATUS_TASK_DELAY_UNIT  100
 
@@ -274,6 +274,11 @@ void status_check_task(void *p)
       // battery charge check
       if (_hasPwrEvent) {
         _chargeStatus = powerManager.chargeStatus();
+#ifdef DEBUG_BATTERY_LIFE
+        if ((_chargeStatus == PowerManager::PreCharge || _chargeStatus == PowerManager::FastCharge) &&
+            powerManager.batteryLevel() > 90 )
+          System::instance()->clearMaintenance();
+#endif
         dc.setBatteryCharge(_chargeStatus == PowerManager::PreCharge || _chargeStatus == PowerManager::FastCharge); 
         _hasPwrEvent = false;
       }
@@ -1198,6 +1203,15 @@ void System::setDeviceName(const char* name, size_t len)
   }
   _updateConfig2();
 }
+
+#ifdef DEBUG_BATTERY_LIFE
+void System::clearMaintenance()
+{
+  _data.maintenance.allSessionsLife = 0;
+  _data.maintenance.recentSessionLife = 0;
+  _updateMaintenance(true);
+}
+#endif
 
 const Maintenance * System::maintenance()
 {

@@ -37,4 +37,6 @@
 #define LOG_REMOTE_CMD
 // #define LOG_APPUPDATER
 
+#define DEBUG_BATTERY_LIFE
+
 #endif // _CONF_H_INCLUDED

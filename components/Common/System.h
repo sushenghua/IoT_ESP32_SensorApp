@@ -235,6 +235,9 @@ public:
   void setDevCapability(uint32_t cap);
   void setDeviceName(const char* name, size_t len = 0);
 
+#ifdef DEBUG_BATTERY_LIFE
+  void clearMaintenance();
+#endif
   const Maintenance * maintenance();
   SysResetRestore * resetRestoreData();
 
