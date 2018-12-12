@@ -275,8 +275,7 @@ void status_check_task(void *p)
       if (_hasPwrEvent) {
         _chargeStatus = powerManager.chargeStatus();
 #ifdef DEBUG_BATTERY_LIFE
-        if ((_chargeStatus == PowerManager::PreCharge || _chargeStatus == PowerManager::FastCharge) &&
-            powerManager.batteryLevel() > 90 )
+        if (_chargeStatus == PowerManager::NotCharging && powerManager.batteryLevel() > 95)
           System::instance()->clearMaintenance();
 #endif
         dc.setBatteryCharge(_chargeStatus == PowerManager::PreCharge || _chargeStatus == PowerManager::FastCharge); 
