@@ -21,63 +21,6 @@
 
 #define DEBUG
 
-
-// Ref: https://gist.github.com/barrysteyn/7308212
-
-// size_t calcDecodeLength(const char* b64input) { //Calculates the length of a decoded string
-//   size_t len = strlen(b64input),
-//     padding = 0;
-
-//   if (b64input[len-1] == '=' && b64input[len-2] == '=') //last two chars are =
-//     padding = 2;
-//   else if (b64input[len-1] == '=') //last char is =
-//     padding = 1;
-
-//   return (len*3)/4 - padding;
-// }
-
-// int Base64Decode(char* b64message, unsigned char** buffer, size_t* length) //Decodes a base64 encoded string
-// {
-//   BIO *bio, *b64;
-
-//   int decodeLen = calcDecodeLength(b64message);
-//   *buffer = (unsigned char*)malloc(decodeLen + 1);
-//   (*buffer)[decodeLen] = '\0';
-
-//   bio = BIO_new_mem_buf(b64message, -1);
-//   b64 = BIO_new(BIO_f_base64());
-//   bio = BIO_push(b64, bio);
-
-//   BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL); //Do not use newlines to flush buffer
-//   *length = BIO_read(bio, *buffer, strlen(b64message));
-//   assert(*length == decodeLen); //length should equal decodeLen, else something went horribly wrong
-//   BIO_free_all(bio);
-
-//   return (0); //success
-// }
-
-// int Base64Encode(unsigned char* buffer, size_t length, char** b64text) //Encodes a binary safe base 64 string
-// {
-//   BIO *bio, *b64;
-//   BUF_MEM *bufferPtr;
-
-//   b64 = BIO_new(BIO_f_base64());
-//   bio = BIO_new(BIO_s_mem());
-//   bio = BIO_push(b64, bio);
-
-//   BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL); //Ignore newlines - write everything in one line
-//   BIO_write(bio, buffer, length);
-//   BIO_flush(bio);
-//   BIO_get_mem_ptr(bio, &bufferPtr);
-//   BIO_set_close(bio, BIO_NOCLOSE);
-//   BIO_free_all(bio);
-
-//   *b64text=(*bufferPtr).data;
-
-//   return (0); //success
-// }
-
-
 // Ref: https://wiki.openssl.org/index.php/EVP_Symmetric_Encryption_and_Decryption
 
 typedef const EVP_CIPHER * (*CipherAlgorithm)(void);
@@ -241,42 +184,42 @@ bool encryptStringToBinary(const std::string &plainText, unsigned char * cipherB
     size = encrypt(plaintext, plainText.length(), keys, ivs, cipherBinary, cAlgorithm);
 
 
-std::cout << "----------------------begin-----------------" << std::endl;
-std::cout << "input: " << plainText << std::endl;
-std::cout << "key:   " << keys << std::endl;
-std::cout << "iv     " << ivs << std::endl;
-std::vector<unsigned char> _plaintCache(2048, 0);
-std::string cipherText;
-unsigned char bcache[4096];
-size_t bs;
+// std::cout << "----------------------begin-----------------" << std::endl;
+// std::cout << "input: " << plainText << std::endl;
+// std::cout << "key:   " << keys << std::endl;
+// std::cout << "iv     " << ivs << std::endl;
+// std::vector<unsigned char> _plaintCache(2048, 0);
+// std::string cipherText;
+// unsigned char bcache[4096];
+// size_t bs;
 
-    // std::vector<unsigned char> cipherBinary does not woked
-//     int len = encrypt(plaintext, plainText.length(), keys, ivs, cipherBinary.data(), cAlgorithm);
-//     cipherBinary.resize(len);
+//     // std::vector<unsigned char> cipherBinary does not woked
+// //     int len = encrypt(plaintext, plainText.length(), keys, ivs, cipherBinary.data(), cAlgorithm);
+// //     cipherBinary.resize(len);
 
-// std::cout << "en:    " << cipherBinary.data() << std::endl;
-// std::cout << "ensize:" << cipherBinary.size() << std::endl;
-// unsigned char *cipherdata = cipherBinary.data();
-// int dlen = decrypt(cipherdata, cipherBinary.size(), keys, ivs, _plaintCache.data(), cAlgorithm);
+// // std::cout << "en:    " << cipherBinary.data() << std::endl;
+// // std::cout << "ensize:" << cipherBinary.size() << std::endl;
+// // unsigned char *cipherdata = cipherBinary.data();
+// // int dlen = decrypt(cipherdata, cipherBinary.size(), keys, ivs, _plaintCache.data(), cAlgorithm);
 
-int len = encrypt(plaintext, plainText.length(), keys, ivs, cipherBinary, cAlgorithm);
-base64Encode(cipherBinary, size, cipherText);
+// int len = encrypt(plaintext, plainText.length(), keys, ivs, cipherBinary, cAlgorithm);
+// base64Encode(cipherBinary, size, cipherText);
 
-std::cout << "en:    " << (const char*)cipherBinary << std::endl;
-std::cout << "ensize:" << sizeof((const char*)cipherBinary) << std::endl;
-std::cout << "b64enc:" << cipherText << std::endl;
+// std::cout << "en:    " << (const char*)cipherBinary << std::endl;
+// std::cout << "ensize:" << sizeof((const char*)cipherBinary) << std::endl;
+// std::cout << "b64enc:" << cipherText << std::endl;
 
-base64Decode(cipherText, bcache, bs);
-std::cout << "b64dec:" << (const char*)bcache << std::endl;
-std::cout << "decsz: " << bs << std::endl;
+// base64Decode(cipherText, bcache, bs);
+// std::cout << "b64dec:" << (const char*)bcache << std::endl;
+// std::cout << "decsz: " << bs << std::endl;
 
-int dlen = decrypt(bcache, len, keys, ivs, _plaintCache.data(), cAlgorithm);
-_plaintCache.resize(dlen);
-std::string pt((const char*)_plaintCache.data(), _plaintCache.size());
+// int dlen = decrypt(bcache, len, keys, ivs, _plaintCache.data(), cAlgorithm);
+// _plaintCache.resize(dlen);
+// std::string pt((const char*)_plaintCache.data(), _plaintCache.size());
 
-std::cout << "de:    " << pt << std::endl;
-std::cout << "match: " << (pt == plainText) << std::endl;
-std::cout << "---------------------- end -----------------" << std::endl;
+// std::cout << "de:    " << pt << std::endl;
+// std::cout << "match: " << (pt == plainText) << std::endl;
+// std::cout << "---------------------- end -----------------" << std::endl;
   }
 
   return succeeded;
