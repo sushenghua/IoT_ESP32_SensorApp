@@ -384,6 +384,15 @@ int main( int argc, const char* argv[])
     fi.close();
     fo.close();
 
+    if (cipherAlgorithmName != "none") {
+      std::fstream fk("key_and_iv", std::fstream::out);
+      fk << "key:" << std::endl;
+      fk << key << std::endl << std::endl;
+      fk << "iv:" << std::endl;
+      fk << iv << std::endl;
+      fk.close();
+    }
+
   } while (false); // end of flow control
 
   if (formatErr) {
