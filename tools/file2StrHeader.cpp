@@ -246,6 +246,7 @@ std::cout << "key:   " << keys << std::endl;
 std::cout << "iv     " << ivs << std::endl;
 std::vector<unsigned char> _plaintCache(2048, 0);
 
+		// std::vector<unsigned char> cipherBinary does not woked
 //     int len = encrypt(plaintext, plainText.length(), keys, ivs, cipherBinary.data(), cAlgorithm);
 //     cipherBinary.resize(len);
 
