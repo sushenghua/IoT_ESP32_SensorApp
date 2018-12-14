@@ -385,11 +385,13 @@ int main( int argc, const char* argv[])
     fo.close();
 
     if (cipherAlgorithmName != "none") {
-      std::fstream fk("key_and_iv", std::fstream::out);
+      std::fstream fk("encryption_note", std::fstream::out);
       fk << "key:" << std::endl;
       fk << key << std::endl << std::endl;
       fk << "iv:" << std::endl;
-      fk << iv << std::endl;
+      fk << iv << std::endl << std::endl;
+      fk << "algorithm:" << std::endl;
+      fk << cipherAlgorithmName << std::endl;
       fk.close();
     }
 
