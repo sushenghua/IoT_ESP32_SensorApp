@@ -143,7 +143,7 @@ CipherAlgorithm cipherAdaption(std::string &cipherAlgorithm, std::string &iv, un
 {
   CipherAlgorithm cAlgorithm = NULL;
 
-  if (cipherAlgorithm == "aes_128_ecb") {
+  if      (cipherAlgorithm == "aes_128_ecb") {
     cAlgorithm = EVP_aes_128_ecb;
     ivp = NULL;
   }
@@ -252,7 +252,7 @@ int main( int argc, const char* argv[])
 
   do { // flow control
 
-    if (argc != 7 && argc != 9 && argc != 13) {
+    if (argc != 7 && argc != 9 && argc != 11 && argc != 13) {
       formatErr = true;
       break;
     }
@@ -303,14 +303,19 @@ int main( int argc, const char* argv[])
     if (cipherAlgorithmArgIndex != -1) {
       cipherAlgorithmName = argv[cipherAlgorithmArgIndex];
       if (cipherAlgorithmName != "none") {
-        if (keyArgIndex == -1 || ivArgIndex == -1) {
+        if (keyArgIndex == -1) {
           formatErr = true;
           break;
         }
-        else {
-          key = argv[keyArgIndex];
-          iv = argv[ivArgIndex];
-        }
+      	key = argv[keyArgIndex];
+
+        if (cipherAlgorithmName.rfind("_ecb") == std::string::npos) {
+					if (ivArgIndex == -1) {
+	          formatErr = true;
+	          break;
+	        }
+	        iv = argv[ivArgIndex];
+        } 
       }
     }
 
