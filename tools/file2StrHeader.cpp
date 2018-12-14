@@ -139,21 +139,25 @@ void base64Decode(const std::string& encoded, unsigned char *decoded, size_t &si
   size = BIO_read(b64.get(), decoded, maxlen);
 }
 
-CipherAlgorithm getCipherAlgorithm(std::string &cipherAlgorithm)
+CipherAlgorithm cipherAdaption(std::string &cipherAlgorithm, std::string &iv, unsigned char *&ivp)
 {
   CipherAlgorithm cAlgorithm = NULL;
 
   if (cipherAlgorithm == "aes_128_ecb") {
     cAlgorithm = EVP_aes_128_ecb;
+    ivp = NULL;
   }
   else if (cipherAlgorithm == "aes_128_cbc") {
     cAlgorithm = EVP_aes_128_cbc;
+    ivp = (unsigned char *)iv.c_str();
   }
   else if (cipherAlgorithm == "aes_256_ecb") {
     cAlgorithm = EVP_aes_256_ecb;
+    ivp = NULL;
   }
   else if (cipherAlgorithm == "aes_256_cbc") {
     cAlgorithm = EVP_aes_256_cbc;
+    ivp = (unsigned char *)iv.c_str();
   }
 
   return cAlgorithm;
@@ -164,6 +168,7 @@ bool encryptStringToBinary(const std::string &plainText, unsigned char * cipherB
 {
   bool succeeded = true;
   CipherAlgorithm cAlgorithm = NULL;
+  unsigned char *ivp = NULL;
 
   if (cipherAlgorithm == "none") {
     size = plainText.length();
@@ -173,15 +178,14 @@ bool encryptStringToBinary(const std::string &plainText, unsigned char * cipherB
     // cipherBinary.push_back('\0');
   }
   else {
-    cAlgorithm = getCipherAlgorithm(cipherAlgorithm);
+    cAlgorithm = cipherAdaption(cipherAlgorithm, iv, ivp);
     succeeded = cAlgorithm != NULL;
   }
 
   if (cAlgorithm != NULL) {
     unsigned char *plaintext = (unsigned char *)plainText.c_str();
-    unsigned char *keys = (unsigned char *)key.c_str();
-    unsigned char *ivs = (unsigned char *)iv.c_str();
-    size = encrypt(plaintext, plainText.length(), keys, ivs, cipherBinary, cAlgorithm);
+    unsigned char *keyp = (unsigned char *)key.c_str();
+    size = encrypt(plaintext, plainText.length(), keyp, ivp, cipherBinary, cAlgorithm);
   }
 
   return succeeded;
@@ -195,19 +199,19 @@ bool decryptBinaryToString(unsigned char* cipherBinary, size_t size, std::string
 {
   bool succeeded = true;
   CipherAlgorithm cAlgorithm = NULL;
+  unsigned char *ivp = NULL;
 
   if (cipherAlgorithm == "none") {
     plainText = std::string((const char*)cipherBinary, size);
   }
   else {
-    cAlgorithm = getCipherAlgorithm(cipherAlgorithm);
+    cAlgorithm = cipherAdaption(cipherAlgorithm, iv, ivp);
     succeeded = cAlgorithm != NULL;
   }
 
   if (cAlgorithm != NULL) {
-    unsigned char *keys = (unsigned char *)key.c_str();
-    unsigned char *ivs = (unsigned char *)iv.c_str();
-    int len = decrypt(cipherBinary, size, keys, ivs, _plaintCache, cAlgorithm);
+    unsigned char *keyp = (unsigned char *)key.c_str();
+    int len = decrypt(cipherBinary, size, keyp, ivp, _plaintCache, cAlgorithm);
     plainText = std::string((const char*)_plaintCache, len);
   }
 
@@ -343,23 +347,23 @@ int main( int argc, const char* argv[])
             std::cout << "plain: " << linestr << std::endl;
             std::cout << "ciper: " << cipherText << std::endl;
             if ( decryptFromBase64(cipherText, plainText, cipherAlgorithmName, key, iv) ) {
-            std::cout << "plain: " << plainText << std::endl << std::endl;
+            	std::cout << "plain: " << plainText << std::endl << std::endl;
             }
             else {
-            std::cout << "decrypt err!" << std::endl << std::endl;
+            	std::cout << "decrypt err!" << std::endl << std::endl;
             }
 
           }
           else {
-          std::cout << "decrypt err!" << std::endl << std::endl;
-            fo << "err line!!!" << std::endl;
+          	std::cout << "encrypt err!" << std::endl << std::endl;
+            fo << "err line!!!";
           }
 #else
           if ( encryptToBase64(linestr, cipherText, cipherAlgorithmName, key, iv) ) {
             fo << cipherText;
           }
           else {
-            fo << "err line!!!" << std::endl;
+            fo << "err line!!!";
           }
 #endif
         }
