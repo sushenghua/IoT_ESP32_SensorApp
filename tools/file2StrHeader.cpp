@@ -2,7 +2,7 @@
  * CmdSetUtility utility methods
  * Copyright (c) 2016 Shenghua Su
  *
- * build:  g++ -std=c++11 -o f2sh file2StrHeader.cpp -lssl -lcrypto
+ * build:  g++ -std=c++11 -DDEBUG -o f2sh file2StrHeader.cpp -lssl -lcrypto
  * export: ./f2sh -i inputfile -o outputfile
  *
  */
