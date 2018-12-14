@@ -182,44 +182,6 @@ bool encryptStringToBinary(const std::string &plainText, unsigned char * cipherB
     unsigned char *keys = (unsigned char *)key.c_str();
     unsigned char *ivs = (unsigned char *)iv.c_str();
     size = encrypt(plaintext, plainText.length(), keys, ivs, cipherBinary, cAlgorithm);
-
-
-// std::cout << "----------------------begin-----------------" << std::endl;
-// std::cout << "input: " << plainText << std::endl;
-// std::cout << "key:   " << keys << std::endl;
-// std::cout << "iv     " << ivs << std::endl;
-// std::vector<unsigned char> _plaintCache(2048, 0);
-// std::string cipherText;
-// unsigned char bcache[4096];
-// size_t bs;
-
-//     // std::vector<unsigned char> cipherBinary does not woked
-// //     int len = encrypt(plaintext, plainText.length(), keys, ivs, cipherBinary.data(), cAlgorithm);
-// //     cipherBinary.resize(len);
-
-// // std::cout << "en:    " << cipherBinary.data() << std::endl;
-// // std::cout << "ensize:" << cipherBinary.size() << std::endl;
-// // unsigned char *cipherdata = cipherBinary.data();
-// // int dlen = decrypt(cipherdata, cipherBinary.size(), keys, ivs, _plaintCache.data(), cAlgorithm);
-
-// int len = encrypt(plaintext, plainText.length(), keys, ivs, cipherBinary, cAlgorithm);
-// base64Encode(cipherBinary, size, cipherText);
-
-// std::cout << "en:    " << (const char*)cipherBinary << std::endl;
-// std::cout << "ensize:" << sizeof((const char*)cipherBinary) << std::endl;
-// std::cout << "b64enc:" << cipherText << std::endl;
-
-// base64Decode(cipherText, bcache, bs);
-// std::cout << "b64dec:" << (const char*)bcache << std::endl;
-// std::cout << "decsz: " << bs << std::endl;
-
-// int dlen = decrypt(bcache, len, keys, ivs, _plaintCache.data(), cAlgorithm);
-// _plaintCache.resize(dlen);
-// std::string pt((const char*)_plaintCache.data(), _plaintCache.size());
-
-// std::cout << "de:    " << pt << std::endl;
-// std::cout << "match: " << (pt == plainText) << std::endl;
-// std::cout << "---------------------- end -----------------" << std::endl;
   }
 
   return succeeded;
