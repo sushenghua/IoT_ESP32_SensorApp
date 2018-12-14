@@ -19,7 +19,7 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 
-#define DEBUG
+// #define DEBUG
 
 // Ref: https://wiki.openssl.org/index.php/EVP_Symmetric_Encryption_and_Decryption
 
