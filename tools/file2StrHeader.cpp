@@ -358,7 +358,9 @@ void genEncryptionTrail(std::string &cipherAlgorithmName, std::string &key, std:
      << "key encoded str part:" << std::endl
      << keyEncoded.substr(0, keyEncoded.length()-4) << std::endl
      << "key encoded int part:" << std::endl
-     << keySecretV << std::endl << std::endl;
+     << keySecretV << std::endl
+     << "key encoded int part bit invert:" << std::endl
+     << ~keySecretV << std::endl << std::endl;
 
   // iv
   base64Encode((const unsigned char*)iv.data(), iv.length(), ivEncoded);
@@ -367,10 +369,12 @@ void genEncryptionTrail(std::string &cipherAlgorithmName, std::string &key, std:
      << iv << std::endl
      << "iv encoded:" << std::endl
      << ivEncoded << std::endl
-     << "key encoded str part:" << std::endl
+     << "iv encoded str part:" << std::endl
      << ivEncoded.substr(0, ivEncoded.length()-4) << std::endl
-     << "key encoded int part:" << std::endl
-     << ivSecretV << std::endl << std::endl;
+     << "iv encoded int part:" << std::endl
+     << ivSecretV << std::endl
+     << "iv encoded int part bit invert:" << std::endl
+     << ~ivSecretV << std::endl << std::endl;
 
   // merged str
   mergedKeyIv = keyEncoded.substr(0, keyEncoded.length()-4) + ivEncoded.substr(0, ivEncoded.length()-4);
