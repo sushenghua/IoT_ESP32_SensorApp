@@ -302,7 +302,7 @@ void inToOutProcess(std::iostream &istream, std::iostream &ostream, bool retainN
 
         }
         else {
-        	std::cout << "encrypt err!" << std::endl << std::endl;
+          std::cout << "encrypt err!" << std::endl << std::endl;
           ostream << "err line!!!";
         }
 #else
@@ -315,9 +315,9 @@ void inToOutProcess(std::iostream &istream, std::iostream &ostream, bool retainN
 #endif
       }
       if (retainNewline)
-      	ostream << "\\n\"";
+        ostream << "\\n\"";
       else
-      	ostream << "\"";
+        ostream << "\"";
       // if (istream.peek() != EOF) 
       //   ostream << "\\n\"";
       // else
@@ -333,7 +333,7 @@ void inToOutProcess(std::iostream &istream, std::iostream &ostream, bool retainN
   }
 }
 
-void genEncryptionTrail(std::string &cipherAlgorithmName, std::string &key, std::string &iv)
+void genEncryptionTrail(std::string &cipherAlgorithmName, std::string &key, std::string &iv, bool genSki)
 {
   std::string keyEncoded;
   std::string ivEncoded;
@@ -391,13 +391,15 @@ void genEncryptionTrail(std::string &cipherAlgorithmName, std::string &key, std:
   fk.close();
 
   // gen merged key iv header string
-  std::fstream fski("ski.h", std::fstream::out);
-  std::stringstream istreamKeyIv(mergedKeyIv, std::stringstream::in);
-  ostreamHeader(fski, "ski");
-  std::string none("none");
-  inToOutProcess(istreamKeyIv, fski, false, none, key, iv);
-  ostreamTail(fski, "ski");
-  fski.close();
+  if (genSki) {
+    std::fstream fski("ski.h", std::fstream::out);
+    std::stringstream istreamKeyIv(mergedKeyIv, std::stringstream::in);
+    ostreamHeader(fski, "ski");
+    std::string none("none");
+    inToOutProcess(istreamKeyIv, fski, false, none, key, iv);
+    ostreamTail(fski, "ski");
+    fski.close();
+  }
 }
 
 int main( int argc, const char* argv[])
@@ -407,7 +409,7 @@ int main( int argc, const char* argv[])
   do { // flow control
 
     // if (argc < 7 || argc > 14) {
-    if (argc != 7 && argc != 9 && argc != 11 && argc != 13 && argc != 15) {
+    if (argc != 7 && argc != 9 && argc != 11 && argc != 13 && argc != 15 && argc != 17 && argc != 19) {
       formatErr = true;
       break;
     }
@@ -420,26 +422,32 @@ int main( int argc, const char* argv[])
     int keyArgIndex = -1;
     int ivArgIndex = -1;
     int appendNewlineArgIndex = -1;
+    int genCipherNoteArgIndex = -1;
+    int genSkiArgIndex = -1;
 
     for (int i = 0; i < flagCount; ++i) {
 
       const char *flag = argv[1 + i * 2];
       int argIndex = 2 + i * 2;
 
-      if (std::string(flag) == "-i")
+      if      (std::string(flag) == "-i"    || std::string(flag) == "--input")
         inputFileNameArgIndex = argIndex;
-      else if (std::string(flag) == "-o")
+      else if (std::string(flag) == "-o"    || std::string(flag) == "--output")
         outputFileNameArgIndex = argIndex;
-      else if (std::string(flag) == "-n")
+      else if (std::string(flag) == "-n"    || std::string(flag) == "--name")
         stringNameArgIndex = argIndex;
-      else if (std::string(flag) == "-c")
-        cipherAlgorithmArgIndex = argIndex;
-      else if (std::string(flag) == "-key")
-        keyArgIndex = argIndex;
-      else if (std::string(flag) == "-iv")
-        ivArgIndex = argIndex;
-      else if (std::string(flag) == "-appendnewline")
+      else if (std::string(flag) == "-a"    || std::string(flag) == "--appendnewline")
         appendNewlineArgIndex = argIndex;
+      else if (std::string(flag) == "-c"    || std::string(flag) == "--ciphertype")
+        cipherAlgorithmArgIndex = argIndex;
+      else if (std::string(flag) == "-key"  || std::string(flag) == "--cipherkey")
+        keyArgIndex = argIndex;
+      else if (std::string(flag) == "-iv"   || std::string(flag) == "--cipheriv")
+        ivArgIndex = argIndex;
+      else if (std::string(flag) == "-note" || std::string(flag) == "--genciphernote")
+        genCipherNoteArgIndex = argIndex;
+      else if (std::string(flag) == "-ski"  || std::string(flag) == "--genski")
+        genSkiArgIndex = argIndex;
       else {
         formatErr = true;
         break;
@@ -453,39 +461,39 @@ int main( int argc, const char* argv[])
     }
 
     bool appendNewline = true;
+    bool genCipherNote = true;
+    bool genSki = true;
     std::string cipherAlgorithmName = "none";
     std::string key;
     std::string iv;
 
     if (appendNewlineArgIndex != -1) {
-      if (strcmp(argv[appendNewlineArgIndex], "true") == 0) {
-        appendNewline = true;
-      }
-      else if (strcmp(argv[appendNewlineArgIndex], "false") == 0) {
-        appendNewline = false;
-      }
-      else {
-        formatErr = true;
-        break;
-      }
+      if (strcmp(argv[appendNewlineArgIndex], "true") == 0) appendNewline = true;
+      else if (strcmp(argv[appendNewlineArgIndex], "false") == 0) appendNewline = false;
+      else { formatErr = true; break; }
     }
 
     if (cipherAlgorithmArgIndex != -1) {
       cipherAlgorithmName = argv[cipherAlgorithmArgIndex];
       if (cipherAlgorithmName != "none") {
-        if (keyArgIndex == -1) {
-          formatErr = true;
-          break;
-        }
-      	key = argv[keyArgIndex];
+        if (keyArgIndex == -1) { formatErr = true; break; }
+        key = argv[keyArgIndex];
 
         if (cipherAlgorithmName.rfind("_ecb") == std::string::npos) {
-					if (ivArgIndex == -1) {
-	          formatErr = true;
-	          break;
-	        }
-	        iv = argv[ivArgIndex];
-        } 
+          if (ivArgIndex == -1) { formatErr = true; break; }
+          iv = argv[ivArgIndex];
+        }
+
+        if (genCipherNoteArgIndex != -1) {
+          if (strcmp(argv[genCipherNoteArgIndex], "true") == 0) genCipherNote = true;
+          else if (strcmp(argv[genCipherNoteArgIndex], "false") == 0) genCipherNote = false;
+          else { formatErr = true; break; }
+        }
+        if (genSkiArgIndex != -1) {
+          if (strcmp(argv[genSkiArgIndex], "true") == 0) genSki = true;
+          else if (strcmp(argv[genSkiArgIndex], "false") == 0) genSki = false;
+          else { formatErr = true; break; }
+        }
       }
     }
 
@@ -501,15 +509,25 @@ int main( int argc, const char* argv[])
     fi.close();
     fo.close();
 
-    if (cipherAlgorithmName != "none") {
-    	genEncryptionTrail(cipherAlgorithmName, key, iv);
+    if (cipherAlgorithmName != "none" && genCipherNote) {
+      genEncryptionTrail(cipherAlgorithmName, key, iv, genSki);
     }
 
   } while (false); // end of flow control
 
   if (formatErr) {
-    std::cout << "use format: " << argv[0]
-              << " -i inputFile -n stringName -o outputFile [-appendnewline true|false -c cipherAlgorithmName -key key -iv iv]" << std::endl;
+    std::cout << "use format: " << std::endl
+              << argv[0] << " <arguments>" << std::endl
+              << " ARGUMENTS:" << std::endl
+              << "  -i(--input) file                    input file name" << std::endl
+              << "  -n(--name) name                     string name" << std::endl
+              << "  -o(--output) file                   output file name" << std::endl
+              << "  -a(--appendnewline) true|false      [optional]" << std::endl
+              << "  -c(--ciphertype) type               [optional] cipher algorithm name" << std::endl
+              << "  -key(--cipherkey) key               [optional] cipher key"<< std::endl
+              << "  -iv(--cipheriv) iv                  [optional] cipher iv" << std::endl
+              << "  -note(--genciphernote) ture|false   [optional] generate cipher note" << std::endl
+              << "  -ski(--genski) true | false         [optional] cipher key"<< std::endl;
     return -1;
   }
   else
