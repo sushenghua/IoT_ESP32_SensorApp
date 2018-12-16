@@ -18,8 +18,8 @@ typedef enum CmdKey {
     GetIdfVersion           ,//= 6,
     GetHostname             ,//= 7,
     SetHostname             ,//= 8,
-    GetDeviceName             ,//= 9,
-    SetDeviceName             ,//= 10,
+    GetDeviceName           ,//= 9,
+    SetDeviceName           ,//= 10,
     GetStaSsidPass          ,//= 11
     SetStaSsidPass          ,//= 12,
     GetApSsidPass           ,//= 13,

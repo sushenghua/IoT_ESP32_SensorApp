@@ -137,13 +137,55 @@ static void msg_pool_task(void *pvParams)
 #if MG_ENABLE_SSL
 
 #include "mqtt_crt.h"
-// #include "mqtt_key.h"
+#include "ski.h"
+#include "Crypto.h"
 
 // void print_test()
 // {
 //     printf("===> mqtt crt (%d) : \n%s\n", strlen(mqttCrt), mqttCrt);
 //     printf("===> mqtt key (%d) : \n%s\n", strlen(mqttKey), mqttKey);
 // }
+
+#define CRT_CACHE_SIZE 2048
+#define VSIZE 32
+char            _crtCache[CRT_CACHE_SIZE];
+size_t          _crtLength = 0;
+
+void _decryptCrt()
+{
+    uint32_t sih = 1027434326;
+    uint32_t sil = 1027424597;
+
+    unsigned char   v1[VSIZE];
+    unsigned char   v2[VSIZE];
+    unsigned char   _v1[VSIZE];
+    unsigned char   _v2[VSIZE];
+
+    size_t len = strlen(ski) / 2;
+    memcpy(v1, ski,       len);
+    memcpy(v2, ski + len, len);
+
+    memcpy(v1 + len, &sih, 4); v1[len + 4] = '\0';
+    memcpy(v2 + len, &sil, 4); v2[len + 4] = '\0';
+
+    decode(v1, strlen((char*)v1), _v1, &len);
+    decode(v2, strlen((char*)v2), _v2, &len);
+
+#ifdef DEBUG_CRYPT
+    ESP_LOG_BUFFER_HEXDUMP("v1", v1, len + 5, ESP_LOG_INFO);
+    ESP_LOG_BUFFER_HEXDUMP("v2", v2, len + 5, ESP_LOG_INFO);
+    APP_LOGC("[decryptCrt]", "_v1: %s", (char*)_v1);
+    APP_LOGC("[decryptCrt]", "_v2: %s", (char*)_v2);
+#endif
+
+    decryptBase64(mqttCrt, strlen(mqttCrt), '\n', _v1, _v2, _crtCache, &_crtLength);
+
+#ifdef DEBUG_CRYPT
+    APP_LOGC("[decryptCrt]", "calculated crtCahe len: %d", _crtLength);
+    // APP_LOGC("[decryptCrt]", "mqttKey len: %d, crtCahe len: %d", strlen(mqttKey), strlen(_crtCache));
+    // APP_LOGC("[decryptCrt]", "decrypted crt: \n%s", _crtCache);
+#endif
+}
 
 #endif
 
@@ -188,6 +230,9 @@ MqttClient::MqttClient()
 
     // message publish pool
     _msgPubPool.setPubDelegate(this);
+
+    // crt
+    _decryptCrt();
 }
 
 void MqttClient::setServerAddress(const char* serverAddress)
@@ -280,7 +325,7 @@ bool MqttClient::_makeConnection()
 #if MG_ENABLE_SSL
         // opts.ssl_cert = mqttCrt;
         // opts.ssl_key = mqttKey;
-        opts.ssl_ca_cert = mqttCrt;
+        opts.ssl_ca_cert = _crtCache;
 #endif
         // create connection
         struct mg_connection *nc;

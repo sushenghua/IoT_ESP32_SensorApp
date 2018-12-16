@@ -109,11 +109,24 @@ CmdKey _parseJsonStringCmd(const char* msg, size_t msgLen, uint8_t *&args, size_
       cJSON *ssid = cJSON_GetObjectItem(root, "ssid");
       cJSON *pass = cJSON_GetObjectItem(root, "pass");
       if (ssid && pass) {
-        args[0] = strlen(ssid->valuestring);
+        // cJSON *sih = cJSON_GetObjectItem(root, "sih");
+        // cJSON *sil = cJSON_GetObjectItem(root, "sil");
+        // if (sih && sil && sih->type == cJSON_Number && sil->type == cJSON_Number) {
+        //   args[0] = 1;
+        //   uint32_t hv = (uint32_t)sih->valuedouble;
+        //   uint32_t lv = (uint32_t)sil->valuedouble;
+        //   memcpy(args + 1, &hv, 4);
+        //   memcpy(args + 5, &lv, 4);
+        // }
+        // else {
+        //   args[0] = 0;
+        // }
+        size_t offset = 9;
+        args[offset] = strlen(ssid->valuestring);
         size_t passLen = strlen(pass->valuestring);
-        memcpy(args + 1, ssid->valuestring, args[0]);
-        memcpy(args + 1 + args[0], pass->valuestring, passLen);
-        argsSize = 1 + args[0] + passLen;
+        memcpy(args + offset + 1,                ssid->valuestring, args[offset]);
+        memcpy(args + offset + 1 + args[offset], pass->valuestring, passLen);
+        argsSize = offset + 1 + args[offset] + passLen;
         cmdKeyRet = cmdKey;
         // APP_LOGC("[CmdEngine]", "setSta: %.*s, ssidLen: %d", argsSize-1, args+1, args[0]);
       }
@@ -514,18 +527,22 @@ int CmdEngine::execCmd(CmdKey cmdKey, RetFormat retFmt, uint8_t *args, size_t ar
     case SetStaSsidPass:
     case SetApSsidPass:
     case AppendAltApSsidPass: {
-      uint8_t ssidLen = args[0];
+      uint8_t offset = 9;
+      uint8_t ssidLen = args[offset];
       char ssid[32] = {0};
       char pass[64] = {0};
-      strncat(ssid, (const char*)(args+1), ssidLen);
-      strncat(pass, (const char*)(args+1+ssidLen), argsSize-1-ssidLen);
-      if (cmdKey == SetStaSsidPass)
-        Wifi::instance()->setStaConfig(ssid, pass, true);
-      else if (cmdKey == SetApSsidPass)
-        Wifi::instance()->setApConfig(ssid, pass, true);
-      else if (cmdKey == AppendAltApSsidPass)
-        Wifi::instance()->appendAltApConnectionSsidPassword(ssid, pass);
+      strncat(ssid, (const char*)(args + offset + 1),           ssidLen);
+      strncat(pass, (const char*)(args + offset + 1 + ssidLen), argsSize - 1 - ssidLen - offset);
+      if      (cmdKey == SetStaSsidPass)      Wifi::instance()->setStaConfig(ssid, pass, true);
+      else if (cmdKey == SetApSsidPass)       Wifi::instance()->setApConfig(ssid, pass, true);
+      else if (cmdKey == AppendAltApSsidPass) Wifi::instance()->appendAltApConnectionSsidPassword(ssid, pass);
       Wifi::instance()->saveConfig();
+      // if (args[0]) {  // sih sil
+      //   uint32_t sih, sil;
+      //   memcpy(&sih, args + 1, 4);
+      //   memcpy(&sil, args + 5, 4);
+      //   System::instance()->setConnectionSi(sih, sil);
+      // }
       break;
     }
 

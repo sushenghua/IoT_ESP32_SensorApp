@@ -620,10 +620,23 @@ void _sendDebugMsgPN()
 #endif
 
 // ------ mqtt task
+#include "Crypto.h"
+#include "mqtt_user.h"
+#include "mqtt_passwd.h"
 static void mqtt_task(void *pvParams)
 {
   CmdEngine cmdEngine;
-  mqtt.setUserPassword("aqmonitor", "upuPDOK6+zsOwRBKYG9Am");
+  {
+    char user[32];
+    char pass[32];
+    unsigned char v1[] = "CkECr+xGO4YKbicw";
+    unsigned char v2[] = "cBh++uagobC8s1bK";
+    size_t len;
+    decryptBase64(mqttUser,   strlen(mqttUser),   '\n', v1, v2, user, &len);
+    decryptBase64(mqttPasswd, strlen(mqttPasswd), '\n', v1, v2, pass, &len);
+    mqtt.setUserPassword(user, pass);
+    // mqtt.setUserPassword("aqmonitor", "upuPDOK6+zsOwRBKYG9Am");
+  }
   mqtt.init();
   mqtt.start();
 
@@ -839,6 +852,7 @@ void System::_logInfo()
 {
   APP_LOGW("[System]", "esp flash encryption enabled: %s", flashEncryptionEnabled()? "Yes" : "No");
   APP_LOGW("[System]", "free RAM: %d bytes", esp_get_free_heap_size());
+  APP_LOGW("[System]", "data size: %d bytes", sizeof(_data));
 }
 
 // configMAX_PRIORITIES defined in "FreeRTOSConfig.h"

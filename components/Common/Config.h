@@ -20,6 +20,9 @@
 // #define DEBUG_APP_OK
 #define DEBUG_APP_ERR
 
+// #define DEBUG_CRYPT
+// #define DEBUG_CRYPT_DETAIL
+
 // #define LOG_MQTT_TX
 // #define LOG_MQTT_RX
 #define LOG_MQTT_RETX

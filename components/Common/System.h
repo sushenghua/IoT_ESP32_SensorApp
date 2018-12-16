@@ -29,11 +29,13 @@ const char * deployModeStr(DeployMode type);
 
 #define DEV_NAME_MAX_LEN 64
 
+#define DEFAULT_RESERVE  4
+
 struct SysConfig1 {
   bool        wifiOn;
   bool        displayAutoAdjustOn;
   DeployMode  deployMode;
-  int64_t     reserve[2]; // reserve for future use
+  uint64_t    reserve[DEFAULT_RESERVE]; // reserve for future use
 };
 
 struct SysConfig2 {
@@ -41,7 +43,7 @@ struct SysConfig2 {
   SensorType  co2SensorType;
   uint32_t    devCapability;
   char        devName[DEV_NAME_MAX_LEN+1];
-  int64_t     reserve[2];
+  uint64_t    reserve[DEFAULT_RESERVE];
 };
 
 typedef uint32_t LifeTime;
@@ -49,7 +51,7 @@ typedef uint32_t LifeTime;
 struct Maintenance {
   LifeTime    allSessionsLife;    // seconds
   LifeTime    recentSessionLife;  // seconds
-  int64_t     reserve[2];
+  uint64_t    reserve[DEFAULT_RESERVE];
   void init() {
     allSessionsLife = 0;
     recentSessionLife = 0;
@@ -60,7 +62,7 @@ struct SysResetRestore {
   uint32_t    deepSleepResetCount;
   uint32_t    lAlertReactiveCounter;
   uint32_t    gAlertReactiveCounter;
-  int64_t     reserve[2];
+  uint64_t    reserve[DEFAULT_RESERVE];
   void init() {
     deepSleepResetCount = 0;
     lAlertReactiveCounter = 0;
@@ -68,10 +70,15 @@ struct SysResetRestore {
   }
 };
 
+struct  ConnectionConfig {
+  uint64_t    reserve[DEFAULT_RESERVE];
+  void init() {}
+};
+
 struct Bias {
   bool        mbTempNeedCalibrate;
   float       mbTempBias;
-  int64_t     reserve[2];
+  uint64_t    reserve[DEFAULT_RESERVE];
   void init() {
     mbTempNeedCalibrate = false;
     mbTempBias = 0;
@@ -97,7 +104,7 @@ struct MobileToken {
   char     str[TOKEN_LEN+1];   // null terminated
   uint8_t  groupLen;
   char     group[GROUP_LEN+1]; // null terminated
-  int64_t  reserve[2];
+  uint64_t reserve[DEFAULT_RESERVE];
 };
 
 struct MobileTokens {
@@ -151,7 +158,7 @@ struct Alert {
   bool        gEnabled;
   float       lValue;
   float       gValue;
-  int64_t     reserve[2];
+  uint64_t    reserve[DEFAULT_RESERVE];
 };
 
 #define ALERT_REACTIVE_COUNT   60000  // 60000 * 10ms(mqtt_task delay) = 10 min
@@ -172,17 +179,24 @@ struct Alerts {
   }
 };
 
+struct Reserved {
+  uint8_t     bytes[64];
+};
+
 struct SysData {
   SysConfig1        config1;
   SysConfig2        config2;
   Maintenance       maintenance;
   SysResetRestore   resetRestore;
+  ConnectionConfig  connectionConfig;
   Bias              bias;
   Alerts            alerts;
   MobileTokens      mobileTokens;
+  Reserved          block;
   void init() {
     maintenance.init();
     resetRestore.init();
+    connectionConfig.init();
     bias.init();
     alerts.init();
     mobileTokens.init();
