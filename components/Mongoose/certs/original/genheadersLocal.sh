@@ -8,7 +8,7 @@ g++ -std=c++11 -o f2sh ../../../../tools/file2StrHeader.cpp -lssl -lcrypto
 
 # ca.crt encryption
 ./f2sh -i ca.crt -n mqttCrt -o ../mqtt_crt.h -c aes_128_cbc -key k4pR/+0gEhOHXucV -iv 22n+vbspOAsq8ECP
-mv ski.h ../
+mv ski.h ../../../Common/
 
 # ca.key export
 ./f2sh -i ca.key -n mqttKey -o ../mqtt_key.h
