@@ -333,7 +333,8 @@ bool MqttClient::_makeConnection()
 #endif
         // create connection
         struct mg_connection *nc;
-        APP_LOGI("[MqttClient]", "try to connect to server: %s", _serverAddress);
+        // APP_LOGI("[MqttClient]", "try to connect to server: %s", _serverAddress);
+        APP_LOGI("[MqttClient]", "try to connect to server: ***");
         nc = mg_connect_opt(&_manager, _serverAddress, mongoose_mqtt_event_handler, opts);
         if (nc == NULL) {
             APP_LOGE("[MqttClient]", "connect to server failed");
@@ -447,8 +448,9 @@ void MqttClient::repubMessage(PoolMessage *message)
 
 void MqttClient::onConnect(struct mg_connection *nc)
 {
-    APP_LOGI("[MqttClient]", "... connecting to server: %s (client id: %s, nc: %p)",
-                             _serverAddress, _clientId, nc);
+    // APP_LOGI("[MqttClient]", "... connecting to server: %s (client id: %s, nc: %p)",
+    //                          _serverAddress, _clientId, nc);
+    APP_LOGI("[MqttClient]", "... connecting to server: *** (client id: uid, nc: %p)", nc);
     mg_set_timer(nc, 0);        // Clear connect timer
     mg_set_protocol_mqtt(nc);
     mg_send_mqtt_handshake_opt(nc, _clientId, _handShakeOpt);
@@ -543,7 +545,8 @@ void MqttClient::onTimeout(struct mg_connection *nc)
 
 void MqttClient::onClose(struct mg_connection *nc)
 {
-    APP_LOGI("[MqttClient]", "connection to server %s closed (nc: %p) (alive nc: %p)", _serverAddress, nc, _manager.active_connections);
+    // APP_LOGI("[MqttClient]", "connection to server %s closed (nc: %p) (alive nc: %p)", _serverAddress, nc, _manager.active_connections);
+    APP_LOGI("[MqttClient]", "connection to server *** closed (nc: %p) (alive nc: %p)", nc, _manager.active_connections);
 
     if (_manager.active_connections && _manager.active_connections != nc) return;
 
