@@ -23,16 +23,34 @@ FlashSpeed=921600
 Port=/dev/ttyUSB0
 
 
+# Ref: https://docs.espressif.com/projects/esp-idf/en/latest/security/flash-encryption.html#pregenerating-a-flash-encryption-key
+#
+# permanently disable plaintext serial-flashing: espefuse.py --port PORT write_protect_efuse FLASH_CRYPT_CNT
+#
+# increase FLASH_CRYPT_CNT efuse: espefuse.py burn_efuse FLASH_CRYPT_CNT
+# Note: can be called only for 4 times, then encryption is permanently enabled
+#       you cannot serial-flash with new plaintext data;
+#       you can serial-flash with new encrypted data if you know the encryption key and make bin with that key
+
 # format prompt
 if [[ ( $# -eq 0) ]]; then
-  printf "${PinkColorB}use this script as: apptool [m][e][f][k] \n${ColorE}"
+  printf "${PinkColorB}use this script as: apptool [k][m][e][f bootloader|app]  \n${ColorE}"
   exit
 fi
 
 
 # promp beginning
   printf "${CyanColorB}------------------------------------------------------------------\n${ColorE}"
-  printf "${CyanColorB}--------- apptool m/e/f/k (make/encrypt/flash/key) begin ---------\n${ColorE}"
+  printf "${CyanColorB}--------- apptool k/m/e/f (key/make/encrypt/flash) begin ---------\n${ColorE}"
+
+
+# burn flash encryption key when 'k' specified
+if [[ ( $# -gt 0 && $1 == *"k"* ) ]]; then
+  # printf "\n"
+  printf "${PinkColorB}------------------>>> burn encryption key <<<---------------------\n${ColorE}"
+  espefuse.py --port $Port burn_key flash_encryption $EncryptionKey
+fi
+
 
 # make binary when 'm' specified
 if [[ ( $# -gt 0 && $1 == *"m"* ) ]]; then
@@ -88,18 +106,12 @@ if [[ ( $# -eq 2 && $1 == *"f"* ) ]]; then
       esptool.py --chip esp32 --port $Port --baud $FlashSpeed --before default_reset --after hard_reset \
       write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect \
       $AppFlashAddress $AppBinEncrypted
+      # esptool.py --port $Port --baud $FlashSpeed write_flash $AppFlashAddress $AppBinEncrypted
     fi
   fi
 fi
 
-# burn flash encryption key when 'k' specified
-if [[ ( $# -gt 0 && $1 == *"k"* ) ]]; then
-  # printf "\n"
-  printf "${PinkColorB}------------------>>> burn encryption key <<<---------------------\n${ColorE}"
-  espefuse.py --port $Port burn_key flash_encryption $EncryptionKey
-fi
-
 
 # done
-  printf "${CyanColorB}--------- apptool m/e/f/k (make/encrypt/flash/key) done ----------\n${ColorE}"
+  printf "${CyanColorB}--------- apptool k/m/e/f (key/make/encrypt/flash) done ----------\n${ColorE}"
   printf "${CyanColorB}------------------------------------------------------------------\n${ColorE}"
