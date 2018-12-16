@@ -632,8 +632,11 @@ static void mqtt_task(void *pvParams)
     unsigned char v1[] = "CkECr+xGO4YKbicw";
     unsigned char v2[] = "cBh++uagobC8s1bK";
     size_t len;
-    decryptBase64(mqttUser,   strlen(mqttUser),   '\n', v1, v2, user, &len);
-    decryptBase64(mqttPasswd, strlen(mqttPasswd), '\n', v1, v2, pass, &len);
+    decryptBase64(mqttUser,   strlen(mqttUser),   '\0', v1, v2, user, &len);
+    decryptBase64(mqttPasswd, strlen(mqttPasswd), '\0', v1, v2, pass, &len);
+// ESP_LOG_BUFFER_HEXDUMP("user", user, 64, ESP_LOG_INFO);
+// ESP_LOG_BUFFER_HEXDUMP("pass", pass, 64, ESP_LOG_INFO);
+// APP_LOGC("[mqtt_task]", "user: %s, pass: %s", user, pass);
     mqtt.setUserPassword(user, pass);
     // mqtt.setUserPassword("aqmonitor", "upuPDOK6+zsOwRBKYG9Am");
   }
