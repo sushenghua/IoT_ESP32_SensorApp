@@ -8,7 +8,7 @@ GreenColorB='\033[1;32m'
 CyanColorB='\033[1;36m'
 
 # vaiables
-EncryptioinKey=encryptedFlash/key/flash_encryption_key.bin
+EncryptionKey=encryptedFlash/key/flash_encryption_key.bin
 
 BootloaderBin=build/bootloader/bootloader.bin
 BootloaderBinEncrypted=build/bootloader/bootloaderEncrypted.bin
@@ -48,7 +48,7 @@ if [[ ( $# -gt 0 && $1 == *"e"* ) ]]; then
   printf "${PinkColorB}--------------------->>> encrypt binary <<<-----------------------\n${ColorE}"
   if [ -f $BootloaderBin ]; then
     printf "${GreenColorB}------> encrypt bootloader binary ...\n${ColorE}"
-    espsecure.py encrypt_flash_data --keyfile $EncryptioinKey --address $BootloadFlashAddress \
+    espsecure.py encrypt_flash_data --keyfile $EncryptionKey --address $BootloadFlashAddress \
     -o $BootloaderBinEncrypted $BootloaderBin
     printf "${ColorE}done encryption bootloader binary to: ${GreenColorB}$BootloaderBinEncrypted \n"
   else
@@ -57,7 +57,7 @@ if [[ ( $# -gt 0 && $1 == *"e"* ) ]]; then
 
   if [ -f $AppBin ]; then
     printf "${GreenColorB}------> encrypt app binary ...\n${ColorE}"
-    espsecure.py encrypt_flash_data --keyfile $EncryptioinKey --address $AppFlashAddress \
+    espsecure.py encrypt_flash_data --keyfile $EncryptionKey --address $AppFlashAddress \
     -o $AppBinEncrypted $AppBin
     printf "${ColorE}done encryption app binary to: ${GreenColorB}$AppBinEncrypted \n${ColorE}"
   else
@@ -96,7 +96,7 @@ fi
 if [[ ( $# -gt 0 && $1 == *"k"* ) ]]; then
   # printf "\n"
   printf "${PinkColorB}------------------>>> burn encryption key <<<---------------------\n${ColorE}"
-  espefuse.py --port $Port burn_key flash_encryption $EncryptioinKey
+  espefuse.py --port $Port burn_key flash_encryption $EncryptionKey
 fi
 
 
