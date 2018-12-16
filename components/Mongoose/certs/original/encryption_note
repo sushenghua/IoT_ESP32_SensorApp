@@ -9,15 +9,19 @@ key encoded str part:
 azRwUi8rMGdFaE9IWHVj
 key encoded int part:
 1027434326
+key encoded int part bit invert:
+3267532969
 
 iv:
 22n+vbspOAsq8ECP
 iv encoded:
 MjJuK3Zic3BPQXNxOEVDUA==
-key encoded str part:
+iv encoded str part:
 MjJuK3Zic3BPQXNxOEVD
-key encoded int part:
+iv encoded int part:
 1027424597
+iv encoded int part bit invert:
+3267542698
 
 merged encoded keyiv: (key str + iv str)
 azRwUi8rMGdFaE9IWHVjMjJuK3Zic3BPQXNxOEVD
