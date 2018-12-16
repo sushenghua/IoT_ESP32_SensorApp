@@ -406,7 +406,8 @@ int main( int argc, const char* argv[])
 
   do { // flow control
 
-    if (argc != 7 && argc != 9 && argc != 11 && argc != 13) {
+    // if (argc < 7 || argc > 14) {
+    if (argc != 7 && argc != 9 && argc != 11 && argc != 13 && argc != 15) {
       formatErr = true;
       break;
     }
@@ -418,6 +419,7 @@ int main( int argc, const char* argv[])
     int cipherAlgorithmArgIndex = -1;
     int keyArgIndex = -1;
     int ivArgIndex = -1;
+    int appendNewlineArgIndex = -1;
 
     for (int i = 0; i < flagCount; ++i) {
 
@@ -436,6 +438,8 @@ int main( int argc, const char* argv[])
         keyArgIndex = argIndex;
       else if (std::string(flag) == "-iv")
         ivArgIndex = argIndex;
+      else if (std::string(flag) == "-appendnewline")
+        appendNewlineArgIndex = argIndex;
       else {
         formatErr = true;
         break;
@@ -448,9 +452,23 @@ int main( int argc, const char* argv[])
       break;
     }
 
+    bool appendNewline = true;
     std::string cipherAlgorithmName = "none";
     std::string key;
     std::string iv;
+
+    if (appendNewlineArgIndex != -1) {
+      if (strcmp(argv[appendNewlineArgIndex], "true") == 0) {
+        appendNewline = true;
+      }
+      else if (strcmp(argv[appendNewlineArgIndex], "false") == 0) {
+        appendNewline = false;
+      }
+      else {
+        formatErr = true;
+        break;
+      }
+    }
 
     if (cipherAlgorithmArgIndex != -1) {
       cipherAlgorithmName = argv[cipherAlgorithmArgIndex];
@@ -476,7 +494,7 @@ int main( int argc, const char* argv[])
     std::fstream fo(argv[outputFileNameArgIndex], std::fstream::out);
 
     ostreamHeader(fo, argv[stringNameArgIndex]);
-    inToOutProcess(fi, fo, true, cipherAlgorithmName, key, iv);
+    inToOutProcess(fi, fo, appendNewline, cipherAlgorithmName, key, iv);
     ostreamTail(fo, argv[stringNameArgIndex]);
 
     // close stream
@@ -491,7 +509,7 @@ int main( int argc, const char* argv[])
 
   if (formatErr) {
     std::cout << "use format: " << argv[0]
-              << " -i inputFile -n stringName -o outputFile [-c cipherAlgorithmName -key key -iv iv]" << std::endl;
+              << " -i inputFile -n stringName -o outputFile [-appendnewline true|false -c cipherAlgorithmName -key key -iv iv]" << std::endl;
     return -1;
   }
   else
