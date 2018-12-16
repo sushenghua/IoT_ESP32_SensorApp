@@ -27,6 +27,7 @@
 // #define LOG_MQTT_RX
 #define LOG_MQTT_RETX
 // #define LOG_MQTT_PING_PONG
+// #define LOG_MQTT_TOPIC_CHANGE
 
 // #define LOG_HTTP
 // #define LOG_WEBSOCKET

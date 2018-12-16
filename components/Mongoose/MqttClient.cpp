@@ -18,16 +18,20 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 void printTopics(const MqttSubTopic *topics, uint16_t count)
 {
+#ifdef LOG_MQTT_TOPIC_CHANGE
     for (uint16_t i = 0; i < count; ++i) {
         printf("[%d] %s\n", i, topics[i].topic);
     }
+#endif
 }
 
 void printTopics(const char **topics, uint16_t count)
 {
+#ifdef LOG_MQTT_TOPIC_CHANGE
     for (uint16_t i = 0; i < count; ++i) {
         printf("[%d] %s\n", i, topics[i]);
     }
+#endif
 }
 
 static uint16_t _mqttMsgId = 0;
