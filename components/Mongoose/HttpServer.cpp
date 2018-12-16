@@ -61,8 +61,9 @@ HttpServer::HttpServer()
 void HttpServer::init()
 {
     if (!_inited) {
-        APP_LOGI("[HttpServer]", "init server (Mongoose version: %s, Free RAM: %d bytes)",
-                                  MG_VERSION, esp_get_free_heap_size());
+        // APP_LOGI("[HttpServer]", "init server (Mongoose version: %s, Free RAM: %d bytes)",
+        //                           MG_VERSION, esp_get_free_heap_size());
+        APP_LOGI("[HttpServer]", "init, free RAM: %d bytes", esp_get_free_heap_size());
         mg_mgr_init(&_manager, NULL);
 
         _inited = true;
