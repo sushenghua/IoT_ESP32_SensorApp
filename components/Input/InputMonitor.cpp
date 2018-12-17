@@ -129,9 +129,9 @@ static void gpio_check_task(void* args)
           sys->onEvent(INPUT_EVENT_USR_BTN_XLONG_PRESS);
       }
       if (_pwrGpioLvl == 0) {
-      	if( !_pwrLongPressTriggered)
+        if( !_pwrLongPressTriggered)
           ++_pwrLowDurationCount;
-      	if (_pwrLowDurationCount >= PWR_TOGGLE_OFF_LOW_COUNT) {
+        if (_pwrLowDurationCount >= PWR_TOGGLE_OFF_LOW_COUNT) {
           if (_usrPressCount == USER_PRESS_COUNT_FOR_CALIBRATE_MB_TEMP && _usrGpioLvl == 0) {
             sys->onEvent(INPUT_EVENT_MB_TEMP_CALIBRATE);
             vTaskDelay(1000 / portTICK_RATE_MS);

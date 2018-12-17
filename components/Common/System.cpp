@@ -227,7 +227,7 @@ static void display_guard_task(void *pvParams = NULL)
 #include "InputMonitor.h"
 #include "PowerManager.h"
 
-#define BATTERY_LEVEL_TO_PWR_OFF  10
+#define BATTERY_LEVEL_TO_PWR_OFF  15
 #define SYS_EVENT_POWER_LOW       101  // value different from INPUT_EVENT_xxx in InputMonitor
 #define STATUS_TASK_DELAY_UNIT  100
 
