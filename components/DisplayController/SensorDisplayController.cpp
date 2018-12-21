@@ -83,17 +83,17 @@ void SensorDisplayController::setMpu6050(float r, float p, float y)
 void SensorDisplayController::setPmData(const PMData *pmData, bool update)
 {
   // value update
-  _pm1d0 = pmData->pm1d0;
-  _pm2d5 = pmData->pm2d5;
-  _pm10 = pmData->pm10;
-  _aqiPm2d5US = pmData->aqiPm2d5US;
-  _aqiPm10US = pmData->aqiPm10US;
-  _pm2d5Level = pmData->levelPm2d5US;
-  _pm10Level = pmData->levelPm10US;
+  _sensorData.pm1d0 = pmData->pm1d0;
+  _sensorData.pm2d5 = pmData->pm2d5;
+  _sensorData.pm10 = pmData->pm10;
+  _sensorData.aqiPm2d5US = pmData->aqiPm2d5US;
+  _sensorData.aqiPm10US = pmData->aqiPm10US;
+  _sensorData.pm2d5Level = pmData->levelPm2d5US;
+  _sensorData.pm10Level = pmData->levelPm10US;
 
   // color update
-  _pm2d5Color = HS::colorForAirLevel(pmData->levelPm2d5US);
-  _pm10Color = HS::colorForAirLevel(pmData->levelPm10US);
+  _sensorData.pm2d5Color = HS::colorForAirLevel(pmData->levelPm2d5US);
+  _sensorData.pm10Color = HS::colorForAirLevel(pmData->levelPm10US);
 
   if (update) _dynamicContentNeedUpdate = true;
 }
@@ -101,11 +101,11 @@ void SensorDisplayController::setPmData(const PMData *pmData, bool update)
 void SensorDisplayController::setHchoData(const HchoData *hchoData, bool update)
 {
   // value update
-  _hcho = hchoData->hcho;
-  _hchoLevel = hchoData->level;
+  _sensorData.hcho = hchoData->hcho;
+  _sensorData.hchoLevel = hchoData->level;
 
   // color update
-  _hchoColor = HS::colorForHchoLevel(hchoData->level);
+  _sensorData.hchoColor = HS::colorForHchoLevel(hchoData->level);
 
   if (update) _dynamicContentNeedUpdate = true;
 }
@@ -113,14 +113,14 @@ void SensorDisplayController::setHchoData(const HchoData *hchoData, bool update)
 void SensorDisplayController::setTempHumidData(const TempHumidData *tempHumidData, bool update)
 {
   // value update
-  _temp = tempHumidData->temp;
-  _humid = tempHumidData->humid;
-  _tempLevel = tempHumidData->levelTemp;
-  _humidLevel = tempHumidData->levelHumid;
+  _sensorData.temp = tempHumidData->temp;
+  _sensorData.humid = tempHumidData->humid;
+  _sensorData.tempLevel = tempHumidData->levelTemp;
+  _sensorData.humidLevel = tempHumidData->levelHumid;
 
   // color update
-  _tempColor = HS::colorForTempLevel(tempHumidData->levelTemp);
-  _humidColor = HS::colorForHumidLevel(tempHumidData->levelHumid);
+  _sensorData.tempColor = HS::colorForTempLevel(tempHumidData->levelTemp);
+  _sensorData.humidColor = HS::colorForHumidLevel(tempHumidData->levelHumid);
 
   if (update) _dynamicContentNeedUpdate = true;
 }
@@ -128,11 +128,11 @@ void SensorDisplayController::setTempHumidData(const TempHumidData *tempHumidDat
 void SensorDisplayController::setCO2Data(const CO2Data *co2Data, bool update)
 {
   // value update
-  _co2 = co2Data->co2;
-  _co2Level = co2Data->level;
+  _sensorData.co2 = co2Data->co2;
+  _sensorData.co2Level = co2Data->level;
 
   // color update
-  _co2Color = HS::colorForCO2Level(co2Data->level);
+  _sensorData.co2Color = HS::colorForCO2Level(co2Data->level);
 
   if (update) _dynamicContentNeedUpdate = true;
 }
@@ -350,36 +350,36 @@ void SensorDisplayController::_targetData(SensorDataType t)
 {
   switch(t) {
     case PM:
-      if (_aqiPm2d5US > _aqiPm10US) {
-        sprintf(_valueStr, "%d%s", _aqiPm2d5US, padSpace(_aqiPm2d5US));
-        _color = _pm2d5Color;
-        _level = _pm2d5Level;
+      if (_sensorData.aqiPm2d5US > _sensorData.aqiPm10US) {
+        sprintf(_valueStr, "%d%s", _sensorData.aqiPm2d5US, padSpace(_sensorData.aqiPm2d5US));
+        _color = _sensorData.pm2d5Color;
+        _level = _sensorData.pm2d5Level;
       } else {
-        sprintf(_valueStr, "%d%s", _aqiPm10US, padSpace(_aqiPm10US));
-        _color = _pm10Color;
-        _level = _pm10Level;
+        sprintf(_valueStr, "%d%s", _sensorData.aqiPm10US, padSpace(_sensorData.aqiPm10US));
+        _color = _sensorData.pm10Color;
+        _level = _sensorData.pm10Level;
       }
       _level = _level == 6 ? 5 : _level;
       break;
     case HCHO:
-      sprintf(_valueStr, "%.3f", _hcho);
-      _color = _hchoColor;
-      _level = _hchoLevel;
+      sprintf(_valueStr, "%.3f", _sensorData.hcho);
+      _color = _sensorData.hchoColor;
+      _level = _sensorData.hchoLevel;
       break;
     case CO2:
-      sprintf(_valueStr, "%d%s", (int)_co2, (int)_co2 < 1000 ? " " : "");
-      _color = _co2Color;
-      _level = _co2Level;
+      sprintf(_valueStr, "%d%s", (int)_sensorData.co2, (int)_sensorData.co2 < 1000 ? " " : "");
+      _color = _sensorData.co2Color;
+      _level = _sensorData.co2Level;
       break;
     case TEMP:
-      sprintf(_valueStr, "%.1f", _temp);
-      _color = _tempColor;
-      _level = _tempLevel;
+      sprintf(_valueStr, "%.1f", _sensorData.temp);
+      _color = _sensorData.tempColor;
+      _level = _sensorData.tempLevel;
       break;
     case HUMID:
-      sprintf(_valueStr, "%.1f", _humid);
-      _color = _humidColor;
-      _level = _hchoLevel;
+      sprintf(_valueStr, "%.1f", _sensorData.humid);
+      _color = _sensorData.humidColor;
+      _level = _sensorData.hchoLevel;
       break;
     default: break;
   }
@@ -462,43 +462,43 @@ void SensorDisplayController::_renderDetailScreenItem(SensorDataType type)
   offsetX = DETAIL_LINE_BASE_OFFSET_X + DETAIL_LINE_VALUE_OFFSET;
   switch (type) {
     case PM:
-      _dev->setTextColor(_pm2d5Color, RGB565_BLACK);
+      _dev->setTextColor(_sensorData.pm2d5Color, RGB565_BLACK);
       _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount);
-      sprintf(_valueStr, "%.1f", _pm2d5); _dev->write(_valueStr);
+      sprintf(_valueStr, "%.1f", _sensorData.pm2d5); _dev->write(_valueStr);
       _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 1));
-      sprintf(_valueStr, "%d    ", _aqiPm2d5US); _dev->write(_valueStr);
+      sprintf(_valueStr, "%d    ", _sensorData.aqiPm2d5US); _dev->write(_valueStr);
 
-      _dev->setTextColor(_pm10Color, RGB565_BLACK);
+      _dev->setTextColor(_sensorData.pm10Color, RGB565_BLACK);
       _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 2));
-      sprintf(_valueStr, "%.1f", _pm10); _dev->write(_valueStr);
+      sprintf(_valueStr, "%.1f", _sensorData.pm10); _dev->write(_valueStr);
       _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * (detailRowCount + 3));
-      sprintf(_valueStr, "%d    ", _aqiPm10US); _dev->write(_valueStr);
+      sprintf(_valueStr, "%d    ", _sensorData.aqiPm10US); _dev->write(_valueStr);
 
       detailRowCount += 4;
       break;
 
     case HCHO:
-      _dev->setTextColor(_hchoColor, RGB565_BLACK);
+      _dev->setTextColor(_sensorData.hchoColor, RGB565_BLACK);
       _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
-      sprintf(_valueStr, "%.3f", _hcho); _dev->write(_valueStr);
+      sprintf(_valueStr, "%.3f", _sensorData.hcho); _dev->write(_valueStr);
       break;
 
     case CO2:
-      _dev->setTextColor(_co2Color, RGB565_BLACK);
+      _dev->setTextColor(_sensorData.co2Color, RGB565_BLACK);
       _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
-      sprintf(_valueStr, "%d ", (int)_co2); _dev->write(_valueStr);
+      sprintf(_valueStr, "%d ", (int)_sensorData.co2); _dev->write(_valueStr);
       break;
 
     case TEMP:
-      _dev->setTextColor(_tempColor, RGB565_BLACK);
+      _dev->setTextColor(_sensorData.tempColor, RGB565_BLACK);
       _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
-      sprintf(_valueStr, "%.1f", _temp); _dev->write(_valueStr);
+      sprintf(_valueStr, "%.1f", _sensorData.temp); _dev->write(_valueStr);
       break;
 
     case HUMID:
-      _dev->setTextColor(_hchoColor, RGB565_BLACK);
+      _dev->setTextColor(_sensorData.hchoColor, RGB565_BLACK);
       _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
-      sprintf(_valueStr, "%.1f", _humid); _dev->write(_valueStr);
+      sprintf(_valueStr, "%.1f", _sensorData.humid); _dev->write(_valueStr);
       break;
 
     default: break;

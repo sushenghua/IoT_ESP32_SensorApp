@@ -13,6 +13,7 @@
 #include "TempHumidData.h"
 #include "CO2Data.h"
 #include "SensorConfig.h"
+#include "SensorData.h"
 
 enum QRCodeType {
   QRCodeDevice    = 0,
@@ -32,6 +33,8 @@ public:
 
   uint8_t rotation() { return _rotation; }
   void setRotation(uint8_t rotation);
+
+  const SensorData * sensorData() { return &_sensorData; }
 
   void setPmData(const PMData *pmData, bool update = true);
   void setHchoData(const HchoData *hchoData, bool update = true);
@@ -62,57 +65,31 @@ public:
 
 protected:
   // init
-  bool       _inited;
+  bool            _inited;
 
   // content update flag
-  bool       _hasScreenMsg;
-  bool       _staticContentNeedUpdate;
-  bool       _dynamicContentNeedUpdate;
+  bool            _hasScreenMsg;
+  bool            _staticContentNeedUpdate;
+  bool            _dynamicContentNeedUpdate;
 
   // rotation
-  bool       _rotationNeedUpdate;
-  bool       _devUpdateRotationInProgress;
-  uint8_t    _rotation;
-  uint8_t    _lastRotation;
+  bool            _rotationNeedUpdate;
+  bool            _devUpdateRotationInProgress;
+  uint8_t         _rotation;
+  uint8_t         _lastRotation;
 
-  // co2 display
-  uint8_t    _co2Level;
-  uint16_t   _co2Color;
-  float      _co2;
-
-  // pm display
-  uint8_t    _pm2d5Level;
-  uint8_t    _pm10Level;
-  uint16_t   _pm2d5Color;
-  uint16_t   _pm10Color;
-  uint16_t   _aqiPm2d5US;
-  uint16_t   _aqiPm10US;
-  float      _pm1d0;
-  float      _pm2d5;
-  float      _pm10;
-
-  // formaldehyde display
-  uint8_t    _hchoLevel;
-  uint16_t   _hchoColor;
-  float      _hcho;
-
-  // temperature and humidity diplay
-  uint8_t    _tempLevel;
-  uint8_t    _humidLevel;
-  uint16_t   _tempColor;
-  uint16_t   _humidColor;
-  float      _temp;
-  float      _humid;
+  // sensor data pack
+  SensorData      _sensorData;
 
   // qr code
-  QRCodeType _qrCodeType;
+  QRCodeType      _qrCodeType;
 
   // screen layout
-  uint32_t       _devCap;
-  uint16_t       _mainItemCount;
-  uint16_t       _subItemCount;
-  SensorDataType _displayMainItems[5];
-  SensorDataType _displaySubItems[5];
+  uint32_t        _devCap;
+  uint16_t        _mainItemCount;
+  uint16_t        _subItemCount;
+  SensorDataType  _displayMainItems[5];
+  SensorDataType  _displaySubItems[5];
 public:
   void  setMpu6050(float r, float p, float y);
   // mpu6050
