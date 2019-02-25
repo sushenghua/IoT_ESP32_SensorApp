@@ -34,13 +34,13 @@
 // #define LOG_WEBSOCKET_MSG
 
 #define LOG_ALERT
-#define DEBUG_PN
+// #define DEBUG_PN
 
 // #define DEBUG_FLAG_ENABLED
 
 #define LOG_REMOTE_CMD
 // #define LOG_APPUPDATER
 
-#define DEBUG_BATTERY_LIFE
+// #define DEBUG_BATTERY_LIFE
 
 #endif // _CONF_H_INCLUDED

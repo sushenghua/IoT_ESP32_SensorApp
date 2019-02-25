@@ -547,7 +547,7 @@ static const char * const QRCodeTitle[] = {
     "Manual",           // 4
 };
 
-#define IOS_APP_URL         "https://testflight.apple.com/join/YqdQLVMQ"
+#define IOS_APP_URL         "https://itunes.apple.com/cn/app/q-monitor/id1318735622"
 #define ANDROID_APP_URL     "http://appsgenuine.com/download/qmonitor.apk"
 #define DEVICE_MANUAL_URL   "http://appsgenuine.com/#eighth"
 
