@@ -137,6 +137,17 @@ void SensorDisplayController::setCO2Data(const CO2Data *co2Data, bool update)
   if (update) _dynamicContentNeedUpdate = true;
 }
 
+void SensorDisplayController::setLuminosity(uint32_t luminosity, bool update)
+{
+  // value update
+  _sensorData.luminosity = luminosity;
+
+  // color update
+  _sensorData.lumiColor = 0x07F9; // cyan
+
+  if (update) _dynamicContentNeedUpdate = true;
+}
+
 char _msg[256];
 
 void SensorDisplayController::setScreenMessage(const char * msg)
@@ -223,12 +234,16 @@ void SensorDisplayController::_initDisplayItems()
     _displaySubItems[_subItemCount++] = TEMP;
     _displaySubItems[_subItemCount++] = HUMID;
   }
+
+  if (_devCap & LUMINOSITY_CAPABILITY_MASK) {
+    _displayMainItems[_mainItemCount++] = LUMI;
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // used by rendering
 /////////////////////////////////////////////////////////////////////////////////////////
-const char* unitStr[] = {"", "ug/m3", "ppm", "C", "%"};
+const char* unitStr[] = {"", "ug/m3", "ppm", "C", "%", "lm"};
 char _valueStr[100];
 uint16_t _color;
 uint8_t  _level;
@@ -381,6 +396,11 @@ void SensorDisplayController::_targetData(SensorDataType t)
       _color = _sensorData.humidColor;
       _level = _sensorData.hchoLevel;
       break;
+    case LUMI:
+      sprintf(_valueStr, "%.0f", _sensorData.luminosity);
+      _color = _sensorData.lumiColor;
+      _level = _sensorData.lumiLevel;
+      break;
     default: break;
   }
 }
@@ -455,6 +475,11 @@ void SensorDisplayController::_renderDetailScreenItem(SensorDataType type)
       _dev->write("Humid(%):");
       break;
 
+    case LUMI:
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount);
+      _dev->write("Lumi(lm):");
+      break;
+
     default: break;
     }
   }
@@ -496,9 +521,15 @@ void SensorDisplayController::_renderDetailScreenItem(SensorDataType type)
       break;
 
     case HUMID:
-      _dev->setTextColor(_sensorData.hchoColor, RGB565_BLACK);
+      _dev->setTextColor(_sensorData.humidColor, RGB565_BLACK);
       _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
       sprintf(_valueStr, "%.1f", _sensorData.humid); _dev->write(_valueStr);
+      break;
+
+    case LUMI:
+      _dev->setTextColor(_sensorData.lumiColor, RGB565_BLACK);
+      _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
+      sprintf(_valueStr, "%.1f", _sensorData.luminosity); _dev->write(_valueStr);
       break;
 
     default: break;

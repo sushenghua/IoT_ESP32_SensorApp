@@ -88,6 +88,7 @@ static const char * const SensorDataTypeStr[] = {
   "CO2",     // 2
   "TEMP",    // 3
   "HUMID",   // 4
+  "LUMI",    // 5
 };
 
 const char * sensorDataTypeStr(SensorDataType type)
@@ -100,7 +101,8 @@ static const char * const SensorDataValueStrFormat[] = {
   "%s\"HCHO\":%.2f",  // 1
   "%s\"CO2\":%.0f",   // 2
   "%s\"TEMP\":%.1f",  // 3
-  "%s\"HUMID\":%.1f"  // 4
+  "%s\"HUMID\":%.1f", // 4
+  "%s\"LUMI\":%.0f"   // 5
 };
 
 const char * sensorDataValueStrFormat(SensorDataType type)
@@ -108,8 +110,8 @@ const char * sensorDataValueStrFormat(SensorDataType type)
   return SensorDataValueStrFormat[type];
 }
 
-static SensorAlertMask const SENSOR_ALERT_MASKS[5] = {
-  PM_ALERT_MASK, HCHO_ALERT_MASK, CO2_ALERT_MASK, TEMP_ALERT_MASK, HUMID_ALERT_MASK
+static SensorAlertMask const SENSOR_ALERT_MASKS[6] = {
+  PM_ALERT_MASK, HCHO_ALERT_MASK, CO2_ALERT_MASK, TEMP_ALERT_MASK, HUMID_ALERT_MASK, LUMI_ALERT_MASK
 };
 
 SensorAlertMask sensorAlertMask(SensorDataType type)

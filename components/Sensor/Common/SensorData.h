@@ -37,6 +37,11 @@ struct SensorData {
   uint16_t    humidColor;
   float       temp;
   float       humid;
+
+  // luminosity
+  uint8_t     lumiLevel;
+  uint16_t    lumiColor;
+  float       luminosity;
 };
 
 #endif

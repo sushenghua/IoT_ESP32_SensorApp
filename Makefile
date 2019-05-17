@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := SensorApp
+PROJECT_NAME := VerticalFarm
 
 include $(IDF_PATH)/make/project.mk
 

@@ -413,10 +413,11 @@ void tsl2561_sensor_task(void *p)
       if (System::instance()->displayAutoAdjustOn()) {
         tsl2561Sensor.sampleData();
         _luminsity = tsl2561Sensor.luminosity();
+        dc.setLuminosity(_luminsity);
         // APP_LOGC("[TSL2561 Task]", "lux: %d", _luminsity);
-        if (_luminsity >= 100) dc.fadeBrightness(100);
-        else if (_luminsity < 10) dc.fadeBrightness(10);
-        else dc.fadeBrightness(_luminsity);
+        // if (_luminsity >= 100) dc.fadeBrightness(100);
+        // else if (_luminsity < 10) dc.fadeBrightness(10);
+        // else dc.fadeBrightness(_luminsity);
       }
       else if (_luminsity != 100) {
         _luminsity = 100;
@@ -832,10 +833,12 @@ void System::_setDefaultConfig()
   // _data.config1.deployMode = MQTTClientMode;
   _data.config2.pmSensorType =  PRODUCT_PM_SENSOR;
   _data.config2.co2SensorType = PRODUCT_CO2_SENSOR;
-  _data.config2.devCapability = ( capabilityForSensorType(_data.config2.pmSensorType) |
-                                  capabilityForSensorType(_data.config2.co2SensorType) );
+  // _data.config2.devCapability = ( capabilityForSensorType(_data.config2.pmSensorType) |
+  //                                 capabilityForSensorType(_data.config2.co2SensorType) );
+  _data.config2.devCapability = 0;
   _data.config2.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
   _data.config2.devCapability |= ORIENTATION_CAPABILITY_MASK;
+  _data.config2.devCapability |= LUMINOSITY_CAPABILITY_MASK;
   _data.config2.devName[DEV_NAME_MAX_LEN] = '\0'; // null terminated
   sprintf(_data.config2.devName, "%s_%.*s", "AQStation", 8, System::instance()->uid());
 }

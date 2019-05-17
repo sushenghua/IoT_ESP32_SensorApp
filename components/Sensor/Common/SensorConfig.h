@@ -26,7 +26,8 @@ enum SensorAlertMask
   HCHO_ALERT_MASK      = 0x00000002,
   TEMP_ALERT_MASK      = 0x00000004,
   HUMID_ALERT_MASK     = 0x00000008,
-  CO2_ALERT_MASK       = 0x00000010
+  CO2_ALERT_MASK       = 0x00000010,
+  LUMI_ALERT_MASK      = 0x00000020
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -37,6 +38,7 @@ enum SensorAlertMask
 #define TEMP_HUMID_CAPABILITY_MASK     0x00000004
 #define CO2_CAPABILITY_MASK            0x00000008
 #define ORIENTATION_CAPABILITY_MASK    0x00000010
+#define LUMINOSITY_CAPABILITY_MASK     0x00000020
 #define DEV_BUILD_IN_CAPABILITY_MASK   TEMP_HUMID_CAPABILITY_MASK
 
 
@@ -70,6 +72,7 @@ enum SensorDataType
   CO2       = 2,
   TEMP      = 3,
   HUMID     = 4,
+  LUMI      = 5,
   SensorDataTypeCount
 };
 

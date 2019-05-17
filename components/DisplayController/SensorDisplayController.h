@@ -40,6 +40,7 @@ public:
   void setHchoData(const HchoData *hchoData, bool update = true);
   void setTempHumidData(const TempHumidData *tempHumidData, bool update = true);
   void setCO2Data(const CO2Data *co2Data, bool update = true);
+  void setLuminosity(uint32_t luminosity, bool update = true);
   void setScreenMessage(const char * msg);
 
   void setQRCodeType(QRCodeType type, bool forceUpdate = false);
@@ -88,8 +89,8 @@ protected:
   uint32_t        _devCap;
   uint16_t        _mainItemCount;
   uint16_t        _subItemCount;
-  SensorDataType  _displayMainItems[5];
-  SensorDataType  _displaySubItems[5];
+  SensorDataType  _displayMainItems[6];
+  SensorDataType  _displaySubItems[6];
 public:
   void  setMpu6050(float r, float p, float y);
   // mpu6050
