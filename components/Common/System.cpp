@@ -838,7 +838,7 @@ void System::_setDefaultConfig()
   _data.config2.pmSensorType =  PRODUCT_PM_SENSOR;
   _data.config2.co2SensorType = PRODUCT_CO2_SENSOR;
   _data.config2.devCapability = 0;
-  // _data.config2.devCapability |= capabilityForSensorType(_data.config2.pmSensorType);
+  _data.config2.devCapability |= capabilityForSensorType(_data.config2.pmSensorType);
   // _data.config2.devCapability |= capabilityForSensorType(_data.config2.co2SensorType);
   _data.config2.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
   _data.config2.devCapability |= ORIENTATION_CAPABILITY_MASK;
@@ -1197,6 +1197,7 @@ void System::setSensorType(SensorType pmType, SensorType co2Type)
                                     capabilityForSensorType(_data.config2.co2SensorType) );
     _data.config2.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
     _data.config2.devCapability |= ORIENTATION_CAPABILITY_MASK;
+    _data.config2.devCapability |= LUMINOSITY_CAPABILITY_MASK;
     _updateConfig2();
   }
 }

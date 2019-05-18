@@ -122,7 +122,8 @@ const char* SensorDataPacker::dataJsonString(size_t &size)
   if (_lmSensor && _sensorCapability & LUMINOSITY_CAPABILITY_MASK) {
     LuminosityData lm = _lmSensor->luminosityData();
     sprintf(_dataStringBuf + packCount,
-        "\"lm\":%d,\"lmlvl\":%d", lm.luminosity, lm.levelLuminosity);
+        "%s\"lm\":%d,\"lmlvl\":%d",
+        commaPreceded ? "," : "", lm.luminosity, lm.levelLuminosity);
     packCount += strlen(_dataStringBuf + packCount);
     commaPreceded = true;
   }
