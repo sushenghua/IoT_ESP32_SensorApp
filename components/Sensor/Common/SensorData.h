@@ -41,7 +41,7 @@ struct SensorData {
   // luminosity
   uint8_t     lumiLevel;
   uint16_t    lumiColor;
-  float       luminosity;
+  uint32_t    luminosity;
 };
 
 #endif

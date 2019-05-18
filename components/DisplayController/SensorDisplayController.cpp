@@ -397,7 +397,7 @@ void SensorDisplayController::_targetData(SensorDataType t)
       _level = _sensorData.hchoLevel;
       break;
     case LUMI:
-      sprintf(_valueStr, "%.0f", _sensorData.luminosity);
+      sprintf(_valueStr, "%d%s", _sensorData.luminosity, _sensorData.luminosity < 1000.0f ? " " : "");
       _color = _sensorData.lumiColor;
       _level = _sensorData.lumiLevel;
       break;
@@ -529,7 +529,7 @@ void SensorDisplayController::_renderDetailScreenItem(SensorDataType type)
     case LUMI:
       _dev->setTextColor(_sensorData.lumiColor, RGB565_BLACK);
       _dev->setCursor(offsetX, offsetY + DETAIL_LINE_HEIGHT * detailRowCount++);
-      sprintf(_valueStr, "%.1f", _sensorData.luminosity); _dev->write(_valueStr);
+      sprintf(_valueStr, "%d", _sensorData.luminosity); _dev->write(_valueStr);
       break;
 
     default: break;
