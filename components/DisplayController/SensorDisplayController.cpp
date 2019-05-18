@@ -207,6 +207,7 @@ void SensorDisplayController::update()
         _renderDetailScreen();
         break;
       case DISPLAY_ROTATION_CW_180:
+        _renderMainScreen();
         break;
       case DISPLAY_ROTATION_CW_270:
         _renderQRCodeScreen();
