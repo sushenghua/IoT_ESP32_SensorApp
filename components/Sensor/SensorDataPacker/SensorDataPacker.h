@@ -9,11 +9,12 @@
 
 #include <stdint.h>
 #include "SHT3xSensor.h"
+#include "TSL2561.h"
 #include "PMSensor.h"
 #include "CO2Sensor.h"
 #include "OrientationSensor.h"
 
-#define BUF_SIZE (sizeof(PMData) + sizeof(HchoData) + sizeof(TempHumidData) + sizeof(CO2Data))
+#define BUF_SIZE (sizeof(PMData) + sizeof(HchoData) + sizeof(TempHumidData) + sizeof(LuminosityData) + sizeof(CO2Data))
 
 class SensorDataPacker
 {
@@ -26,6 +27,7 @@ public:
 
     // add sensor obj ref
     void setTempHumidSensor(SHT3xSensor *sensor);
+    void setLmSensor(TSL2561 *sensor);
     void setPmSensor(PMSensor *sensor);
     void setOrientationSensor(OrientationSensor *sensor);
     void setCO2Sensor(CO2Sensor *sensor);
@@ -41,7 +43,9 @@ public:
     SensorDataPacker();
 
 protected:
+    bool                 _inited;
     SHT3xSensor         *_thSensor;
+    TSL2561             *_lmSensor;
     PMSensor            *_pmSensor;
     CO2Sensor           *_co2Sensor;
     OrientationSensor   *_orientationSensor;

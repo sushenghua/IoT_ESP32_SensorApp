@@ -137,10 +137,10 @@ void SensorDisplayController::setCO2Data(const CO2Data *co2Data, bool update)
   if (update) _dynamicContentNeedUpdate = true;
 }
 
-void SensorDisplayController::setLuminosity(uint32_t luminosity, bool update)
+void SensorDisplayController::setLuminosityData(const LuminosityData *lmData, bool update)
 {
   // value update
-  _sensorData.luminosity = luminosity;
+  _sensorData.luminosity = lmData->luminosity;
 
   // color update
   _sensorData.lumiColor = 0x07F9; // cyan

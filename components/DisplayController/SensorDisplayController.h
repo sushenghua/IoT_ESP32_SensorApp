@@ -11,6 +11,7 @@
 #include "PMData.h"
 #include "HchoData.h"
 #include "TempHumidData.h"
+#include "LuminosityData.h"
 #include "CO2Data.h"
 #include "SensorConfig.h"
 #include "SensorData.h"
@@ -40,7 +41,7 @@ public:
   void setHchoData(const HchoData *hchoData, bool update = true);
   void setTempHumidData(const TempHumidData *tempHumidData, bool update = true);
   void setCO2Data(const CO2Data *co2Data, bool update = true);
-  void setLuminosity(uint32_t luminosity, bool update = true);
+  void setLuminosityData(const LuminosityData *lmData, bool update = true);
   void setScreenMessage(const char * msg);
 
   void setQRCodeType(QRCodeType type, bool forceUpdate = false);

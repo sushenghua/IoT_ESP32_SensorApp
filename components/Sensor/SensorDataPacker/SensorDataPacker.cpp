@@ -19,18 +19,31 @@ SensorDataPacker * SensorDataPacker::sharedInstance()
 char  *_dataStringBuf = NULL;
 
 SensorDataPacker::SensorDataPacker()
-: _pmSensor(NULL)
+: _inited(false)
+, _thSensor(NULL)
+, _lmSensor(NULL)
+, _pmSensor(NULL)
+, _co2Sensor(NULL)
+, _orientationSensor(NULL)
 {}
 
 void SensorDataPacker::init()
 {
-  _dataStringBuf = SharedBuffer::msgBuffer();
-  _sensorCapability = System::instance()->devCapability();
+  if (!_inited) {
+    _dataStringBuf = SharedBuffer::msgBuffer();
+    _sensorCapability = System::instance()->devCapability();
+    _inited = true;
+  }
 }
 
 void SensorDataPacker::setTempHumidSensor(SHT3xSensor *sensor)
 {
   _thSensor = sensor;
+}
+
+void SensorDataPacker::setLmSensor(TSL2561 *sensor)
+{
+  _lmSensor = sensor;
 }
 
 void SensorDataPacker::setPmSensor(PMSensor *sensor)
@@ -56,6 +69,12 @@ const uint8_t* SensorDataPacker::dataBlock(size_t &size)
   if (_thSensor && _sensorCapability & TEMP_HUMID_CAPABILITY_MASK) {
     sz = sizeof(_thSensor->tempHumidData());
     memcpy(_dataBlockBuf + packCount, &(_thSensor->tempHumidData()), sz);
+    packCount += sz;
+  }
+
+  if (_lmSensor && _sensorCapability & LUMINOSITY_CAPABILITY_MASK) {
+    sz = sizeof(_lmSensor->luminosityData());
+    memcpy(_dataBlockBuf + packCount, &(_lmSensor->luminosityData()), sz);
     packCount += sz;
   }
 
@@ -96,6 +115,14 @@ const char* SensorDataPacker::dataJsonString(size_t &size)
     sprintf(_dataStringBuf + packCount,
         "\"temp\":%.1f,\"templvl\":%d,\"humid\":%.1f,\"humidlvl\":%d",
         th.temp, th.levelTemp, th.humid, th.levelHumid);
+    packCount += strlen(_dataStringBuf + packCount);
+    commaPreceded = true;
+  }
+
+  if (_lmSensor && _sensorCapability & LUMINOSITY_CAPABILITY_MASK) {
+    LuminosityData lm = _lmSensor->luminosityData();
+    sprintf(_dataStringBuf + packCount,
+        "\"lm\":%d,\"lmlvl\":%d", lm.luminosity, lm.levelLuminosity);
     packCount += strlen(_dataStringBuf + packCount);
     commaPreceded = true;
   }

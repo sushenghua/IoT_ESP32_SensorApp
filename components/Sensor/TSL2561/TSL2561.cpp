@@ -427,6 +427,7 @@ void tsl2561CalculateLuminosity(uint32_t &ret, uint16_t broadband, uint16_t ir)
 /////////////////////////////////////////////////////////////////////////////////////////
 
 TSL2561::TSL2561()
+: _dc(NULL)
 {}
 
 #define  TSL2561_TRY_INIT_DELAY             100
@@ -467,7 +468,9 @@ void TSL2561::sampleData()
   }
 
   if (tsl2561GetLuminosity(_broadbandCache, _irCache)) {
-    tsl2561CalculateLuminosity(_luminosity, _broadbandCache, _irCache);
+    tsl2561CalculateLuminosity(_luminosityData.luminosity, _broadbandCache, _irCache);
+    if (_dc) _dc->setLuminosityData(&_luminosityData, true);
+
 #ifdef DEBUG_APP_OK
     APP_LOGC("[TSL2561]", "--->lux: %d b: %d, ir: %d", _luminosity, _broadbandCache, _irCache);
 #endif

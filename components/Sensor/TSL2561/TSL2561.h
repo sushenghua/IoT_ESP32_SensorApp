@@ -8,6 +8,8 @@
 #define _TSL2561_H
 
 #include <stdint.h>
+#include "SensorDisplayController.h"
+#include "LuminosityData.h"
 
 class TSL2561
 {
@@ -17,16 +19,20 @@ public:
 
   // init and display delegate
   void init(bool checkDeviceReady=true);
+  void setDisplayDelegate(SensorDisplayController *dc) { _dc = dc; }
 
   // cached values
-  const uint32_t & luminosity() { return _luminosity; }
+  LuminosityData & luminosityData() { return _luminosityData; }
 
   // sample
   void sampleData();
 
 protected:
   // value cache from sensor
-  uint32_t   _luminosity;
+  LuminosityData            _luminosityData;
+
+  // display delagate
+  SensorDisplayController  *_dc;
 };
 
 #endif // _TSL2561_H

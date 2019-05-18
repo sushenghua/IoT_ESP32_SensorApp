@@ -345,6 +345,7 @@ void sht3x_sensor_task(void *p)
 {
   sht3xSensor.init();
   sht3xSensor.setDisplayDelegate(&dc);
+  SensorDataPacker::sharedInstance()->init();
   SensorDataPacker::sharedInstance()->setTempHumidSensor(&sht3xSensor);
   _sht3xSensorTaskState = TaskRunning;
   while (true) {
@@ -387,6 +388,7 @@ void co2_sensor_task(void *p)
   CO2Sensor co2Sensor;
   co2Sensor.init();
   co2Sensor.setDisplayDelegate(&dc);
+  SensorDataPacker::sharedInstance()->init();
   SensorDataPacker::sharedInstance()->setCO2Sensor(&co2Sensor);
   _co2SensorTaskState = TaskRunning;
   vTaskDelay(3000/portTICK_RATE_MS); // delay 3 seconds
@@ -400,24 +402,26 @@ void co2_sensor_task(void *p)
   }
 }
 
-TaskHandle_t tsl2561SensorTaskHandle;
-TaskState _tsl2561SensorTaskState = TaskEmpty;
-uint32_t _luminsity = 0;
+TaskHandle_t  tsl2561SensorTaskHandle;
+TaskState    _tsl2561SensorTaskState = TaskEmpty;
+uint32_t     _luminsity;
 void tsl2561_sensor_task(void *p)
 {
   TSL2561 tsl2561Sensor;
   tsl2561Sensor.init();
+  tsl2561Sensor.setDisplayDelegate(&dc);
+  SensorDataPacker::sharedInstance()->init();
+  SensorDataPacker::sharedInstance()->setLmSensor(&tsl2561Sensor);
   _tsl2561SensorTaskState = TaskRunning;
   while (true) {
     if (_enablePeripheralTaskLoop) {
+      tsl2561Sensor.sampleData();
       if (System::instance()->displayAutoAdjustOn()) {
-        tsl2561Sensor.sampleData();
-        _luminsity = tsl2561Sensor.luminosity();
-        dc.setLuminosity(_luminsity);
+        _luminsity = tsl2561Sensor.luminosityData().luminosity;
         // APP_LOGC("[TSL2561 Task]", "lux: %d", _luminsity);
-        // if (_luminsity >= 100) dc.fadeBrightness(100);
-        // else if (_luminsity < 10) dc.fadeBrightness(10);
-        // else dc.fadeBrightness(_luminsity);
+        if (_luminsity >= 100) dc.fadeBrightness(100);
+        else if (_luminsity < 10) dc.fadeBrightness(10);
+        else dc.fadeBrightness(_luminsity);
       }
       else if (_luminsity != 100) {
         _luminsity = 100;
@@ -833,9 +837,9 @@ void System::_setDefaultConfig()
   // _data.config1.deployMode = MQTTClientMode;
   _data.config2.pmSensorType =  PRODUCT_PM_SENSOR;
   _data.config2.co2SensorType = PRODUCT_CO2_SENSOR;
-  // _data.config2.devCapability = ( capabilityForSensorType(_data.config2.pmSensorType) |
-  //                                 capabilityForSensorType(_data.config2.co2SensorType) );
   _data.config2.devCapability = 0;
+  // _data.config2.devCapability |= capabilityForSensorType(_data.config2.pmSensorType);
+  // _data.config2.devCapability |= capabilityForSensorType(_data.config2.co2SensorType);
   _data.config2.devCapability |= DEV_BUILD_IN_CAPABILITY_MASK;
   _data.config2.devCapability |= ORIENTATION_CAPABILITY_MASK;
   _data.config2.devCapability |= LUMINOSITY_CAPABILITY_MASK;
