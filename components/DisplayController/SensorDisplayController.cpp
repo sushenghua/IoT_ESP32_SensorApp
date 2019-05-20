@@ -388,7 +388,8 @@ void SensorDisplayController::_targetData(SensorDataType t)
       _level = _sensorData.co2Level;
       break;
     case TEMP:
-      sprintf(_valueStr, "%.1f", _sensorData.temp);
+      if (_sensorData.temp >= 100.0f) sprintf(_valueStr, "%.0f", _sensorData.temp);
+      else                            sprintf(_valueStr, "%.1f", _sensorData.temp);
       _color = _sensorData.tempColor;
       _level = _sensorData.tempLevel;
       break;
