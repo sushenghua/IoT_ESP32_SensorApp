@@ -418,7 +418,7 @@ void Wifi::onStaConnected()
 }
 
 #define TRY_OTHER_AP_AFTER_FAIL_COUNT  3
-#define MAX_ALT_APS_TRY_ROUND          4
+#define MAX_ALT_APS_TRY_ROUND          1000
 
 void Wifi::onStaDisconnected(system_event_info_t &info)
 {
