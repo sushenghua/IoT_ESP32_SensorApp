@@ -626,8 +626,8 @@ void _sendDebugMsgPN()
 
 // ------ mqtt task
 #include "Crypto.h"
-#include "mqtt_user.h"
-#include "mqtt_passwd.h"
+#include "certs/mqtt_user.h"
+#include "certs/mqtt_passwd.h"
 static void mqtt_task(void *pvParams)
 {
   CmdEngine cmdEngine;

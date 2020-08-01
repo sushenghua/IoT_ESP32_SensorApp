@@ -8,7 +8,7 @@
 #define _ORIENTATION_SENSOR_H
 
 #include "SensorDisplayController.h"
-#include "MPU6050.h"
+#include "MPU6050/MPU6050.h"
 
 class OrientationSensor
 {

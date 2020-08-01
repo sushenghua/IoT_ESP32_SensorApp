@@ -76,7 +76,7 @@ Wifi::Wifi()
 {
   // set default config value
   _config.mode = WIFI_MODE_AP;
-  _config.powerSaveType = WIFI_PS_MODEM;
+  _config.powerSaveType = WIFI_PS_MIN_MODEM;
 #ifdef ENABLE_EAP
   _config.eapConfig.enabled = false;
   _config.eapConfig.eapMode = EAP_PEAP;
@@ -113,7 +113,7 @@ void Wifi::setWifiMode(wifi_mode_t mode)
 
 void Wifi::setPowerSaveEnabled(bool enabled)
 {
-  _config.powerSaveType = enabled ? WIFI_PS_MODEM : WIFI_PS_NONE;
+  _config.powerSaveType = enabled ? WIFI_PS_MIN_MODEM : WIFI_PS_NONE;
   esp_wifi_set_ps(_config.powerSaveType);
 }
 

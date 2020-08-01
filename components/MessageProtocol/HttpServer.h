@@ -10,7 +10,7 @@
 #include "ProtocolMessageInterpreter.h"
 #include "ProtocolDelegate.h"
 
-#include "mongoose.h"
+#include "mongoose/mongoose.h"
 
 #define MONGOOSE_HTTP_DEFAULT_POLL_SLEEP 1000
 

@@ -11,7 +11,7 @@
 #include "MqttClientDelegate.h"
 #include "MessagePubPool.h"
 
-#include "mongoose.h"
+#include "mongoose/mongoose.h"
 
 
 /////////////////////////////////////////////////////////////////////////////////////////

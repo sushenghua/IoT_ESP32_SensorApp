@@ -140,8 +140,8 @@ static void msg_pool_task(void *pvParams)
 /////////////////////////////////////////////////////////////////////////////////////////
 #if MG_ENABLE_SSL
 
-#include "mqtt_crt.h"
-#include "ski.h"
+#include "certs/mqtt_crt.h"
+#include "certs/ski.h"
 #include "Crypto.h"
 
 // void print_test()
@@ -235,8 +235,10 @@ MqttClient::MqttClient()
     // message publish pool
     _msgPubPool.setPubDelegate(this);
 
+#if MG_ENABLE_SSL
     // crt
     _decryptCrt();
+#endif
 }
 
 void MqttClient::setServerAddress(const char* serverAddress)

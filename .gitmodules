@@ -1,8 +1,8 @@
 [submodule "components/Mongoose/lib/mongoose"]
-	path = components/Mongoose/lib/mongoose
+	path = components/MessageProtocol/lib/mongoose
 	url = https://github.com/cesanta/mongoose.git
 [submodule "components/Mongoose/lib/mongoose-os"]
-	path = components/Mongoose/lib/mongoose-os
+	path = components/MessageProtocol/lib/mongoose-os
 	url = https://github.com/cesanta/mongoose-os.git
 [submodule "components/QRCode/QR-Code-generator"]
 	path = components/QRCode/QR-Code-generator
