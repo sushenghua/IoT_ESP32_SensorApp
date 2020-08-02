@@ -399,7 +399,7 @@ void SensorDisplayController::_targetData(SensorDataType t)
       _level = _sensorData.hchoLevel;
       break;
     case LUMI:
-      sprintf(_valueStr, "%d%s", _sensorData.luminosity, _sensorData.luminosity < 1000.0f ? " " : "");
+      sprintf(_valueStr, "%d%s", _sensorData.luminosity, _sensorData.luminosity < 1000.0f ? "   " : "");
       _color = _sensorData.lumiColor;
       _level = _sensorData.lumiLevel;
       break;
