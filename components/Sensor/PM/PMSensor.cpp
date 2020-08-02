@@ -8,6 +8,7 @@
 #include "HealthyStandard.h"
 #include "driver/gpio.h"
 #include "Debug.h"
+#include "AppLog.h"
 #include "System.h"
 
 // ------ use temp/humid sensor inside PMS5xxxT

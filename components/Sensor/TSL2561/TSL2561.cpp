@@ -472,7 +472,7 @@ void TSL2561::sampleData()
     if (_dc) _dc->setLuminosityData(&_luminosityData, true);
 
 #ifdef DEBUG_APP_OK
-    APP_LOGC("[TSL2561]", "--->lux: %d b: %d, ir: %d", _luminosity, _broadbandCache, _irCache);
+    APP_LOGC("[TSL2561]", "--->lux: %d b: %d, ir: %d", _luminosityData.luminosity, _broadbandCache, _irCache);
 #endif
   }
   else {
