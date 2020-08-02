@@ -126,7 +126,7 @@ void DisplayController::updateStatusBar(bool foreUpdateAll)
     _dev->setCursor(_dev->width()/2 - TIM_OFFSET_FROM_M, 8);
     _dev->setTextSize(2);
     _dev->setTextColor(RGB565_WEAKWHITE, RGB565_BLACK);
-    SNTP::setTimezone("CST-8CDT-9,M4.2.0/2,M9.2.0/3");
+    SNTP::setTimezone("CST-8CDT-8,M4.2.0/2,M9.2.0/3");
     strftime(strftime_buf, sizeof(strftime_buf), "%H:%M", &SNTP::timeInfo(SNTP::timeNow()));
     _dev->write(strftime_buf);
     _timeNeedUpdate = false;
