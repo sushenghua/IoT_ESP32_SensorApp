@@ -141,11 +141,11 @@ public:
     void onStaStart();
     void onStaStop();
     void onStaConnected();
-    void onStaDisconnected(system_event_info_t &info);
+    void onStaDisconnected(uint8_t reason);
     void onStaGotIp();
     void onApStart();
     void onApStaConnected();
-    void onApStaDisconnected(system_event_info_t &info);
+    void onApStaDisconnected();
 
 protected:
     // flags

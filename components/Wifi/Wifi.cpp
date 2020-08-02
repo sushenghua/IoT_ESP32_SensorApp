@@ -11,9 +11,9 @@
 #include "freertos/event_groups.h"
 #include "esp_wifi.h"
 #include "esp_wpa2.h"
-#include "esp_event_loop.h"
+#include "esp_event.h"
 #include "esp_system.h"
-#include "tcpip_adapter.h"
+#include "esp_netif.h"
 
 #include "AppLog.h"
 #include "System.h"
@@ -343,45 +343,79 @@ const char * Wifi::apPassword()
 /////////////////////////////////////////////////////////////////////////////////////////
 // ------ wifi init and event handler
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
-static EventGroupHandle_t wifiEventGroup;
+static EventGroupHandle_t           _wifiEventGroup;
 
-/* The event group allows multiple bits for each event,
-   but we only care about one event - are we connected
-   to the AP with an IP? */
+// event handler instance object related to the registered event handler and data, can be NULL
+static esp_event_handler_instance_t _instanceAnyId;
+static esp_event_handler_instance_t _instanceGotIp;
+
+// default WIFI AP, STA. In case of any init error this API aborts.
+static esp_netif_t *_defaultWifiAp = NULL;
+static esp_netif_t *_defaultWifiSta = NULL;
+
+/* The event group allows multiple bits for each event, but we only care about two event
+   - we are connected to the AP with an IP
+   - we failed to connect after the maximum amount of retries */
 static const int CONNECTED_BIT = BIT0;
+static const int FAIL_BIT      = BIT1;
 
-static esp_err_t wifi_app_event_handler(void *ctx, system_event_t *event)
+static void wifi_app_event_handler( void* ctx, esp_event_base_t eventBase,
+                                    int32_t eventId, void* eventData)
 {
-  switch (event->event_id) {
+  if (eventBase == WIFI_EVENT) {
+    wifi_event_t wifiEvent = static_cast<wifi_event_t>(eventId);
+    switch (wifiEvent) {
 
-    case SYSTEM_EVENT_STA_START:
-      Wifi::instance()->onStaStart();
-      break;
+      case WIFI_EVENT_STA_START: {
+        Wifi::instance()->onStaStart();
+      } break;
 
-    case SYSTEM_EVENT_STA_GOT_IP:
-      Wifi::instance()->onStaGotIp();
-      break;
+      case WIFI_EVENT_STA_STOP: {
+        Wifi::instance()->onStaStop();
+      } break;
 
-    case SYSTEM_EVENT_STA_DISCONNECTED:
-      Wifi::instance()->onStaDisconnected(event->event_info);
-      break;
+      case WIFI_EVENT_STA_CONNECTED: {
+        Wifi::instance()->onStaConnected();
+      } break;
 
-    case SYSTEM_EVENT_AP_START:
-      Wifi::instance()->onApStart();
-      break;
+      case WIFI_EVENT_STA_DISCONNECTED: {
+        wifi_event_sta_disconnected_t* event = (wifi_event_sta_disconnected_t*) eventData;
+        Wifi::instance()->onStaDisconnected(event->reason);
+      } break;
 
-    case SYSTEM_EVENT_AP_STACONNECTED:
-      Wifi::instance()->onApStaConnected();
-      break;
+      case WIFI_EVENT_AP_START: {
+        Wifi::instance()->onApStart();
+      } break;
 
-    case SYSTEM_EVENT_AP_STADISCONNECTED:
-      Wifi::instance()->onApStaDisconnected(event->event_info);
-      break;
+      // case WIFI_EVENT_AP_STOP:
+      //   break;
 
-    default:
-      break;
+      case WIFI_EVENT_AP_STACONNECTED: {
+        Wifi::instance()->onApStaConnected();
+      } break;
+
+      case WIFI_EVENT_AP_STADISCONNECTED: {
+        Wifi::instance()->onApStaDisconnected();
+      } break;
+
+      default:
+        break;
+    }
+  } 
+  else if (eventBase == IP_EVENT) {
+    ip_event_t ipEvent = static_cast<ip_event_t>(eventId);
+    switch (ipEvent) {
+      case IP_EVENT_STA_GOT_IP: {
+        Wifi::instance()->onStaGotIp();
+      } break;
+
+      // case IP_STA_LOST_IP:
+      //   break;
+
+      default:
+        break;
+    }
   }
-  return ESP_OK;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -399,7 +433,7 @@ void Wifi::onStaStart()
 void Wifi::onStaGotIp()
 {
   APP_LOGI("[Wifi]", "connected, got ip");
-  xEventGroupSetBits(wifiEventGroup, CONNECTED_BIT);
+  xEventGroupSetBits(_wifiEventGroup, CONNECTED_BIT);
   _connectionFailCount = 0;
   _altApsConnectionFailRound = 0;
   _connected = true;
@@ -420,14 +454,15 @@ void Wifi::onStaConnected()
 #define TRY_OTHER_AP_AFTER_FAIL_COUNT  3
 #define MAX_ALT_APS_TRY_ROUND          1000
 
-void Wifi::onStaDisconnected(system_event_info_t &info)
+void Wifi::onStaDisconnected(uint8_t reason)
 {
-  APP_LOGI("[Wifi]", "disconnected, code: %d", info.disconnected.reason);
-  xEventGroupClearBits(wifiEventGroup, CONNECTED_BIT);
+  APP_LOGI("[Wifi]", "disconnected, reason code: %d", reason);
+  xEventGroupClearBits(_wifiEventGroup, CONNECTED_BIT);
   _connected = false;
   bool tryReconnect = true;
-  switch(info.disconnected.reason) {
-    case WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT:
+  switch(reason) {
+    // case WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT: // legacy code
+    case WIFI_REASON_HANDSHAKE_TIMEOUT:
     case WIFI_REASON_AUTH_FAIL:
     case WIFI_REASON_NO_AP_FOUND:
       ++_connectionFailCount;
@@ -477,7 +512,7 @@ void Wifi::onApStaConnected()
   // APP_LOGC("[Wifi]", "++_apStaConnectionCount %d", _apStaConnectionCount);
 }
 
-void Wifi::onApStaDisconnected(system_event_info_t &info)
+void Wifi::onApStaDisconnected()
 {
   _apStaConnectionCount = 0;
   // APP_LOGC("[Wifi]", "--_apStaConnectionCount %d", _apStaConnectionCount);
@@ -485,7 +520,7 @@ void Wifi::onApStaDisconnected(system_event_info_t &info)
 
 void Wifi::waitConnected()
 {
-  xEventGroupWaitBits(wifiEventGroup, CONNECTED_BIT, false, true, portMAX_DELAY);
+  xEventGroupWaitBits(_wifiEventGroup, CONNECTED_BIT, false, true, portMAX_DELAY);
 }
 
 bool Wifi::connected()
@@ -527,9 +562,20 @@ void Wifi::init()
 {
   if (_initialized) return;
 
-  tcpip_adapter_init();
+  _wifiEventGroup = xEventGroupCreate();
 
+  ESP_ERROR_CHECK( esp_netif_init() );
+  ESP_ERROR_CHECK( esp_event_loop_create_default() );
+
+  if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) {
+    // save default wifi sta
+    _defaultWifiSta = esp_netif_create_default_wifi_sta();
+  }
   if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_AP) {
+    // save default wifi ap
+    _defaultWifiAp = esp_netif_create_default_wifi_ap();
+
+    // network ip
     tcpip_adapter_ip_info_t info = { 0, 0, 0};
     IP4_ADDR(&info.ip, 192, 168, 4, 1);
     IP4_ADDR(&info.gw, 192, 168, 4, 1);
@@ -539,19 +585,32 @@ void Wifi::init()
     ESP_ERROR_CHECK(tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP));
   }
 
-  wifiEventGroup = xEventGroupCreate();
-  ESP_ERROR_CHECK( esp_event_loop_init(wifi_app_event_handler, NULL) );
-
+  // init wifi
   wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
   ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
   ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
 
+  // register event handler
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+                                                      ESP_EVENT_ANY_ID,
+                                                      &wifi_app_event_handler,
+                                                      NULL,
+                                                      &_instanceAnyId));
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
+                                                      IP_EVENT_STA_GOT_IP,
+                                                      &wifi_app_event_handler,
+                                                      NULL,
+                                                      &_instanceGotIp));
+
+  // set power save mode
   esp_err_t ret = esp_wifi_set_ps(_config.powerSaveType);
   APP_LOGI("[Wifi]", "init with power save support: %s", ret != ESP_ERR_NOT_SUPPORTED ? "Yes" : "No");
-
+  
+  // set wifi mode: ap or sta
   APP_LOGI("[Wifi]", "init with mode %d", _config.mode);
   ESP_ERROR_CHECK( esp_wifi_set_mode(_config.mode) );
 
+  // set wifi mode config accordingly
   if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA)
     ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &_config.staConfig) );
   if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_AP)
@@ -567,7 +626,27 @@ void Wifi::init()
 void Wifi::deinit()
 {
   if (_initialized) {
+    // event will not be processed after unregister
+    ESP_ERROR_CHECK(esp_event_handler_instance_unregister(IP_EVENT,   IP_EVENT_STA_GOT_IP, _instanceGotIp));
+    ESP_ERROR_CHECK(esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID,    _instanceAnyId));
+
+    // deinit wifi
     ESP_ERROR_CHECK( esp_wifi_deinit() );
+
+    // destroys the esp_netif object accordingly
+    if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) {
+      esp_netif_destroy(_defaultWifiSta);
+      _defaultWifiSta = NULL;
+    }
+    if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_AP) {
+      esp_netif_destroy(_defaultWifiAp);
+      _defaultWifiAp = NULL;
+    }
+
+    // ESP_ERROR_CHECK( esp_netif_deinit() ); // deinitialization is not supported yet
+
+    vEventGroupDelete(_wifiEventGroup);
+
     _initialized = false;
   }
 }

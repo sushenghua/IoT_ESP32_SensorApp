@@ -36,7 +36,7 @@ enum TaskState {
 // Wifi task
 //----------------------------------------------
 #include "Wifi.h"
-#include "tcpip_adapter.h"
+#include "esp_netif.h"
 
 TaskHandle_t wifiTaskHandle;
 void wifi_task(void *pvParameters)
