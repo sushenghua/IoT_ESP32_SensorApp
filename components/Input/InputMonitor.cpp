@@ -40,7 +40,7 @@ static void IRAM_ATTR gpioIsrHandler(void* arg)
 
 #define USER_TOGGLE_DISPLAY_LOW_COUNT     50   // 0.5 second
 #define USER_TOGGLE_WIFI_ON_LOW_COUNT     200  // 2 second
-#define USER_TOGGLE_WIFI_MODE_LOW_COUNT   400  // 4 sencod
+#define USER_TOGGLE_WIFI_MODE_LOW_COUNT   500  // 5 sencod
 
 #define GPIO_CHECK_TASK_PAUSE_DELAY       400
 
@@ -68,7 +68,7 @@ static void gpio_check_task(void* args)
       vTaskDelay(GPIO_CHECK_TASK_PAUSE_DELAY / portTICK_RATE_MS);
       continue;
     }
-    if(xQueueReceive(_gpioEventQueue, &ioNum, GPIO_CHECK_TASK_DELAY_UNIT)) {
+    if(xQueueReceive(_gpioEventQueue, &ioNum, GPIO_CHECK_TASK_DELAY_UNIT/portTICK_RATE_MS)) {
       lvl = gpio_get_level((gpio_num_t)ioNum);
       switch(ioNum) {
 
@@ -76,7 +76,7 @@ static void gpio_check_task(void* args)
           if (_pwrGpioLvl != lvl) {
             _pwrGpioLvl = lvl;
             if (lvl == 1) { // released
-              // APP_LOGC("[BTN]", "pwr released, duration cnt: %d, time: %.2f",
+              // APP_LOGC("[BTN]", "pwr released, duration cnt: %d, time: %.2f s",
               //          _pwrLowDurationCount, GPIO_CHECK_TASK_DELAY_UNIT*_pwrLowDurationCount/1000.0f);
               if (_pwrLowDurationCount < PWR_TOGGLE_DISPLAY_LOW_COUNT) {
                 sys->onEvent(INPUT_EVENT_PWR_BTN_SHORT_RELEASE);
@@ -94,7 +94,7 @@ static void gpio_check_task(void* args)
           if (_usrGpioLvl != lvl) {
             _usrGpioLvl = lvl;
             if (lvl == 1) { // released
-              // APP_LOGC("[BTN]", "usr released, duration cnt: %d, time: %.2f",
+              // APP_LOGC("[BTN]", "usr released, duration cnt: %d, time: %.2f s",
               //          _usrLowDurationCount, GPIO_CHECK_TASK_DELAY_UNIT*_usrLowDurationCount/1000.0f);
               if (_usrLowDurationCount > 0 &&
                   _usrLowDurationCount < USER_TOGGLE_DISPLAY_LOW_COUNT) {
