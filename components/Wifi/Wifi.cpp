@@ -41,6 +41,44 @@ extern uint8_t client_key_end[]   asm("_binary_wpa2_client_key_end");
 #endif // ENABLE_EAP
 
 /////////////////////////////////////////////////////////////////////////////////////////
+// ------ default WIFI AP, STA. In case of any init error this API aborts.
+static esp_netif_t *_defaultWifiApInstance = NULL;
+static esp_netif_t *_defaultWifiStaInstance = NULL;
+
+static esp_netif_t * _defaultWifiAp() { 
+  if (!_defaultWifiApInstance)  APP_LOGE("[Wifi]", "_defaultWifiApInstance NULL");
+  return _defaultWifiApInstance; }
+static esp_netif_t * _defaultWifiSta() { 
+    if (!_defaultWifiStaInstance) APP_LOGE("[Wifi]", "_defaultWifiStaInstance NULL");
+return _defaultWifiStaInstance; }
+
+static esp_netif_t * _createDefaultWifiAp() {
+  if (_defaultWifiApInstance != NULL) esp_netif_destroy(_defaultWifiApInstance);
+  _defaultWifiApInstance = esp_netif_create_default_wifi_ap();
+  return _defaultWifiApInstance;
+}
+
+static esp_netif_t * _createDefaultWifiSta() {
+  if (_defaultWifiStaInstance != NULL) esp_netif_destroy(_defaultWifiStaInstance);
+  _defaultWifiStaInstance = esp_netif_create_default_wifi_sta();
+  return _defaultWifiStaInstance;
+}
+
+static void _destroyDefaultWifiAp() {
+  if (_defaultWifiApInstance != NULL) {
+    esp_netif_destroy(_defaultWifiApInstance);
+    _defaultWifiApInstance = NULL;
+  }
+}
+
+static void _destroyDefaultWifiSta() {
+  if (_defaultWifiStaInstance != NULL) {
+    esp_netif_destroy(_defaultWifiStaInstance);
+    _defaultWifiStaInstance = NULL;
+  }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
 // ------ helper
 inline size_t stringLen(const char *str)
 {
@@ -298,10 +336,10 @@ bool Wifi::setHostName(const char* hostname)
   stringAssign(_config.hostName, hostname, len);
   if ( _started ) {
     if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) {
-      ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
+      if (_defaultWifiSta()) ESP_ERROR_CHECK( esp_netif_set_hostname(_defaultWifiSta(), _config.hostName) );
     }
     if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_AP) {
-      ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_AP, _config.hostName) );
+      if (_defaultWifiAp()) ESP_ERROR_CHECK( esp_netif_set_hostname(_defaultWifiAp(), _config.hostName) );
     }
   }
 
@@ -312,10 +350,10 @@ const char * Wifi::getHostName()
 {
   const char *hostname = NULL;
   if (_config.mode == WIFI_MODE_STA || _config.mode == WIFI_MODE_APSTA) {
-    ESP_ERROR_CHECK( tcpip_adapter_get_hostname(TCPIP_ADAPTER_IF_STA, &hostname) );
+    if (_defaultWifiSta()) ESP_ERROR_CHECK( esp_netif_get_hostname(_defaultWifiSta(), &hostname) );
   }
   else if (_config.mode == WIFI_MODE_AP) {
-    ESP_ERROR_CHECK( tcpip_adapter_get_hostname(TCPIP_ADAPTER_IF_AP, &hostname) );
+    if (_defaultWifiAp()) ESP_ERROR_CHECK( esp_netif_get_hostname(_defaultWifiAp(), &hostname) );
   }
   return hostname;
 }
@@ -348,10 +386,6 @@ static EventGroupHandle_t           _wifiEventGroup;
 // event handler instance object related to the registered event handler and data, can be NULL
 static esp_event_handler_instance_t _instanceAnyId;
 static esp_event_handler_instance_t _instanceGotIp;
-
-// default WIFI AP, STA. In case of any init error this API aborts.
-static esp_netif_t *_defaultWifiAp = NULL;
-static esp_netif_t *_defaultWifiSta = NULL;
 
 /* The event group allows multiple bits for each event, but we only care about two event
    - we are connected to the AP with an IP
@@ -439,7 +473,7 @@ void Wifi::onStaGotIp()
   _connected = true;
 
   if ( (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) && _config.hostName[0] != '\0') {
-    ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
+    ESP_ERROR_CHECK( esp_netif_set_hostname(_defaultWifiSta(), _config.hostName) );
   }
 }
 
@@ -502,7 +536,7 @@ void Wifi::onApStart()
 {
   APP_LOGI("[Wifi]", "AP start");
   if ( (_config.mode == WIFI_MODE_AP) && _config.hostName[0] != '\0') {
-    ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_AP, _config.hostName) );
+    ESP_ERROR_CHECK( esp_netif_set_hostname(_defaultWifiAp(), _config.hostName) );
   }
 }
 
@@ -568,21 +602,21 @@ void Wifi::init()
   ESP_ERROR_CHECK( esp_event_loop_create_default() );
 
   if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) {
-    // save default wifi sta
-    _defaultWifiSta = esp_netif_create_default_wifi_sta();
+    // create default wifi sta
+    _createDefaultWifiSta();
   }
   if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_AP) {
-    // save default wifi ap
-    _defaultWifiAp = esp_netif_create_default_wifi_ap();
+    // create default wifi ap
+    _createDefaultWifiAp();
 
     // network ip
-    tcpip_adapter_ip_info_t info = { 0, 0, 0};
-    IP4_ADDR(&info.ip, 192, 168, 4, 1);
-    IP4_ADDR(&info.gw, 192, 168, 4, 1);
-    IP4_ADDR(&info.netmask, 255, 255, 255, 0);
-    ESP_ERROR_CHECK(tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP));
-    ESP_ERROR_CHECK(tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &info));
-    ESP_ERROR_CHECK(tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP));
+    esp_netif_ip_info_t info = { 0, 0, 0};
+    info.ip.addr =      esp_netif_htonl(esp_netif_ip4_makeu32(192, 168, 4, 1));
+    info.gw.addr =      esp_netif_htonl(esp_netif_ip4_makeu32(192, 168, 4, 1));
+    info.netmask.addr = esp_netif_htonl(esp_netif_ip4_makeu32(255, 255, 255, 0));
+    ESP_ERROR_CHECK( esp_netif_dhcps_stop(_defaultWifiAp()) );
+    ESP_ERROR_CHECK( esp_netif_set_ip_info(_defaultWifiAp(), &info) );
+    ESP_ERROR_CHECK( esp_netif_dhcps_start(_defaultWifiAp()) );
   }
 
   // init wifi
@@ -635,12 +669,10 @@ void Wifi::deinit()
 
     // destroys the esp_netif object accordingly
     if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) {
-      esp_netif_destroy(_defaultWifiSta);
-      _defaultWifiSta = NULL;
+      _destroyDefaultWifiSta();
     }
     if (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_AP) {
-      esp_netif_destroy(_defaultWifiAp);
-      _defaultWifiAp = NULL;
+      _destroyDefaultWifiAp();
     }
 
     // ESP_ERROR_CHECK( esp_netif_deinit() ); // deinitialization is not supported yet
@@ -664,7 +696,7 @@ void Wifi::start(bool waitConnected)
     if (waitConnected) this->waitConnected();
     // if ( (_config.mode == WIFI_MODE_APSTA || _config.mode == WIFI_MODE_STA) && _config.hostName[0] != '\0') {
     //   if (!waitConnected) this->waitConnected();  // wait connect anyway
-    //   ESP_ERROR_CHECK( tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, _config.hostName) );
+    //   ESP_ERROR_CHECK( esp_netif_set_hostname(_defaultWifiSta(), _config.hostName) );
     // }
     _started = true;
   }
