@@ -103,7 +103,7 @@ public:
       case EXPECT_CHECKSUM:
         if (_expectLSB) {
           _halfWord |= byte;
-          _expectLSB = false; 
+          _expectLSB = false;
           if (_checksum == _halfWord) {
             _frameState = FRAME_READY;
           }
@@ -121,7 +121,7 @@ public:
   }
 
 protected:
-  FrameState      _frameState;  
+  FrameState      _frameState;
   ParseState      _parseState;
 
   bool            _expectLSB;
