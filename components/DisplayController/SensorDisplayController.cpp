@@ -141,9 +141,10 @@ void SensorDisplayController::setLuminosityData(const LuminosityData *lmData, bo
 {
   // value update
   _sensorData.luminosity = lmData->luminosity;
+  _sensorData.lumiLevel = lmData->level;
 
   // color update
-  _sensorData.lumiColor = 0x07F9; // cyan
+  _sensorData.lumiColor = HS::colorForLumiLevel(lmData->level);
 
   if (update) _dynamicContentNeedUpdate = true;
 }
@@ -334,7 +335,7 @@ void SensorDisplayController::_renderMainScreenMainItem(uint8_t refIndex, uint8_
 
   // level chars
   _dev->drawBitmap(ITEM_RECT_OFFSET_X + ITEM_LEVEL_OFFSET_X, baseOffsetY + ITEM_LEVEL_OFFSET_Y,
-                   LEVEL[lvl], ITEM_LEVEL_CHAR_W, ITEM_LEVEL_CHAR_H, color, RGB565_BLACK);
+                   LEVEL_CAT[refIndex][lvl], ITEM_LEVEL_CHAR_W, ITEM_LEVEL_CHAR_H, color, RGB565_BLACK);
 }
 
 void SensorDisplayController::_renderMainScreenSubItem(uint8_t refIndex, uint8_t posIndex,

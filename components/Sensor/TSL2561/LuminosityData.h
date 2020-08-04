@@ -12,7 +12,7 @@
 
 struct LuminosityData {
     // standard from 
-    uint8_t         levelLuminosity;
+    uint8_t         level;
 
     // luminosity value
     uint32_t        luminosity;
@@ -20,12 +20,12 @@ struct LuminosityData {
     // clear method
     void clear() {
         luminosity = 0;
-        levelLuminosity = 0;
+        level = 0;
     }
 
     // calculate level
     void calculateLevel() {
-        // levelLuminosity = HS::calculateSampleLevel();
+        level = HS::calculateSampleLevel(HS::LUMI_TABLE, luminosity, LUMI_MAX_LEVEL);
     }
 };
 

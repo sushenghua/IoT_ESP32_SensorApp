@@ -469,6 +469,7 @@ void TSL2561::sampleData()
 
   if (tsl2561GetLuminosity(_broadbandCache, _irCache)) {
     tsl2561CalculateLuminosity(_luminosityData.luminosity, _broadbandCache, _irCache);
+    _luminosityData.calculateLevel();
     if (_dc) _dc->setLuminosityData(&_luminosityData, true);
 
 #ifdef DEBUG_APP_OK

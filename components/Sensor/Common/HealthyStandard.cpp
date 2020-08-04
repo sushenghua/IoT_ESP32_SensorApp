@@ -15,6 +15,17 @@ uint16_t HS::RGB888toRGB565(uint8_t r, uint8_t g, uint8_t b)
     return (r << 11) | (g <<5) | b;
 }
 
+uint8_t HS::calculateSampleLevel(const float *table, float sampleValue, uint8_t maxLevel)
+{
+    uint8_t i = 0;
+    for (; i < maxLevel; ++i) {
+        if (sampleValue < table[i]) {
+            break;
+        }
+    }
+    return i;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////
 // PM standard
 // ref: https://en.wikipedia.org/wiki/Air_quality_index
@@ -210,6 +221,30 @@ uint16_t HS::colorForHumidLevel(uint8_t level)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
+// luminosity standard
+// ref:
+/////////////////////////////////////////////////////////////////////////////////////////
+
+// luminosity level
+float HS::LUMI_TABLE[] = {
+        100.0f,     // dark
+        1000.0f     // comfortable
+                    // strong
+};
+
+// table of level color
+static uint16_t LUMILEVELCOLOR[] = {
+        0xFBE0,     // dark
+        0x07E0,     // comfortable
+        0x07FF      // strong
+};
+
+uint16_t HS::colorForLumiLevel(uint8_t level)
+{
+    return LUMILEVELCOLOR[level];
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
 // CO2 standard
 // ref: https://zhidao.baidu.com/question/475675906.html
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -235,15 +270,4 @@ static uint16_t CO2LEVELCOLOR[] = {
 uint16_t HS::colorForCO2Level(uint8_t level)
 {
     return CO2LEVELCOLOR[level];
-}
-
-uint8_t HS::calculateSampleLevel(const float *table, float sampleValue, uint8_t maxLevel)
-{
-    uint8_t i = 0;
-    for (; i < maxLevel; ++i) {
-        if (sampleValue < table[i]) {
-            break;
-        }
-    }
-    return i;
 }

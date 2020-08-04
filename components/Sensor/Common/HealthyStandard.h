@@ -18,6 +18,8 @@ public:
 
 static uint16_t RGB888toRGB565(uint8_t r, uint8_t g, uint8_t b);
 
+static uint8_t calculateSampleLevel(const float *table, float sampleValue, uint8_t maxLevel);
+
 /////////////////////////////////////////////////////////////////////////////////////////
 // PM standard
 // ref: https://en.wikipedia.org/wiki/Air_quality_index
@@ -72,7 +74,17 @@ static float CO2_TABLE[];
 
 static uint16_t colorForCO2Level(uint8_t level);
 
-static uint8_t calculateSampleLevel(const float *table, float sampleValue, uint8_t maxLevel);
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// luminosity standard
+// ref:
+/////////////////////////////////////////////////////////////////////////////////////////
+
+#define LUMI_MAX_LEVEL   2
+
+static float LUMI_TABLE[];
+
+static uint16_t colorForLumiLevel(uint8_t level);
 
 };
 
