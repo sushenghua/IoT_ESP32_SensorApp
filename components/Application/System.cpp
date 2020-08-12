@@ -104,8 +104,7 @@ bool isDeepSleepReset()
   return getWakeupCause() == ESP_SLEEP_WAKEUP_TIMER;
 }
 
-// #include "ST7789V.h"
-// ST7789V dev;// static ILI9341 dev;
+
 #include "ILI9341.h"
 #include "SensorDisplayController.h"
 #define DISPLAY_TASK_DELAY_UNIT  100
@@ -125,7 +124,6 @@ void display_task(void *p)
 
   dc.init();
   APP_LOGC("[display_task]", "start running ...");
-  // _displayDaemonInactiveTicks = 0;
   while (true) {
     if (_enablePeripheralTaskLoop) {
       dc.update();
@@ -638,11 +636,10 @@ static void mqtt_task(void *pvParams)
     size_t len;
     decryptBase64(mqttUser,   strlen(mqttUser),   '\0', v1, v2, user, &len);
     decryptBase64(mqttPasswd, strlen(mqttPasswd), '\0', v1, v2, pass, &len);
-// ESP_LOG_BUFFER_HEXDUMP("user", user, 64, ESP_LOG_INFO);
-// ESP_LOG_BUFFER_HEXDUMP("pass", pass, 64, ESP_LOG_INFO);
-// APP_LOGC("[mqtt_task]", "user: %s, pass: %s", user, pass);
+    // ESP_LOG_BUFFER_HEXDUMP("user", user, 64, ESP_LOG_INFO);
+    // ESP_LOG_BUFFER_HEXDUMP("pass", pass, 64, ESP_LOG_INFO);
+    // APP_LOGC("[mqtt_task]", "user: %s, pass: %s", user, pass);
     mqtt.setUserPassword(user, pass);
-    // mqtt.setUserPassword("aqmonitor", "upuPDOK6+zsOwRBKYG9Am");
   }
   mqtt.init();
   mqtt.start();

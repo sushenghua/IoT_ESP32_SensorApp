@@ -502,7 +502,7 @@ void Wifi::onStaDisconnected(uint8_t reason)
       ++_connectionFailCount;
       break;
     case WIFI_REASON_ASSOC_LEAVE:
-      tryReconnect = false;
+      // tryReconnect = false;
       break;
     default:
       break;
