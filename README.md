@@ -7,7 +7,7 @@ The mobile side App may read sensor data from device or send command to it. The 
 
 <img src="https://github.com/sushenghua/IoT_ESP32_SensorDoc/blob/master/Demo/dev2.jpg" width="600">
 
-More information about the device can be found [here](http://appsgenuine.com). And the mobile apps are [iOS App](https://itunes.apple.com/cn/app/q-monitor/id1318735622) and [Android App](http://appsgenuine.com/download/qmonitor.apk)
+Some short demo videos are listed at https://github.com/sushenghua/IoT_ESP32_SensorDoc/blob/master/Demo, more information about the device can be found [here](http://appsgenuine.com). And the mobile apps are [iOS App](https://itunes.apple.com/cn/app/q-monitor/id1318735622) and [Android App](http://appsgenuine.com/download/qmonitor.apk)
 
 ## Program features
 
