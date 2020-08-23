@@ -7,7 +7,7 @@ The mobile side App may read sensor data from device or send command to it. The 
 
 <img src="https://github.com/sushenghua/IoT_ESP32_SensorDoc/blob/master/Demo/dev2.jpg" width="600">
 
-More information about the device can be found [here](http://appsgenuine.com). And the mobile apps are [iOS App](https://itunes.apple.com/cn/app/q-monitor/id1318735622) and [Android App](http://appsgenuine.com/download/qmonitor.apk)
+Some short demo videos are listed at https://github.com/sushenghua/IoT_ESP32_SensorDoc/blob/master/Demo, more information about the device can be found [here](http://appsgenuine.com). And the mobile apps are [iOS App](https://itunes.apple.com/cn/app/q-monitor/id1318735622) and [Android App](http://appsgenuine.com/download/qmonitor.apk)
 
 ## Program features
 
@@ -84,7 +84,7 @@ For the BOM list:
 ### Build and Run
 
 To build this project, latest [esp-idf](https://github.com/espressif/esp-idf.git) is required to setup properly, just by following the [step-by-step instructions](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html#installation-step-by-step). An [ESP32-DevKitC](https://www.espressif.com/en/products/devkits/esp32-devkitc) board or similar compitable development boards can be used to deploy the firmware of this
-project. As these boards don't have the peripheral chips as this SensorApp board has, some related tasks in file [System.cpp](https://github.com/sushenghua/IoT_ESP32_SensorApp/tree/master/components/Application/System.cpp) should be commented out. Also, a MQTT broker is required
+project(switch to branch [**'esp32_devkit_board'**](https://github.com/sushenghua/IoT_ESP32_SensorApp/tree/esp32_devkit_board)). As these boards don't have the peripheral chips as this SensorApp board has, some related tasks in file [System.cpp](https://github.com/sushenghua/IoT_ESP32_SensorApp/tree/master/components/Application/System.cpp) had been commented out. Also, a MQTT broker is required
 to depoly on a server, [Mosquitto](https://mosquitto.org) is used in this project. To make the OTA update enabled, a MQTT subscriber service is needed to
 response the Device App (SensorApp) or the mobile App.
 
