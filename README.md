@@ -5,9 +5,9 @@
 SensorApp is an IoT device application which is used to send messages back and forth (over MQTT protocol) to corresponding mobile App.
 The mobile side App may read sensor data from device or send command to it. The real device show is as the following image:
 
-<img src="https://github.com/sushenghua/IoT_ESP32_SensorDoc/blob/master/Demo/dev2.jpg" width="600">
+<img src="https://github.com/sushenghua/IoT_ESP32_SensorDoc/blob/master/Demo/dev1.jpg" width="500"><img src="https://github.com/sushenghua/IoT_ESP32_SensorDoc/blob/master/Demo/dev2.jpg" width="500">
 
-Some short demo videos are listed at https://github.com/sushenghua/IoT_ESP32_SensorDoc/blob/master/Demo, more information about the device can be found [here](http://appsgenuine.com). And the mobile apps are [iOS App](https://itunes.apple.com/cn/app/q-monitor/id1318735622) and [Android App](http://appsgenuine.com/download/qmonitor.apk)
+Some short demo videos are listed at https://github.com/sushenghua/IoT_ESP32_SensorDoc/blob/master/Demo, more information about the device can be found [here](https://htmlpreview.github.io/?https://github.com/sushenghua/IoT_ESP32_SensorDoc/blob/master/Demo/webpage/index.html#second). And the mobile apps are [iOS App](https://itunes.apple.com/cn/app/q-monitor/id1318735622) and [Android App](http://appsgenuine.com/download/qmonitor.apk)
 
 ## Program features
 
